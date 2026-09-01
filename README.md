@@ -20,37 +20,147 @@ this repo             8 scripts, 14 migrations, a small compose delta
 
 ## Install
 
-You need Docker and about 4 GB of disk. Nothing else -- the gameserver image
-ships the world database and seeds it on first boot.
+### What you need
+
+* **Windows 11 with WSL2**, or any Linux host. The server itself only ever
+  sees Linux; on Windows everything runs inside the WSL distro.
+* **Docker Engine** *inside* the distro. Docker Desktop works too, but the
+  reference setup is plain `docker.io` installed in Ubuntu.
+* About **4 GB** of disk.
+* A **Dark Age of Camelot 1.127 client** to connect with.
+
+Nothing else. You do not need to build OpenDAoC, and you do not need a
+database dump -- the gameserver image ships the world database and seeds it
+into the volume on first boot.
+
+### 1. Docker, inside the distro
+
+```bash
+sudo apt update && sudo apt install -y docker.io docker-compose-v2
+sudo usermod -aG docker "$USER"     # then close and reopen the shell
+```
+
+### 2. Stop WSL from killing the server
+
+**This one bites.** WSL shuts a distro down seconds after its last process
+exits, and that `SIGKILL`s the containers out from under you -- the server
+just disappears, usually while you are still logged in.
+
+Hold the distro open with one idle process. `windows/wsl-keepalive.vbs` does
+exactly that and nothing else; put a shortcut to it in
+`shell:startup` so it runs at login:
+
+```
+wsl.exe -d Ubuntu -u root -e /bin/sleep infinity
+```
+
+### 3. Clone and configure
 
 ```bash
 git clone https://github.com/Pactor/gaheris.git
 cd gaheris
-cp .env.example .env          # set DB_PASSWORD to something of your own
-docker compose up -d          # first boot seeds the DB; give it a few minutes
-./install.sh                  # applies the conversion
+cp .env.example .env
+```
+
+Edit `.env` and set `DB_PASSWORD`. MariaDB reads it **once**, when it
+initialises its data volume, so choose it before the first boot -- changing it
+afterwards means recreating the volume.
+
+### 4. First boot
+
+```bash
+docker compose up -d
+```
+
+The first run seeds the world database and takes a few minutes; later boots
+take about fifteen seconds. Watch it come up:
+
+```bash
+docker compose logs -f gameserver
+```
+
+You are ready when the log says `Server is now listening`.
+
+### 5. Apply the conversion
+
+```bash
+./install.sh
 docker compose restart gameserver
 ```
 
-Then point a 1.127 client at `127.0.0.1:10300`. `AUTO_ACCOUNT_CREATION` is on,
-so the first login with a new name creates the account.
+`install.sh` applies everything in `sql/` in order. It is idempotent, so
+re-running it is always safe and is the normal way to take an update.
 
-Optional extras:
+### 6. Connect
+
+`AUTO_ACCOUNT_CREATION` is on, so the first login with a new name creates the
+account. On Windows, `windows/play-local.bat` launches the client against the
+local server:
+
+```
+play-local.bat <account> <password>
+```
+
+It expects the client at `C:\Program Files (x86)\OpenDAoC` -- edit the path in
+the file if yours differs. To connect by hand, point a 1.127 client at
+`127.0.0.1:10300`.
+
+Characters start at level 5, which is where the game lets you promote out of
+a base class. Promote first: the recruiters will not hire to anyone still
+holding an archetype. Then find a **Mercenary Recruiter** -- one in each
+capital, one at each border keep -- and hire a group.
+
+### Optional extras
 
 ```bash
 ./install.sh --testkit        # faster seals, softer doors, a level 50 test kit
 ./install.sh --maintenance    # one-off repairs; see sql/maintenance/
 ```
 
-`install.sh` is safe to re-run. Every migration is written to be idempotent,
-so re-running it after a `git pull` is the normal way to take an update.
+The testkit is for development, not play. It is kept separate so it can be
+left out, or dropped later, without disturbing the conversion.
 
-The clone is the deployment: the compose file mounts `./scripts` straight
-into the container, so editing a script here and restarting the gameserver is
-the whole edit loop. There is no copy step.
+---
 
-If you keep the server somewhere else and only use this repo as a source,
-`./sync-to-live.sh [target]` pushes the scripts across instead.
+## Operating it
+
+**The clone is the deployment.** The compose file mounts `./scripts` straight
+into the container, so the whole edit loop is: edit a script here, restart the
+gameserver. There is no copy step. (If you would rather keep the server
+elsewhere and use this repo only as a source, `./sync-to-live.sh [target]`
+pushes the scripts across.)
+
+| | |
+|---|---|
+| Update | `git pull && ./install.sh && docker compose restart gameserver` |
+| Logs | `docker compose logs -f gameserver` |
+| Restart the server only | `docker compose restart gameserver` |
+| Stop everything | `docker compose down` (volumes are kept) |
+| Back up the world | `docker exec opendaoc-db mysqldump -uroot -p"$PW" opendaoc \| gzip > backup.sql.gz` |
+
+**Log characters out before restarting.** OpenDAoC has no shutdown handler, so
+`docker compose restart` kills the process without calling `GameServer.Stop()`
+and nothing is saved. Autosave runs every 10 minutes; anything since the last
+one is lost. This is the single easiest way to lose an evening's progress.
+
+**Compile-check before restarting after a script change.** The scripts
+directory builds as ONE assembly, so a single bad file takes down the whole
+server -- not just that file:
+
+```bash
+~/.dotnet/dotnet build ~/scriptcheck/scriptcheck.csproj
+```
+
+`tools/scriptcheck.csproj` is that harness; point it at this repo's `scripts/`
+and at a checkout of OpenDAoC-Core for its references.
+
+### If the world looks empty after moving the checkout
+
+Compose derives its project name from the directory it runs in and prefixes
+every volume with it, so a rename would point the server at fresh, empty
+volumes. `docker-compose.yml` pins `name: opendaoc` to prevent exactly that.
+If you ever do see an empty world, check that the pin is still there and that
+`docker volume ls` shows `opendaoc_opendaoc-db-data`.
 
 ---
 
@@ -212,7 +322,7 @@ a script replaces the built-in PvE rules with no core change.
 ## Layout
 
 ```
-docker-compose.yml     stock upstream compose + 5 lines (see below)
+docker-compose.yml     stock upstream compose + 6 lines (see below)
 install.sh             applies sql/ in order, idempotent
 sync-to-live.sh        pushes scripts to a deployment elsewhere
 scripts/               compiled at boot into GameServerScripts.dll
@@ -220,6 +330,7 @@ sql/                   numbered, applied in order
   optional/            testing kit and power sustain -- not part of the conversion
   maintenance/         one-off repairs, safe to skip on a fresh install
 tools/                 generators for the bulk SQL, and the compile harness
+windows/               client launcher, and the WSL keepalive
 docs/                  reference notes
 ```
 
@@ -242,22 +353,11 @@ repo can live anywhere and still finds `opendaoc_opendaoc-db-data`.
 
 ---
 
-## Working on this
+## Notes for anyone changing this
 
-**The scripts directory compiles as one assembly.** A single bad file takes
-down the entire server, not just that file. Always compile-check before
-restarting:
-
-```bash
-~/.dotnet/dotnet build ~/scriptcheck/scriptcheck.csproj
-```
-
-`tools/scriptcheck.csproj` is that harness -- point it at your scripts
-directory and a checkout of OpenDAoC-Core for references.
-
-**OpenDAoC has no shutdown handler.** `docker compose restart` kills the
-process without calling `GameServer.Stop()`, so nothing is saved. Autosave is
-every 10 minutes. Log characters out before restarting or they lose progress.
+The operational traps -- the one-assembly build, and the missing shutdown
+handler -- are under [Operating it](#operating-it). These are the ones that
+will surprise you in the code.
 
 **There is no pathfinding.** The Detour native library is absent and there are
 no navmesh files, so NPCs walk straight lines and snag on terrain. The

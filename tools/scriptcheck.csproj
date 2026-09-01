@@ -1,0 +1,47 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    Compile-checks the Gaheris server scripts against the running server's own
+    assemblies, so a broken script is caught here rather than at boot. A script
+    compile failure takes down the WHOLE scripts assembly - the monster
+    garrison and the seal loot generator with it - so this is worth the setup.
+
+    Usage:  ~/.dotnet/dotnet build ~/scriptcheck/scriptcheck.csproj
+  -->
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>disable</Nullable>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <AssemblyName>ScriptCheck</AssemblyName>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+    <!-- Scripts are compiled by the server without warnings-as-errors. -->
+    <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
+    <NoWarn>CS0169;CS0414;CS0649</NoWarn>
+    <OutputType>Library</OutputType>
+    <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="src/**/*.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Reference Include="GameServer">
+      <HintPath>libs/GameServer.dll</HintPath>
+    </Reference>
+    <Reference Include="CoreBase">
+      <HintPath>libs/CoreBase.dll</HintPath>
+    </Reference>
+    <Reference Include="CoreDatabase">
+      <HintPath>libs/CoreDatabase.dll</HintPath>
+    </Reference>
+    <Reference Include="CoreServer">
+      <HintPath>libs/CoreServer.dll</HintPath>
+    </Reference>
+    <Reference Include="Detour.Managed">
+      <HintPath>libs/Detour.Managed.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+
+</Project>

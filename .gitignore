@@ -1,0 +1,30 @@
+# Secrets -- never commit. Copy .env.example to .env and set your own.
+.env
+.dbpass
+
+# Database dumps. These are large, and a dump of a live server contains
+# account rows with password hashes. The migrations in sql/ rebuild the
+# world on a fresh import, so a dump is never the thing to share.
+*.sql.gz
+*.dump
+backup-*.sql
+pre-import-backup.sql
+restore-guard-levels.sql
+
+# Build scratch from assembling the scripts by hand
+*.bak
+*.err
+merc_head.cs
+merc_body.cs
+merc_tail.cs
+keep_*.txt
+gear_methods.txt
+
+# Client installer payloads
+*.bin
+*.exe
+
+# Tooling
+obj/
+bin/
+__pycache__/

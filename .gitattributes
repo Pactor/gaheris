@@ -1,0 +1,15 @@
+# The server runs on Linux. Anything it executes or parses must keep LF
+# endings, or bash fails with "\r: command not found" and MySQL chokes on
+# the migrations.
+* text=auto eol=lf
+
+*.sh   text eol=lf
+*.sql  text eol=lf
+*.cs   text eol=lf
+*.py   text eol=lf
+*.yml  text eol=lf
+*.md   text eol=lf
+
+*.png binary
+*.bin binary
+*.exe binary

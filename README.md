@@ -13,7 +13,7 @@ requires you to build it.
 ```
 OpenDAoC-Core         stock, pulled as a Docker image -- 0 files changed
 OpenDAoC-Database     stock -- 0 files changed
-this repo             8 scripts, 14 migrations, a 5-line compose delta
+this repo             8 scripts, 14 migrations, a small compose delta
 ```
 
 ---
@@ -24,7 +24,7 @@ You need Docker and about 4 GB of disk. Nothing else -- the gameserver image
 ships the world database and seeds it on first boot.
 
 ```bash
-git clone <your-fork-url> gaheris
+git clone https://github.com/Pactor/gaheris.git
 cd gaheris
 cp .env.example .env          # set DB_PASSWORD to something of your own
 docker compose up -d          # first boot seeds the DB; give it a few minutes
@@ -45,15 +45,12 @@ Optional extras:
 `install.sh` is safe to re-run. Every migration is written to be idempotent,
 so re-running it after a `git pull` is the normal way to take an update.
 
-### If your server directory is not this repo
+The clone is the deployment: the compose file mounts `./scripts` straight
+into the container, so editing a script here and restarting the gameserver is
+the whole edit loop. There is no copy step.
 
-The compose file mounts `./scripts` into the container, so a fresh clone is
-already a working deployment. If you have an existing install elsewhere (the
-original one lives in `~/opendaoc`), push to it instead:
-
-```bash
-./sync-to-live.sh             # defaults to ~/opendaoc
-```
+If you keep the server somewhere else and only use this repo as a source,
+`./sync-to-live.sh [target]` pushes the scripts across instead.
 
 ---
 
@@ -228,13 +225,20 @@ docs/                  reference notes
 
 ### The compose delta
 
-Our `docker-compose.yml` differs from upstream's by exactly five things:
+Our `docker-compose.yml` differs from upstream's by exactly six things:
 
 1. `GAME_TYPE: "PvE"` (was `Normal`)
 2. mount `./scripts:/app/scripts/custom`
 3. a `healthcheck` on the db service
 4. `depends_on: db: condition: service_healthy`
 5. `restart: unless-stopped` on the gameserver
+6. `name: opendaoc` &mdash; see below
+
+**The project name is pinned on purpose.** Compose defaults it to the
+directory name and prefixes every volume with it, so running this from a
+checkout called anything else would silently create new, empty volumes and
+the world database would appear to have been wiped. Pinning it means the
+repo can live anywhere and still finds `opendaoc_opendaoc-db-data`.
 
 ---
 

@@ -1,3 +1,14 @@
+# Pinned deliberately. Compose defaults the project name to the name of the
+# directory it is run from, and prefixes every volume with it -- so running
+# this from a differently-named checkout would create fresh, EMPTY volumes
+# and the world database would look as though it had been wiped. Pinning it
+# means the server can be run from anywhere and still finds:
+#
+#     opendaoc_opendaoc-db-data   -> /var/lib/mysql
+#     opendaoc_base-db            -> /docker-entrypoint-initdb.d
+#
+name: opendaoc
+
 networks:
   opendaoc-network:
     driver: bridge

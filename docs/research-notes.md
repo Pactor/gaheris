@@ -285,6 +285,113 @@ not a belief that we restored one.
 
 ---
 
+## 3d. The model viewer -- and two models I got wrong
+
+`https://daoc.ndlp.info/losojos-001-site1.btempurl.com/ModelViewer/`
+
+A **model ID to name and picture** browser, 75 pages, filterable by category
+(Biped male/female, Vampiir, Demons, Animals, Other, Not Categorised). Credits
+Dawn of Light for the pictures and Eve of Darkness for the viewer itself, and
+is hosted under the Los-Ojos DOLSharp fork's space.
+
+**This is the reference we did not have when choosing models for Deep
+Volcanus, and it immediately exposed two mistakes.**
+
+The method used there was to match a creature's name against names already in
+the world and take that model. It works when the match is representative and
+fails badly when it lands on an outlier:
+
+| chosen | because | what model actually is |
+|---|---|---|
+| `456` for Flame of Volcanus | one mob in the world is called "Flame" | **417 wyverns** |
+| `456` for Typhon's Essence | same | **wyverns** |
+| `666` for Battlewarder | "chrysiron statue" x18 sits on it | **1086 "storm effects"** -- invisible |
+
+So the flames were wyverns and the Battlewarder could not be seen.
+
+The lesson generalises: **take the model the MAJORITY of a family uses, never
+a single name hit.** Corrected in `sql/23-volcanus-model-fixes.sql`:
+
+```
+125   Magma Elemental / magmatasm   an actual magma elemental
+951   basalt golem                  a construct you can see
+993   atevo statue (248 in world)   where 1203 palios statue has 9 uses
+```
+
+Still worth a second look, not yet changed: `Ancient Transmuter` sits on model
+1191, which is overwhelmingly **taur** (elite taur defender, taur arieos --
+several hundred). A centaur is not absurd for an Atlantis service NPC, but it
+was not the intent.
+
+---
+
+## 3e. How keeps actually get their defenders
+
+The question "which mobs defend which castle" has a structural answer, and it
+is not a list.
+
+**`KeepPosition` is keyed on `ComponentSkin` and `Height` -- not on KeepID.**
+
+```json
+{ "ClassType": "DOL.GS.Keeps.GameKeepDoor", "ComponentSkin": 24,
+  "Height": 0, "XOff": 374, "YOff": -771, "ZOff": 0, "TemplateType": 1 }
+```
+
+A position says: *on a wall section of this skin, at this height, put this
+guard at this offset*. A keep gets its garrison by being **built of components**
+whose skins have positions defined. So the defenders of a castle are a
+consequence of its architecture, not a roster attached to it.
+
+Eve's data, per building block rather than per keep:
+
+```
+skin 30  62 positions     skin 24  33      skin 0   24
+skin 10  20               skin 4   19      skin 31  15
+
+GuardFighter 74   GameKeepDoor 67   GuardStaticArcher 25   GuardArcher 25
+Patrol 16         GuardLord 13      GameKeepBanner 10      GuardHealer 9
+FrontiersPortalStone 8   MissionMaster 5   FrontierHastener 3
+GuardCaster 3     GuardStaticCaster 2      GuardStealther 1
+```
+
+### Why ours does not work that way
+
+| | our live DB | Eve `~/dol-db` | upstream OpenDAoC-Database |
+|---|---|---|---|
+| keep | 79 | 151 | present |
+| keepposition | 55 | **261** | ~55, mostly doors |
+| keepcomponent | **0** | **2121** | ~0 |
+| keephookpoint | **0** | **729** | ~0 |
+
+**We have no components at all**, which is precisely why this project builds
+garrisons out of `mob` rows and why `guard.Component` is always null -- the
+trap that has bitten four times now. It is not a bug in our data; there is
+simply no component layer to hang guards off.
+
+Adopting Eve's would mean adopting the whole architecture: 2121 components,
+729 hookpoints, 261 positions, and keeps that assemble themselves. That is a
+different server design from the one running now, not an import.
+
+---
+
+## 3f. Other emulator projects worth knowing about
+
+- **[TTom03/DOLServer-DAoC-NewFrontiers](https://github.com/TTom03/DOLServer-DAoC-NewFrontiers)**
+  -- a real OpenDAoC fork, 13,190 commits, whose stated purpose is exactly the
+  New Frontiers question: *"OpenDAoC was old frontiers. This repository will
+  have New Frontiers implemented."* Also plans epic dungeons, CL5 dungeons, a
+  revised Summoner's Hall and a modern quest system, and deliberately excludes
+  artifacts. The README says nothing about bundled world data, so whether it
+  carries NF keep data or only the code to run it is unresolved -- and it is
+  the single most promising unexplored lead in this file.
+- **[Eve-of-Darkness/eve-of-darkness](https://github.com/Eve-of-Darkness/eve-of-darkness)**
+  -- a DAoC server in Elixir. Same people whose `db-public` and `dol-db` we
+  have already mined.
+- The **OpenDAoC organisation** has eleven repositories and none of them holds
+  world data beyond `OpenDAoC-Database`, which we already have.
+
+---
+
 ## 4. GitHub: is there an old DOL Gaheris project?
 
 Searched. **No dedicated Gaheris server repository exists.** What is out there:

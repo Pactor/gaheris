@@ -1881,6 +1881,36 @@ namespace DOL.GS.Scripts
         }
 
         /// <summary>
+        /// Refuses the bow, every time it is offered.
+        ///
+        /// Overriding the initial choice was not enough, and the reason is in
+        /// AttackComponent:
+        ///
+        ///     // Force NPCs to switch back to their ranged weapon if they
+        ///     // have any and their aggro list is empty.
+        ///     npcOwner.SwitchWeapon(eActiveWeaponSlot.Distance);
+        ///
+        /// Core does not decide the weapon once. It re-arms the bow EVERY TIME
+        /// a fight ends, so a Blademaster given one drew it again the moment
+        /// the aggro list emptied -- which is most of the time. Catching the
+        /// switch itself is the only place that covers every route in.
+        /// </summary>
+        public override void SwitchWeapon(eActiveWeaponSlot slot)
+        {
+            if (slot is eActiveWeaponSlot.Distance &&
+                Profile != null && !Profile.Has(Duty.Archer))
+            {
+                base.SwitchWeapon(Inventory?.GetItem(eInventorySlot.TwoHandWeapon) != null
+                    ? eActiveWeaponSlot.TwoHanded
+                    : eActiveWeaponSlot.Standard);
+
+                return;
+            }
+
+            base.SwitchWeapon(slot);
+        }
+
+        /// <summary>
         /// Picks the weapon this class would actually draw.
         ///
         /// Core's version hands the distance slot to anything with a bow in

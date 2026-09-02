@@ -148,6 +148,82 @@ Worth noting the earlier correction: "5983 mobs indexed" on that site is the
 
 ---
 
+## 3b. Volcanus, in detail
+
+Followed up properly. The short version: **the creatures can be imported, the
+raid cannot be rebuilt, and nothing would be visible without inventing models.**
+
+### What Deep Volcanus actually is
+
+Master Level **7** -- not 10, as first assumed. From the ToA documentation:
+
+> All of these trials, except the first one, happen inside Deep Volcanus, in
+> Ashen Isle. Entry requirement to Volcanus is ML 3.
+
+Trials: The Lava Bridge, Know your Opponents, Apophian's Challenge, Volurgon's
+Challenge, Shaitan's Challenge, Hephaestian's Challenge, Crossing the Chamber,
+Pillars.
+
+Note the entrance is in **Ashen Isle**, which is zone 85 in region 73 -- and
+that zone we DID populate. The way in is furnished; what is behind the door is
+not.
+
+### What capnbry actually lists
+
+56 entries for zone 89, and a good half of them are not creatures at all. They
+are the scaffolding a scripted raid is built from:
+
+```
+spell markers      Typhon spell effects 1/2, spell effects 1/2/3,
+                   fire explosion, fire explosions, flame sphere
+control entities   monster generator 1, monster generator 2,
+                   T7E3-6 Inra Mediator Control
+doors and walls    Typhon's Gate, Volurgon's Passage, mystical barrier
+boss abilities     Katorii's Blood / Breath / Deathtouch / Foresight /
+                   Gaze / Touch, Katorii's pet
+```
+
+The genuine creatures are four elemental factions and their bosses:
+
+```
+apophian      aggressor, archon, crusher, enforcer, controlled, feuding
+hephaestian   archon, controlled, feuding, mastered
+shaitan       archon, idol, zealot, controlled, feuding
+volurgon      archon, chronomancer, psytinel, wretch, controlled,
+              corrupt, feuding, mischievous, unruly
+bosses        Typhon, Katorii, and a Mediator for each of the four
+other         Battlewarder, Ancient Transmuter, Balance of the Four,
+              Flame of Volcanus
+```
+
+Levels run 61-65 for the rank and file.
+
+### Three blockers, in order of severity
+
+1. **No models, and nothing to borrow.** Checked every one of the 56 names
+   against our `mob` and `npctemplate` tables: **zero matches**. These
+   creatures exist nowhere else in the world, and capnbry records name, level
+   and coordinates but no model. Imported as-is they would be invisible.
+
+2. **No encounter logic anywhere.** Grepped the whole of OpenDAoC-Core for
+   typhon / katorii / volurgon / apophian / hephaestian / shaitan: the only hit
+   is `AncientBoundDjinn.cs`, which is a teleporter. The generators, the gate,
+   the mediator controls are inert rows without scripts to drive them.
+
+3. **db-public has nothing** for regions 46 / 89 / 146, so the good source that
+   solved the rest of Atlantis cannot help here.
+
+### What is actually achievable
+
+Import the ~30 real creatures with models chosen by hand from existing
+elemental models, and Deep Volcanus becomes a populated level 61-65 fire
+dungeon worth fighting through. That is worth having on a co-operative server.
+
+What it would NOT be is Master Level 7. The trials are scripted content and
+none of the scripting exists.
+
+---
+
 ## 4. GitHub: is there an old DOL Gaheris project?
 
 Searched. **No dedicated Gaheris server repository exists.** What is out there:
@@ -161,6 +237,14 @@ Searched. **No dedicated Gaheris server repository exists.** What is out there:
   a DOLSharp fork carried forward to **1.124-1.127**, which is our client
   version. Not yet examined; the most likely place to find 1.127-era fixes.
 - [OpenDAoC/OpenDAoC-Core](https://github.com/OpenDAoC/OpenDAoC-Core) — ours.
+
+**gaheris.net** turned up and is worth recording so nobody chases it twice. It
+is dead (connection refused) but archived: captures from 2010 to 2015 or so,
+titled "Gaheris: Home", with Forum / FAQ / Index / Links / About and the
+footer "Site copyright 2010-2014 Robbie of Gaheris". It was a **player
+community site for the live server** -- guides, a phpBB forum -- not a shard
+and not a source of server data. Only the homepage was archived; the inner
+pages have no captures at all.
 
 Gaheris itself was a live Mythic/EA ruleset, never a community server, which is
 why there is no repository for it. The ruleset is documented on the
@@ -179,5 +263,5 @@ NPCs**.
 | NF keeps | Eve `Keep.json` | 105 keeps, schema 20/20 |
 | **Correct defenders** | **Eve `KeepPosition.json`** | **261 rows, schema 13/13** |
 | NF structures | Eve `KeepComponent.json` | 2121 rows, schema 10/10 |
-| Volcanus mobs | capnbry zone 89 only | 56 mobs, no models |
+| Volcanus mobs | capnbry zone 89 only | ~30 real creatures, no models, no encounter logic |
 | Gaheris repo | — | does not exist |

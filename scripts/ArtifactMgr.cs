@@ -362,7 +362,12 @@ namespace DOL.GS
 		/// <param name="player"></param>
 		/// <param name="item"></param>
 		/// <param name="xpAmount"></param>
-		private static void ArtifactGainedExperience(GamePlayer player, InventoryArtifact item, long xpAmount)
+		/// <summary>
+		/// Public here, private upstream. ArtifactExperience calls it from a
+		/// Dying handler, because OpenDAoC has no GainedExperience event for
+		/// the original caller to hang off.
+		/// </summary>
+		public static void ArtifactGainedExperience(GamePlayer player, InventoryArtifact item, long xpAmount)
 		{
 			if (player == null || item == null)
 				return;

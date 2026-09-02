@@ -470,6 +470,54 @@ until the new one actually works.
 
 ---
 
+## 3h. The pet command window
+
+Nothing is commented out. The whole thing is live in OpenDAoC:
+
+```
+packets/Client/168/PetWindowHandler.cs      the client's button presses
+packets/Server/PacketLib168.cs              SendPetWindow
+packets/Server/IPacketLib.cs                ePetWindowAction
+ai/brain/IControlledBrain.cs                eWalkState, eAggressionState
+ai/brain/ControlledMob/ControlledMobBrain.cs:288
+    (m_owner as GamePlayer)?.Out.SendPetWindow(
+        Body, ePetWindowAction.Update, m_aggressionState, m_walkState);
+```
+
+Aggressive / Defensive / Passive and Attack / Follow / Stay / Come all work.
+GamePlayer opens the window on `controlledBrain.Body` and closes it when the
+pet goes.
+
+### Why the company's pets do not have one
+
+`SendPetWindow` is driven from `ControlledMobBrain`, and a player has exactly
+one `ControlledBrain`. Our summoned servants deliberately are **not** pets --
+they carry `MercenaryBrain`, because making them `IControlledBrain` is what
+handed the owner 30% of their damage as aggro and walked mobs through the
+group to reach the player. That decision is the reason the window cannot
+appear for them.
+
+So it is a consequence, not a bug, and there are only two honest ways to a
+command window:
+
+1. Give servants a real `ControlledBrain` -- which reintroduces the aggro
+   problem the whole design exists to avoid.
+2. Build our own command surface. Most of one already exists: `/tactic`,
+   the `[circle] [line] [column] [wedge]` formations, and the crowd-control
+   toggle. Adding "taunt" and "switch weapon" to that is small.
+
+The player's OWN pet -- an Enchanter's underhill ally, a Druid's wolf -- is a
+real controlled pet and should have the window already.
+
+### Related: summons all looked identical
+
+A summon's `Model` field is a semicolon-separated list because the creature is
+not meant to look the same every time. An underhill ally has **thirty-two**
+models. `FirstOf` took the first, so every Enchanter in the company had an
+identical twin. `AnyOf` now picks at random.
+
+---
+
 ## 4. GitHub: is there an old DOL Gaheris project?
 
 Searched. **No dedicated Gaheris server repository exists.** What is out there:

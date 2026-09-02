@@ -603,6 +603,34 @@ namespace DOL.GS.Scripts
         /// alternatives -- an underhill ally has thirty-odd models -- so they
         /// cannot simply be parsed as a number.
         /// </summary>
+        /// <summary>
+        /// One of the alternatives, chosen at random.
+        ///
+        /// A summon's Model field is a semicolon-separated list because the
+        /// creature is not meant to look the same every time -- an Enchanter's
+        /// underhill ally has thirty-two models and can be any of them. Taking
+        /// the first, which is what FirstOf does, gave every Enchanter in the
+        /// company an identical twin.
+        /// </summary>
+        public static ushort AnyOf(string field, ushort fallback)
+        {
+            if (string.IsNullOrWhiteSpace(field))
+                return fallback;
+
+            List<ushort> choices = new();
+
+            foreach (string part in field.Split(';', ','))
+            {
+                if (ushort.TryParse(part.Trim(), out ushort value) && value > 0)
+                    choices.Add(value);
+            }
+
+            if (choices.Count == 0)
+                return fallback;
+
+            return choices[Util.Random(choices.Count - 1)];
+        }
+
         public static ushort FirstOf(string field, ushort fallback)
         {
             if (string.IsNullOrWhiteSpace(field))

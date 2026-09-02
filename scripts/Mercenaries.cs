@@ -2734,7 +2734,9 @@ namespace DOL.GS.Scripts
             if (template != null)
             {
                 label = template.Name;
-                model = MercenaryLoadout.FirstOf(template.Model, FALLBACK_MODEL);
+                // Random, not first: an underhill ally has thirty-two
+                // models and is meant to be any of them.
+                model = MercenaryLoadout.AnyOf(template.Model, FALLBACK_MODEL);
                 size  = MercenaryLoadout.FirstOf(template.Size, 45);
             }
             else

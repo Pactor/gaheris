@@ -143,7 +143,7 @@ namespace DOL.GS.Scripts
             // Atlantis, if this server runs it.
             if (GaherisSettings.ATLANTIS)
             {
-                string path = MasterPath(duties);
+                string path = MasterPath(characterClass, duties);
 
                 if (path != null)
                     specs.Add(path);
@@ -210,12 +210,75 @@ namespace DOL.GS.Scripts
         }
 
         /// <summary>
-        /// The Master Level path this role would actually have walked.
+        /// The Master Level path this class actually had.
         ///
-        /// A character picks one path, so this picks one too, by what the hire
-        /// is for rather than by class -- which is how players chose them.
+        /// Every class was offered exactly two paths and picked one; this takes
+        /// the first, which is the one the class is usually built around. The
+        /// table is the real one rather than a guess from what the hire does --
+        /// a Druid is Convoker/Perfecter, which no amount of reasoning from
+        /// "it heals" would have produced.
+        ///
+        /// Classes that postdate Trials of Atlantis are not in it, and fall
+        /// through to the duty rule below.
         /// </summary>
-        private static string MasterPath(Duty duties)
+        private static string MasterPath(eCharacterClass characterClass, Duty duties)
+        {
+            switch (characterClass)
+            {
+                // ---- Albion --------------------------------------------
+                case eCharacterClass.Armsman:     return "Warlord";
+                case eCharacterClass.Cabalist:    return "Convoker";
+                case eCharacterClass.Cleric:      return "Warlord";
+                case eCharacterClass.Friar:       return "Battlemaster";
+                case eCharacterClass.Infiltrator: return "Spymaster";
+                case eCharacterClass.Mercenary:   return "Battlemaster";
+                case eCharacterClass.Minstrel:    return "Warlord";
+                case eCharacterClass.Necromancer: return "Convoker";
+                case eCharacterClass.Paladin:     return "Warlord";
+                case eCharacterClass.Reaver:      return "Battlemaster";
+                case eCharacterClass.Scout:       return "Battlemaster";
+                case eCharacterClass.Sorcerer:    return "Convoker";
+                case eCharacterClass.Theurgist:   return "Convoker";
+                case eCharacterClass.Wizard:      return "Convoker";
+
+                // ---- Midgard -------------------------------------------
+                case eCharacterClass.Thane:        return "Battlemaster";
+                case eCharacterClass.Warrior:      return "Warlord";
+                case eCharacterClass.Shadowblade:  return "Spymaster";
+                case eCharacterClass.Skald:        return "Warlord";
+                case eCharacterClass.Hunter:       return "Sojourner";
+                case eCharacterClass.Healer:       return "Sojourner";
+                case eCharacterClass.Spiritmaster: return "Convoker";
+                case eCharacterClass.Shaman:       return "Convoker";
+                case eCharacterClass.Runemaster:   return "Convoker";
+                case eCharacterClass.Bonedancer:   return "Convoker";
+                case eCharacterClass.Berserker:    return "Battlemaster";
+                case eCharacterClass.Savage:       return "Warlord";
+
+                // ---- Hibernia ------------------------------------------
+                case eCharacterClass.Animist:     return "Convoker";
+                case eCharacterClass.Bard:        return "Sojourner";
+                case eCharacterClass.Blademaster: return "Battlemaster";
+                case eCharacterClass.Champion:    return "Battlemaster";
+                case eCharacterClass.Druid:       return "Convoker";
+                case eCharacterClass.Eldritch:    return "Convoker";
+                case eCharacterClass.Enchanter:   return "Convoker";
+                case eCharacterClass.Hero:        return "Battlemaster";
+                case eCharacterClass.Mentalist:   return "Stormlord";
+                case eCharacterClass.Nightshade:  return "Spymaster";
+                case eCharacterClass.Ranger:      return "Battlemaster";
+                case eCharacterClass.Valewalker:  return "Battlemaster";
+                case eCharacterClass.Warden:      return "Battlemaster";
+            }
+
+            return MasterPathByDuty(duties);
+        }
+
+        /// <summary>
+        /// For anything the table does not name -- Heretic, Mauler, Valkyrie,
+        /// Warlock, Vampiir, Bainshee all arrived after Atlantis did.
+        /// </summary>
+        private static string MasterPathByDuty(Duty duties)
         {
             if (duties.HasFlag(Duty.Heal) || duties.HasFlag(Duty.Buffs))
                 return "Perfecter";

@@ -46,6 +46,40 @@ apply() {
   fi
 }
 
+# The two big generated migrations are committed, so this should never fire.
+# It is here because their absence is otherwise silent: the loop below globs
+# whatever is present, everything reports ok, and you find out weeks later
+# that the Gate Warden offers Oceanus and nobody is there.
+GENERATED="sql/13-atlantis-mobs.sql sql/15-volcanus.sql"
+missing=""
+
+for file in $GENERATED; do
+  [[ -f "$file" ]] || missing="$missing $file"
+done
+
+if [[ -n "$missing" ]]; then
+  cat >&2 <<EOF
+
+  ------------------------------------------------------------------
+  Migrations are missing from this checkout:
+$(for f in $missing; do echo "      $f"; done)
+
+  These are committed, so something has removed them. A fresh clone or
+  a "git checkout -- sql/" will bring them back.
+
+  Without them the conversion still installs and the server still runs
+  -- but Atlantis and Deep Volcanus will be empty, and the travel
+  network will happily send you to both.
+  ------------------------------------------------------------------
+
+EOF
+  read -r -p "  Carry on without them? [y/N] " reply < /dev/tty || reply=n
+  case "$reply" in
+    [yY]*) echo ;;
+    *) echo "  Stopped."; exit 1 ;;
+  esac
+fi
+
 echo 'Applying the conversion:'
 for file in sql/[0-9]*.sql; do
   apply "$file"

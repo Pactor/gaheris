@@ -138,8 +138,9 @@ aggressor / archon / crusher / enforcer (levels 61-65), Balance of the Four,
 Ancient Transmuter, and the rest.
 
 That is ~57 polite requests to harvest, which is nothing — the harvester in
-`tools/harvest-atlantis.py` already does exactly this and just needs its zone
-list narrowed to 89. The gap versus db-public is that capnbry gives name, level
+the harvester used for Atlantis did exactly this and only needed its zone list
+narrowed to 89. (That tooling is no longer in the repository -- see the README
+-- but the approach is one request a second against `mobs.php?f=xml&m=<id>`.) The gap versus db-public is that capnbry gives name, level
 and coordinates but **no model, no stats, no loot**, so imported mobs would need
 models inferred by name before they were visible.
 

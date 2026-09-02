@@ -29,10 +29,7 @@ obj/
 bin/
 __pycache__/
 
-# Generated from db-public, which is a separate project with its own history.
-# 11 MB of INSERTs is not ours to redistribute, and tools/mkatlantis.py rebuilds
-# it in seconds from a db-public checkout.
-sql/13-atlantis-mobs.sql
-
-# Generated from a CapnBry harvest; tools/mkvolcanus.py rebuilds it.
-sql/15-volcanus.sql
+# Build tooling. These are ours -- generators, harvesters and the compile
+# harness -- and nobody installing the server needs them. The SQL they produce
+# is committed instead, so a clone is self-contained.
+tools/

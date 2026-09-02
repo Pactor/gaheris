@@ -110,6 +110,32 @@ a base class. Promote first: the recruiters will not hire to anyone still
 holding an archetype. Then find a **Mercenary Recruiter** -- one in each
 capital, one at each border keep -- and hire a group.
 
+### Where the world data came from
+
+Everything needed to run this is committed, including the large ones -- a
+clone installs without fetching anything else. Two of the migrations were
+generated rather than written, and it is worth knowing what from:
+
+| | | |
+|---|---|---|
+| `sql/13-atlantis-mobs.sql` | 41,727 placements, 11 MB | [db-public](https://github.com/Eve-of-Darkness/db-public) |
+| `sql/15-volcanus.sql` | 533 placements | a survey of CapnBry's Bestiary |
+| `sql/12-master-levels.sql` | 64 Master Level spells | db-public |
+
+**db-public** is the Dawn of Light community database. It is where the Atlantis
+population and the Master Level spells came from, and it is the reason those
+two things exist here at all: the zones were in the database and empty, and all
+eight Master Level lines existed with no spells between them.
+
+**Deep Volcanus** is the exception db-public could not fill -- it holds nothing
+for regions 46, 89 or 146. Those placements come from a radar survey instead,
+which records position but no model, so the models there were chosen by hand.
+`docs/research-notes.md` says which and why.
+
+The generators that built these are not in the repository. They are ours, they
+needed a db-public checkout and a live harvest to run, and nobody installing
+the server has any use for them.
+
 ### Optional extras
 
 ```bash
@@ -151,8 +177,10 @@ server -- not just that file:
 ~/.dotnet/dotnet build ~/scriptcheck/scriptcheck.csproj
 ```
 
-`tools/scriptcheck.csproj` is that harness; point it at this repo's `scripts/`
-and at a checkout of OpenDAoC-Core for its references.
+That harness is a small csproj that compiles `scripts/` against a checkout of
+OpenDAoC-Core. It is not in the repository -- it is build tooling rather than
+server content -- but it is four references and an `EnableDefaultCompileItems`
+of false, and worth recreating if you are going to change a script.
 
 ### If the world looks empty after moving the checkout
 
@@ -329,7 +357,6 @@ scripts/               compiled at boot into GameServerScripts.dll
 sql/                   numbered, applied in order
   optional/            testing kit and power sustain -- not part of the conversion
   maintenance/         one-off repairs, safe to skip on a fresh install
-tools/                 generators for the bulk SQL, and the compile harness
 windows/               client launcher, and the WSL keepalive
 docs/                  reference notes
 ```

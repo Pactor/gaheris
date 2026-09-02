@@ -1,6 +1,6 @@
 using System;
 using System.Collections.Generic;
-using DOL.AI.Brain;
+using DOL.Database;
 using DOL.GS.PacketHandler;
 
 namespace DOL.GS.Scripts
@@ -8,28 +8,49 @@ namespace DOL.GS.Scripts
     /// <summary>
     /// Gaheris travel.
     ///
-    /// One realm, one network. Every warden reaches every other warden --
-    /// both other realms' frontiers included -- because on Gaheris there is
-    /// nobody to hide the map from.
+    /// One realm, one teleporter, the whole world on it. On Gaheris there is
+    /// nobody to hide the map from, so there is no reason to make you walk to a
+    /// particular keep to reach a particular place.
     ///
-    /// The network is its own map. Each warden registers itself when it spawns,
-    /// so the destination list is exactly the set of wardens standing in the
-    /// world, and you always arrive next to one that can send you on again.
-    /// Adding a stop is one mob row; moving a stop is editing that row. There
-    /// is no second list to keep in step, and nothing to regenerate.
+    /// This used to be a peer network: every warden was both a stop and a
+    /// destination, so the list of places you could go was exactly the list of
+    /// places somebody had already put a warden. That meant thirty wardens
+    /// standing at keeps to make thirty keeps reachable, a menu that was mostly
+    /// keep names, and no way at all to offer somewhere that had no warden --
+    /// Atlantis included.
     ///
-    /// The mob row's Guild column names the destination. That name is the
-    /// keyword -- click it in the window rather than typing it.
+    /// Now the destinations are a catalogue in the teleport table, and a warden
+    /// is only somewhere to stand. Adding a destination is one row; it does not
+    /// need anybody posted there.
     /// </summary>
     public class GaherisTeleporter : GameNPC
     {
-        private static readonly List<GaherisTeleporter> _network = new();
+        /// <summary>The Type column that marks a row as ours.</summary>
+        public const string CATALOGUE = "gaheris";
+
+        private static readonly List<Stop> _stops = new();
+        private static readonly Dictionary<int, string> _families = new();
         private static readonly object _lock = new();
+        private static bool _loaded;
 
-        /// <summary>Realms in menu order. Cities first, since that is where you start.</summary>
-        private static readonly string[] Groups = { "Cities", "Albion", "Midgard", "Hibernia", "Elsewhere" };
+        /// <summary>Somewhere you can be sent.</summary>
+        public class Stop
+        {
+            public string Name;
+            public ushort Region;
+            public int X;
+            public int Y;
+            public int Z;
+            public ushort Heading;
+            public string Family;
+        }
 
-        public string StopName => string.IsNullOrEmpty(GuildName) ? Name : GuildName;
+        /// <summary>Menu order. Where you are most likely to want to go, first.</summary>
+        private static readonly string[] Order =
+        {
+            "Cities", "Albion", "Midgard", "Hibernia",
+            "Shrouded Isles", "Atlantis", "Dungeons", "Elsewhere",
+        };
 
         public override bool AddToWorld()
         {
@@ -37,23 +58,9 @@ namespace DOL.GS.Scripts
                 return false;
 
             Level = 70;
-            Flags |= eFlags.PEACE; // Wardens stand outside hostile keeps.
-
-            lock (_lock)
-            {
-                if (!_network.Contains(this))
-                    _network.Add(this);
-            }
-
+            Flags |= eFlags.PEACE;
+            Load();
             return true;
-        }
-
-        public override bool RemoveFromWorld()
-        {
-            lock (_lock)
-                _network.Remove(this);
-
-            return base.RemoveFromWorld();
         }
 
         public override bool Interact(GamePlayer player)
@@ -71,14 +78,12 @@ namespace DOL.GS.Scripts
             if (!base.WhisperReceive(source, text))
                 return false;
 
-            GamePlayer player = source as GamePlayer;
-
-            if (player == null)
+            if (source is not GamePlayer player)
                 return false;
 
-            GaherisTeleporter stop = Find(text);
+            Stop stop = Find(text);
 
-            if (stop == null || stop == this)
+            if (stop == null)
             {
                 SayTo(player, eChatLoc.CL_SystemWindow, "I know nowhere by that name.");
                 return true;
@@ -88,68 +93,165 @@ namespace DOL.GS.Scripts
             return true;
         }
 
+        // -------------------------------------------------------------------
+        // The catalogue
+        // -------------------------------------------------------------------
+
+        /// <summary>
+        /// Reads the destinations once, the first time a warden spawns.
+        ///
+        /// Regions are grouped by the realm their zones belong to rather than
+        /// by a list kept here, so a server that adds a zone gets it filed in
+        /// the right place without anybody editing this.
+        /// </summary>
+        private static void Load()
+        {
+            lock (_lock)
+            {
+                if (_loaded)
+                    return;
+
+                _loaded = true;
+
+                foreach (DbZone zone in DOLDB<DbZone>.SelectAllObjects())
+                {
+                    if (zone != null && !_families.ContainsKey(zone.RegionID))
+                        _families[zone.RegionID] = RealmName(zone.Realm);
+                }
+
+                var rows = DOLDB<DbTeleport>.SelectObjects(
+                    DB.Column("Type").IsEqualTo(CATALOGUE));
+
+                if (rows == null)
+                    return;
+
+                foreach (DbTeleport row in rows)
+                {
+                    if (row == null || string.IsNullOrWhiteSpace(row.TeleportID))
+                        continue;
+
+                    _stops.Add(new Stop
+                    {
+                        Name = row.TeleportID.Trim(),
+                        Region = (ushort) row.RegionID,
+                        X = row.X,
+                        Y = row.Y,
+                        Z = row.Z,
+                        Heading = (ushort) row.Heading,
+                        Family = FamilyOf((ushort) row.RegionID, row.TeleportID),
+                    });
+                }
+
+                _stops.Sort((a, b) =>
+                {
+                    int byFamily = Rank(a.Family).CompareTo(Rank(b.Family));
+
+                    return byFamily != 0
+                        ? byFamily
+                        : string.Compare(a.Name, b.Name, StringComparison.OrdinalIgnoreCase);
+                });
+            }
+        }
+
+        private static string RealmName(int realm)
+        {
+            switch (realm)
+            {
+                case 1:  return "Albion";
+                case 2:  return "Midgard";
+                case 3:  return "Hibernia";
+                default: return "Elsewhere";
+            }
+        }
+
+        private static string FamilyOf(ushort region, string name)
+        {
+            switch (region)
+            {
+                case 10:                     // Camelot
+                case 101:                    // Jordheim
+                case 201: return "Cities";   // Tir na Nog
+
+                case 30:
+                case 73:
+                case 130: return "Atlantis";
+
+                case 51:
+                case 151:
+                case 181: return "Shrouded Isles";
+            }
+
+            // A dungeon has no zone realm of its own worth showing under a
+            // realm heading, and there are a lot of them.
+            if (_families.TryGetValue(region, out string family) && family != "Elsewhere")
+                return family;
+
+            return region > 200 ? "Dungeons" : "Elsewhere";
+        }
+
+        private static int Rank(string family)
+        {
+            for (int i = 0; i < Order.Length; i++)
+            {
+                if (Order[i] == family)
+                    return i;
+            }
+
+            return Order.Length;
+        }
+
         private string Menu()
         {
             string text = "Anywhere you like. Your company comes with you.\n\n";
 
-            foreach (string group in Groups)
+            foreach (string family in Order)
             {
-                List<GaherisTeleporter> stops = InGroup(group);
+                bool wroteHeading = false;
 
-                if (stops.Count == 0)
-                    continue;
+                lock (_lock)
+                {
+                    foreach (Stop stop in _stops)
+                    {
+                        if (stop.Family != family)
+                            continue;
 
-                text += group + "\n";
+                        // No point offering to send somebody where they are.
+                        if (stop.Region == CurrentRegionID && IsWithinRadius2D(stop, 2000))
+                            continue;
 
-                foreach (GaherisTeleporter stop in stops)
-                    text += "  [" + stop.StopName + "]\n";
+                        if (!wroteHeading)
+                        {
+                            text += family + "\n";
+                            wroteHeading = true;
+                        }
 
-                text += "\n";
+                        text += "  [" + stop.Name + "]\n";
+                    }
+                }
+
+                if (wroteHeading)
+                    text += "\n";
             }
 
             return text;
         }
 
-        private List<GaherisTeleporter> InGroup(string group)
+        private bool IsWithinRadius2D(Stop stop, int radius)
         {
-            List<GaherisTeleporter> stops = new();
-
-            lock (_lock)
-            {
-                foreach (GaherisTeleporter stop in _network)
-                {
-                    if (stop != this && GroupOf(stop) == group)
-                        stops.Add(stop);
-                }
-            }
-
-            stops.Sort((a, b) => string.Compare(a.StopName, b.StopName, StringComparison.OrdinalIgnoreCase));
-            return stops;
+            long dx = stop.X - X;
+            long dy = stop.Y - Y;
+            return dx * dx + dy * dy <= (long) radius * radius;
         }
 
-        private static string GroupOf(GaherisTeleporter stop)
-        {
-            switch (stop.CurrentRegionID)
-            {
-                case 1:   return "Albion";     // the mainland, frontier included
-                case 100: return "Midgard";
-                case 200: return "Hibernia";
-                case 10:                       // Camelot
-                case 101:                      // Jordheim
-                case 201: return "Cities";     // Tir na Nog
-                default:  return "Elsewhere";
-            }
-        }
-
-        private static GaherisTeleporter Find(string name)
+        private static Stop Find(string name)
         {
             string wanted = name.ToLower().Trim();
 
             lock (_lock)
             {
-                foreach (GaherisTeleporter stop in _network)
+                foreach (Stop stop in _stops)
                 {
-                    if (stop.StopName.ToLower() == wanted)
+                    if (stop.Name.ToLower() == wanted)
                         return stop;
                 }
             }
@@ -157,7 +259,11 @@ namespace DOL.GS.Scripts
             return null;
         }
 
-        private void Send(GamePlayer player, GaherisTeleporter stop)
+        // -------------------------------------------------------------------
+        // Going
+        // -------------------------------------------------------------------
+
+        private void Send(GamePlayer player, Stop stop)
         {
             if (!player.IsWithinRadius(this, WorldMgr.INTERACT_DISTANCE))
                 return;
@@ -179,17 +285,18 @@ namespace DOL.GS.Scripts
             foreach (GameMercenary merc in MercenaryManager.GetCompany(player))
                 retinue.Add(merc);
 
-            if (player.ControlledBrain != null && player.ControlledBrain.Body != null)
+            if (player.ControlledBrain?.Body != null)
                 retinue.Add(player.ControlledBrain.Body);
 
-            player.MoveTo(stop.CurrentRegionID, stop.X + 80, stop.Y + 80, stop.Z, stop.Heading);
+            player.MoveTo(stop.Region, stop.X + 80, stop.Y + 80, stop.Z, stop.Heading);
 
             int spread = 100;
 
             foreach (GameNPC follower in retinue)
             {
                 spread += 50;
-                follower.MoveTo(stop.CurrentRegionID, stop.X + spread, stop.Y + spread, stop.Z, stop.Heading);
+                follower.MoveTo(stop.Region, stop.X + spread, stop.Y + spread,
+                    stop.Z, stop.Heading);
             }
         }
     }

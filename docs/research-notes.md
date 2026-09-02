@@ -392,6 +392,84 @@ different server design from the one running now, not an import.
 
 ---
 
+## 3g. The New Frontiers fork, examined
+
+`TTom03/DOLServer-DAoC-NewFrontiers`, cloned to
+`E:\AITestProjects\UO\DOLServer-DAoC-NewFrontiers`. 227 MB, 13,190 commits,
+last touched 2026-03-01 with a merge from OpenDAoC upstream.
+
+### It carries no world data
+
+Twelve non-source files, all of them build artefacts and VS Code settings. No
+SQL, no JSON, nothing for region 163. The keeps, components and positions are
+not here.
+
+### It carries the CODE that Old Frontiers does not need
+
+Forty source files we do not have, and three of them matter:
+
+```
+GameServer/relics/TempleGuardsNF/     RelicCaster, RelicGuards, RelicHealer,
+                                      RelicKeepGuards, RelicLord,
+                                      RelicRoamingGuards
+GameServer/relics/GameTempleRelicPad.cs
+GameServer/keeps/Managers/RelicDefenseMgr.cs
+```
+
+`TempleGuardsNF` is a per-realm relic temple garrison -- a Relic Wizard at
+model 61 for Albion, level 65, fifteen-minute respawn, and so on. That is
+literally "a specific set of defenders for this castle", written out.
+
+### The single most important line
+
+`KeepManager.cs` differs, and the difference is not cosmetic. **OpenDAoC has
+tower creation commented out; the fork has it enabled:**
+
+```csharp
+//  ours -- disabled
+// if ((datakeep.KeepID >> 8) != 0 || ((datakeep.KeepID & 0xFF) > 150))
+// {   keep = keepRegion.CreateGameKeepTower();   }
+// else {
+      keep = datakeep.SkinType == 99 ? CreateRelicGameKeep() : CreateGameKeep();
+// }
+
+//  theirs -- enabled
+if ((datakeep.KeepID >> 8) != 0 || ((datakeep.KeepID & 0xFF) > 150))
+{   keep = keepRegion.CreateGameKeepTower();   }
+else
+{   keep = datakeep.SkinType == 99 ? CreateRelicGameKeep() : CreateGameKeep();   }
+```
+
+Old Frontiers keeps have no towers, so OpenDAoC switched the branch off. New
+Frontiers keeps do, and **which is which is encoded in the KeepID** -- a
+non-zero high byte, or a low byte above 150, means tower. Our 79 keeps contain
+no towers at all; Eve's 105 for region 163 do.
+
+### So all three pieces are now located
+
+| | where | state |
+|---|---|---|
+| the map | our own database, region 163 | 15 zones, present, empty |
+| the data | Eve `~/dol-db` | 105 keeps, 2121 components, 261 positions, 729 hookpoints -- schema 100% compatible |
+| the code | TTom03 fork | tower creation, relic temples, relic defence |
+
+Nothing is missing any more. What remains is not research.
+
+### The cost, stated plainly
+
+Taking this means moving from **mob-row garrisons to component-built keeps**.
+Everything this project does with keeps -- `MonsterGarrison.cs`, the guard
+scaling, the seal payout, `ScaleToKeep`, the null-Component workarounds --
+exists *because* there is no component layer. Give the server one and most of
+that code is solving a problem it no longer has, while `MonsterGarrison`
+continues to expect the old shape.
+
+It is a second server design sitting alongside the first, not an import. Worth
+doing deliberately, on a branch, with the Old Frontiers conversion left intact
+until the new one actually works.
+
+---
+
 ## 4. GitHub: is there an old DOL Gaheris project?
 
 Searched. **No dedicated Gaheris server repository exists.** What is out there:

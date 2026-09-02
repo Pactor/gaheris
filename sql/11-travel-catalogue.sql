@@ -145,23 +145,20 @@ INSERT INTO `teleport` (`Teleport_ID`, `Type`, `TeleportID`, `Realm`, `RegionID`
 -- ---------------------------------------------------------------------------
 -- 2. Atlantis
 -- ---------------------------------------------------------------------------
--- Oceanus is the hub: every other Atlantis zone in the region -- Mesothalassa,
--- Stygian Delta, Typhon's Reach, Green Glades -- is reachable from it without
--- a zone line, which is how Atlantis is laid out in the first place.
+-- Oceanus comes through with the rest of the catalogue above; it is the only
+-- Atlantis coordinate that comes off a working server, and it is the hub in
+-- any case. Mesothalassa, Stygian Delta, Typhon's Reach and Green Glades are
+-- all the same region, so you swim to them -- which is how Atlantis is laid
+-- out and does not need a teleport of its own.
 --
--- Only Oceanus is listed, and deliberately. It is the one Atlantis coordinate
--- that comes from a working server; the rest would have to be computed from
--- zone bounds, and a computed point in a land zone is as likely to be inside
--- the terrain as on it. Swimming out of Oceanus costs a minute and always
--- works.
+-- Nothing is invented here on purpose. The remaining Atlantis coordinates
+-- would have to be computed from zone bounds, and a computed point in a land
+-- zone is as likely to be inside the terrain as on it.
 --
 -- NOTE: these zones are EMPTY. The upstream world data carries 70 mobs across
 -- the whole of Atlantis, against 97,737 in the world as a whole -- so this
 -- gets you there to look at it, and nothing more.
 
-INSERT INTO `teleport` (`Teleport_ID`, `Type`, `TeleportID`, `Realm`, `RegionID`, `X`, `Y`, `Z`, `Heading`) VALUES (UUID(), 'gaheris', 'Atlantis', 1, 30, 271184, 539600, 8344, 0);
-INSERT INTO `teleport` (`Teleport_ID`, `Type`, `TeleportID`, `Realm`, `RegionID`, `X`, `Y`, `Z`, `Heading`) VALUES (UUID(), 'gaheris', 'Atlantis', 2, 73, 271184, 539600, 8344, 0);
-INSERT INTO `teleport` (`Teleport_ID`, `Type`, `TeleportID`, `Realm`, `RegionID`, `X`, `Y`, `Z`, `Heading`) VALUES (UUID(), 'gaheris', 'Atlantis', 3, 130, 271184, 539600, 8344, 0);
 
 -- ---------------------------------------------------------------------------
 -- 3. One teleporter, not thirty-three

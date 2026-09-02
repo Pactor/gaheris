@@ -68,7 +68,7 @@ namespace DOL.GS.Scripts
                 return false;
 
             TurnTo(player, 5000);
-            SayTo(player, eChatLoc.CL_PopupWindow, Menu());
+            Speak(player, Menu());
             return true;
         }
 
@@ -80,7 +80,24 @@ namespace DOL.GS.Scripts
             if (source is not GamePlayer player)
                 return false;
 
-            Stop stop = Find(text);
+            string said = (text ?? string.Empty).Trim();
+
+            if (said.Equals("Back", StringComparison.OrdinalIgnoreCase))
+            {
+                Speak(player, Menu());
+                return true;
+            }
+
+            foreach (string family in Order)
+            {
+                if (family.Equals(said, StringComparison.OrdinalIgnoreCase))
+                {
+                    Speak(player, FamilyMenu(family));
+                    return true;
+                }
+            }
+
+            Stop stop = Find(said);
 
             if (stop == null)
             {
@@ -238,40 +255,121 @@ namespace DOL.GS.Scripts
             return Order.Length;
         }
 
+        /// <summary>
+        /// Names that sit in the teleport table but are not places: dialog
+        /// words left behind by the old OF teleporters, the personal-housing
+        /// marker, and the throne room exits, which are a way out of a room
+        /// rather than somewhere to be sent.
+        /// </summary>
+        private static readonly HashSet<string> NotAPlace =
+            new(StringComparer.OrdinalIgnoreCase)
+            {
+                "Accept", "Sure", "personal",
+                "AlbThroneExit", "MidThroneExit", "HibThroneExit",
+            };
+
+        /// <summary>
+        /// The top menu: regions only.
+        ///
+        /// This used to list all 127 destinations at once, which built a 2231
+        /// byte packet. The client ceiling is 2048, so the server threw the
+        /// whole thing away and right-clicking a warden did nothing at all:
+        ///
+        ///   Discarding oversized packet. Packet code: 0xAF, packet size: 2231.
+        ///
+        /// Now you name a region and get back only what is in it, and neither
+        /// message comes near the limit however far the catalogue grows.
+        /// </summary>
         private string Menu()
         {
-            string text = "Anywhere you like. Your company comes with you.\n\n";
+            string text = "Anywhere you like. Your company comes with you.\n" +
+                          "Name a region and I will tell you what is in it.\n\n";
 
             foreach (string family in Order)
             {
-                bool wroteHeading = false;
+                int count = Listed(family).Count;
 
-                lock (_lock)
-                {
-                    foreach (Stop stop in _stops)
-                    {
-                        if (stop.Family != family)
-                            continue;
-
-                        // No point offering to send somebody where they are.
-                        if (stop.Region == CurrentRegionID && IsWithinRadius2D(stop, 2000))
-                            continue;
-
-                        if (!wroteHeading)
-                        {
-                            text += family + "\n";
-                            wroteHeading = true;
-                        }
-
-                        text += "  [" + stop.Name + "]\n";
-                    }
-                }
-
-                if (wroteHeading)
-                    text += "\n";
+                if (count > 0)
+                    text += "  [" + family + "]  (" + count + ")\n";
             }
 
             return text;
+        }
+
+        /// <summary>What is in one region, and only that region.</summary>
+        private string FamilyMenu(string family)
+        {
+            List<Stop> stops = Listed(family);
+
+            if (stops.Count == 0)
+                return "There is nowhere in " + family + " I can send you.";
+
+            string text = family + " -- name a place and I will send you.\n\n";
+
+            foreach (Stop stop in stops)
+                text += "  [" + stop.Name + "]\n";
+
+            return text + "\n  [Back]\n";
+        }
+
+        /// <summary>
+        /// The destinations in one region worth offering from here: real
+        /// places, and not the one already under your feet.
+        /// </summary>
+        private List<Stop> Listed(string family)
+        {
+            List<Stop> found = new();
+
+            lock (_lock)
+            {
+                foreach (Stop stop in _stops)
+                {
+                    if (stop.Family != family)
+                        continue;
+
+                    if (NotAPlace.Contains(stop.Name))
+                        continue;
+
+                    // No point offering to send somebody where they are.
+                    if (stop.Region == CurrentRegionID && IsWithinRadius2D(stop, 2000))
+                        continue;
+
+                    found.Add(stop);
+                }
+            }
+
+            return found;
+        }
+
+        /// <summary>
+        /// Says something in a popup, split so no single packet can pass the
+        /// client's limit however long a region's list gets.
+        /// </summary>
+        private void Speak(GamePlayer player, string text)
+        {
+            const int LIMIT = 1400;
+
+            if (text.Length <= LIMIT)
+            {
+                SayTo(player, eChatLoc.CL_PopupWindow, text);
+                return;
+            }
+
+            string chunk = string.Empty;
+
+            foreach (string line in text.Split('\n'))
+            {
+                if (chunk.Length + line.Length + 1 > LIMIT && chunk.Length > 0)
+                {
+                    SayTo(player, eChatLoc.CL_PopupWindow, chunk);
+                    chunk = string.Empty;
+                }
+
+                chunk += line + "\n";
+            }
+
+            if (chunk.Length > 0)
+                SayTo(player, eChatLoc.CL_PopupWindow, chunk);
         }
 
         private bool IsWithinRadius2D(Stop stop, int radius)
@@ -289,6 +387,9 @@ namespace DOL.GS.Scripts
             {
                 foreach (Stop stop in _stops)
                 {
+                    if (NotAPlace.Contains(stop.Name))
+                        continue;
+
                     if (stop.Name.ToLower() == wanted)
                         return stop;
                 }

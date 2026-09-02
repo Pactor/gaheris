@@ -33,3 +33,6 @@ __pycache__/
 # 11 MB of INSERTs is not ours to redistribute, and tools/mkatlantis.py rebuilds
 # it in seconds from a db-public checkout.
 sql/13-atlantis-mobs.sql
+
+# Generated from a CapnBry harvest; tools/mkvolcanus.py rebuilds it.
+sql/15-volcanus.sql

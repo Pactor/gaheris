@@ -1880,6 +1880,42 @@ namespace DOL.GS.Scripts
             }
         }
 
+        /// <summary>
+        /// Picks the weapon this class would actually draw.
+        ///
+        /// Core's version hands the distance slot to anything with a bow in
+        /// its inventory, ahead of every melee weapon, because for an ordinary
+        /// mob a bow IS the weapon. These are classes, so only the ones that
+        /// shoot for a living should be shooting -- and the gate above stops
+        /// anyone else being given a bow in the first place. This covers the
+        /// ones handed one before that gate existed.
+        /// </summary>
+        public override void InitializeActiveWeaponFromInventory()
+        {
+            if (Inventory == null)
+                return;
+
+            if (Profile != null && !Profile.Has(Duty.Archer))
+            {
+                DbInventoryItem twoHand = Inventory.GetItem(eInventorySlot.TwoHandWeapon);
+                DbInventoryItem oneHand = Inventory.GetItem(eInventorySlot.RightHandWeapon);
+
+                if (twoHand != null)
+                {
+                    SwitchWeapon(eActiveWeaponSlot.TwoHanded);
+                    return;
+                }
+
+                if (oneHand != null)
+                {
+                    SwitchWeapon(eActiveWeaponSlot.Standard);
+                    return;
+                }
+            }
+
+            base.InitializeActiveWeaponFromInventory();
+        }
+
         public override bool AddToWorld()
         {
             if (!base.AddToWorld())
@@ -3036,8 +3072,32 @@ namespace DOL.GS.Scripts
         /// </summary>
         public static string WhyNot(GameMercenary merc, DbInventoryItem item)
         {
+            if (GlobalConstants.IsWeapon(item.Object_Type))
+            {
+                // Weapons are trained for, exactly like armour.
+                //
+                // This used to wave everything through -- "weapons and
+                // jewellery: their business" -- and it was not their business
+                // at all. Hand a Blademaster a bow and core does the rest:
+                // InitializeActiveWeaponFromInventory switches an NPC to the
+                // distance slot the moment one is in its inventory, ahead of
+                // any melee weapon, and AttackComponent switches it BACK to
+                // ranged every time its aggro list empties. One gift turned a
+                // melee class into a permanent archer.
+                if (merc.Profile != null &&
+                    !MercenaryLoadout.CanWield(merc.Profile.ClassId,
+                        (eObjectType) item.Object_Type))
+                {
+                    return "I have never been trained with " +
+                           ((eObjectType) item.Object_Type).ToString().ToLower() +
+                           ". Give it to somebody who has.";
+                }
+
+                return null;
+            }
+
             if (!GlobalConstants.IsArmor(item.Object_Type))
-                return null; // Weapons and jewellery: their business.
+                return null; // Jewellery: their business.
 
             int allowed = Math.Max(merc.GetAbilityLevel(Abilities.AlbArmor),
                           Math.Max(merc.GetAbilityLevel(Abilities.HibArmor),

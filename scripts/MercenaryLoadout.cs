@@ -340,6 +340,31 @@ namespace DOL.GS.Scripts
             return spec != null && MasterPaths.Contains(spec);
         }
 
+        /// <summary>
+        /// Whether this class is trained to use a given kind of weapon.
+        ///
+        /// The game already knows: every weapon type maps to the
+        /// specialisation that wields it, and a class either has that
+        /// specialisation or it does not. A Blademaster has Blades, Blunt,
+        /// Piercing and Celtic Dual, and nothing that fires an arrow.
+        /// </summary>
+        public static bool CanWield(eCharacterClass characterClass, eObjectType type)
+        {
+            string spec = SkillBase.ObjectTypeToSpec(type);
+
+            // No mapping at all: not something proficiency governs.
+            if (string.IsNullOrEmpty(spec))
+                return true;
+
+            foreach (string mine in SpecsOf(characterClass))
+            {
+                if (string.Equals(mine, spec, StringComparison.OrdinalIgnoreCase))
+                    return true;
+            }
+
+            return false;
+        }
+
         private static List<string> SpecsOf(eCharacterClass characterClass)
         {
             List<string> specs = new();

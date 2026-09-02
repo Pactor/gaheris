@@ -54,6 +54,40 @@ namespace DOL.GS.Scripts
         public Spell Mez;
         public Spell Taunt;
 
+        /// <summary>
+        /// Songs and chants -- pulsing group effects.
+        ///
+        /// These are deliberately NOT kept with the maintained buffs, because
+        /// they are not maintained. Only one pulses at a time, so which one is
+        /// playing IS the decision: travelling wants speed, a fight wants
+        /// whichever sustain the group is short of. Filed with the buffs, speed
+        /// was simply kept up out of combat and the mana song never played at
+        /// all -- which is not what a Bard does.
+        /// </summary>
+        public Spell Speed;
+
+        public Spell PowerSong;
+        public Spell HealthSong;
+        public Spell ChantHeal;
+        public Spell ChantDamage;
+        public Spell ChantGuard;
+        public Spell ChantEndurance;
+
+        /// <summary>Whether this class plays anything at all.</summary>
+        public bool HasSongs =>
+            Speed != null || PowerSong != null || HealthSong != null ||
+            ChantHeal != null || ChantDamage != null || ChantGuard != null ||
+            ChantEndurance != null;
+
+        /// <summary>The class's own pet, the one the spell actually summons.</summary>
+        public Spell PetSummon;
+
+        /// <summary>
+        /// Fire-and-forget turrets. An Animist plants these where it stands and
+        /// they stay put -- they are not a pet, and they do not follow.
+        /// </summary>
+        public List<Spell> Turrets = new();
+
         public bool Has(Spell spell) => spell != null;
     }
 
@@ -74,8 +108,18 @@ namespace DOL.GS.Scripts
 
         public static Loadout For(eCharacterClass characterClass, int level)
         {
+            return For(characterClass, level, Duty.None);
+        }
+
+        /// <summary>
+        /// Duties come in only for Atlantis: a Master Level path is chosen by
+        /// what the character does, not by what class it is, so the cache has
+        /// to tell a healing Cleric from a smiting one.
+        /// </summary>
+        public static Loadout For(eCharacterClass characterClass, int level, Duty duties)
+        {
             level = Math.Clamp(level, 1, 50);
-            long key = (long) characterClass * 100 + level;
+            long key = ((long) characterClass * 100 + level) * 65536 + (long) duties;
 
             lock (_lock)
             {
@@ -83,7 +127,7 @@ namespace DOL.GS.Scripts
                     return cached;
             }
 
-            Loadout loadout = Build(characterClass, level);
+            Loadout loadout = Build(characterClass, level, duties);
 
             lock (_lock)
                 _cache[key] = loadout;
@@ -91,10 +135,19 @@ namespace DOL.GS.Scripts
             return loadout;
         }
 
-        private static Loadout Build(eCharacterClass characterClass, int level)
+        private static Loadout Build(eCharacterClass characterClass, int level, Duty duties)
         {
             Loadout loadout = new();
             List<string> specs = SpecsOf(characterClass);
+
+            // Atlantis, if this server runs it.
+            if (GaherisSettings.ATLANTIS)
+            {
+                string path = MasterPath(duties);
+
+                if (path != null)
+                    specs.Add(path);
+            }
 
             if (specs.Count == 0)
                 return loadout;
@@ -156,6 +209,42 @@ namespace DOL.GS.Scripts
             return loadout;
         }
 
+        /// <summary>
+        /// The Master Level path this role would actually have walked.
+        ///
+        /// A character picks one path, so this picks one too, by what the hire
+        /// is for rather than by class -- which is how players chose them.
+        /// </summary>
+        private static string MasterPath(Duty duties)
+        {
+            if (duties.HasFlag(Duty.Heal) || duties.HasFlag(Duty.Buffs))
+                return "Perfecter";
+
+            if (duties.HasFlag(Duty.Pet))
+                return "Convoker";
+
+            if (duties.HasFlag(Duty.CC) || duties.HasFlag(Duty.Debuff))
+                return "Banelord";
+
+            if (duties.HasFlag(Duty.Nuke) || duties.HasFlag(Duty.PBAoE) ||
+                duties.HasFlag(Duty.DoT))
+                return "Stormlord";
+
+            if (duties.HasFlag(Duty.Archer))
+                return "Spymaster";
+
+            if (duties.HasFlag(Duty.Tank))
+                return "Warlord";
+
+            if (duties.HasFlag(Duty.Melee))
+                return "Battlemaster";
+
+            if (duties.HasFlag(Duty.Speed) || duties.HasFlag(Duty.Chants))
+                return "Sojourner";
+
+            return null;
+        }
+
         private static List<string> SpecsOf(eCharacterClass characterClass)
         {
             List<string> specs = new();
@@ -195,8 +284,47 @@ namespace DOL.GS.Scripts
         {
             foreach (Spell spell in loadout.Known)
             {
+                // Travel speed is never a buff to keep up, pulsing or not.
+                if (spell.SpellType is eSpellType.SpeedEnhancement)
+                {
+                    Keep(ref loadout.Speed, spell, s => s.Value);
+                    continue;
+                }
+
+                // Anything else that pulses is a song, and songs are switched
+                // between rather than stacked.
+                if (spell.Pulse > 0 && KeepSong(loadout, spell))
+                    continue;
+
                 switch (spell.SpellType)
                 {
+                    // ---- pets ----------------------------------------------
+                    //
+                    // Fire-and-forget first: a turret is planted and left, and
+                    // the Animist keeps planting more. Treating it as "the pet"
+                    // would give an Animist one wandering mushroom instead of a
+                    // field of them.
+                    case eSpellType.SummonAnimistFnF:
+                    case eSpellType.SummonAnimistFnFCustom:
+                    case eSpellType.SummonAnimistAmbusher:
+                        KeepTurret(loadout, spell);
+                        break;
+
+                    case eSpellType.SummonDruidPet:
+                    case eSpellType.SummonUnderhill:
+                    case eSpellType.SummonSimulacrum:
+                    case eSpellType.SummonNecroPet:
+                    case eSpellType.SummonCommander:
+                    case eSpellType.SummonMinion:
+                    case eSpellType.SummonSpiritFighter:
+                    case eSpellType.SummonHunterPet:
+                    case eSpellType.SummonTheurgistPet:
+                    case eSpellType.SummonAnimistPet:
+                    case eSpellType.SummonElemental:
+                    case eSpellType.SummonHealingElemental:
+                        Keep(ref loadout.PetSummon, spell, s => s.Level);
+                        break;
+
                     case eSpellType.Heal:
                     case eSpellType.SpreadHeal:
                         if (spell.Target is eSpellTarget.GROUP)
@@ -269,11 +397,104 @@ namespace DOL.GS.Scripts
                     case eSpellType.PowerRegenBuff:
                     case eSpellType.CombatSpeedBuff:
                     case eSpellType.MeleeDamageBuff:
-                    case eSpellType.SpeedEnhancement:
                         KeepBest(loadout.Maintained, spell);
                         break;
                 }
             }
+        }
+
+        /// <summary>
+        /// Files a pulsing spell under the job it does, strongest of each kind.
+        /// False for anything that pulses but is not a song we would play.
+        /// </summary>
+        private static bool KeepSong(Loadout loadout, Spell spell)
+        {
+            switch (spell.SpellType)
+            {
+                case eSpellType.PowerRegenBuff:
+                    Keep(ref loadout.PowerSong, spell, s => s.Value);
+                    return true;
+
+                case eSpellType.HealthRegenBuff:
+                    Keep(ref loadout.HealthSong, spell, s => s.Value);
+                    return true;
+
+                case eSpellType.CombatHeal:
+                    Keep(ref loadout.ChantHeal, spell, s => s.Value);
+                    return true;
+
+                case eSpellType.DamageAdd:
+                    Keep(ref loadout.ChantDamage, spell, s => s.Value);
+                    return true;
+
+                case eSpellType.AblativeArmor:
+                case eSpellType.Bladeturn:
+                    Keep(ref loadout.ChantGuard, spell, s => s.Value);
+                    return true;
+
+                case eSpellType.EnduranceRegenBuff:
+                    Keep(ref loadout.ChantEndurance, spell, s => s.Value);
+                    return true;
+            }
+
+            return false;
+        }
+
+        /// <summary>Turrets, weakest first, one of each strength.</summary>
+        private static void KeepTurret(Loadout loadout, Spell spell)
+        {
+            foreach (Spell kept in loadout.Turrets)
+            {
+                if (kept.SpellType == spell.SpellType && kept.Level == spell.Level)
+                    return;
+            }
+
+            loadout.Turrets.Add(spell);
+            loadout.Turrets.Sort((a, b) => a.Level.CompareTo(b.Level));
+        }
+
+        /// <summary>
+        /// What a summon spell actually brings.
+        ///
+        /// The pet id lives in LifeDrainReturn -- the field is reused, which is
+        /// not obvious -- and points at a real npctemplate row. Reading it is
+        /// what makes a Druid's pet the bear the game summons rather than a
+        /// model number picked to look about right. It was picked to look about
+        /// right, and it was a vine.
+        /// </summary>
+        public static DbNpcTemplate PetTemplate(Spell summon)
+        {
+            if (summon == null || summon.LifeDrainReturn <= 0)
+                return null;
+
+            var rows = DOLDB<DbNpcTemplate>.SelectObjects(
+                DB.Column("TemplateId").IsEqualTo(summon.LifeDrainReturn));
+
+            if (rows == null || rows.Count == 0)
+                return null;
+
+            return rows[0];
+        }
+
+        /// <summary>
+        /// First number out of a template field.
+        ///
+        /// Model and Size are STRINGS holding a semicolon-separated list of
+        /// alternatives -- an underhill ally has thirty-odd models -- so they
+        /// cannot simply be parsed as a number.
+        /// </summary>
+        public static ushort FirstOf(string field, ushort fallback)
+        {
+            if (string.IsNullOrWhiteSpace(field))
+                return fallback;
+
+            foreach (string part in field.Split(';', ','))
+            {
+                if (ushort.TryParse(part.Trim(), out ushort value) && value > 0)
+                    return value;
+            }
+
+            return fallback;
         }
 
         private static void Keep(ref Spell slot, Spell candidate, Func<Spell, double> weigh)

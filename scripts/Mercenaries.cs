@@ -1028,7 +1028,7 @@ namespace DOL.GS.Scripts
             if (Profile == null)
                 return;
 
-            Kit = MercenaryLoadout.For(Profile.ClassId, Level);
+            Kit = MercenaryLoadout.For(Profile.ClassId, Level, Profile.Duties);
             Styles = Kit.Styles;
 
             // The class's real abilities, so armour and weapon proficiency
@@ -1204,6 +1204,12 @@ namespace DOL.GS.Scripts
                 return;
             }
 
+            // Pets are kept standing whether or not there is a fight on --
+            // an Animist replacing burnt turrets mid-fight is the class working
+            // as intended, not an interruption.
+            if (Profile.Has(Duty.Pet))
+                MaintainServants();
+
             if (Profile.Has(Duty.Heal) && Mend(owner))
                 return;
 
@@ -1214,6 +1220,11 @@ namespace DOL.GS.Scripts
             // arrives simply dies mid-cast. Anything not already up can wait
             // until the fighting stops.
             if (!owner.InCombat && !InCombat && Support(owner))
+                return;
+
+            // A utility class is always doing something. Which song is playing
+            // is the decision -- see Perform.
+            if (Kit != null && Kit.HasSongs && Perform(owner))
                 return;
 
             Tactic tactic = MercenaryManager.GetTactic(owner);
@@ -1310,6 +1321,177 @@ namespace DOL.GS.Scripts
             }
 
             Follow(foe, Math.Max(200, Kit.Nuke.Range - 300), Kit.Nuke.Range - 100);
+        }
+
+        /// <summary>
+        /// Plays whatever the moment calls for.
+        ///
+        /// Only one song pulses at a time, so this is a choice and not a list
+        /// to keep up. On the road that is speed, because the group is going
+        /// somewhere; in a fight it is whichever sustain the group is actually
+        /// short of. Filing speed with the maintained buffs -- which is where
+        /// it used to live -- meant a Bard kept the group quick and then stood
+        /// there in the fight playing nothing at all.
+        ///
+        /// Two of the same class do not fight over it: a song already pulsing
+        /// on the employer satisfies the check, so the second one moves on.
+        /// </summary>
+        private bool Perform(GamePlayer owner)
+        {
+            bool fighting = owner.InCombat || InCombat;
+
+            if (!fighting)
+            {
+                if (Kit.Speed != null && NeedsSong(owner, Kit.Speed))
+                    return CastAt(this, Kit.Speed, 3000);
+
+                // Out of combat there is nothing else worth playing over the
+                // travel song, so a class without one simply rests.
+                return false;
+            }
+
+            Spell song = FightSong(owner);
+
+            return song != null && NeedsSong(owner, song) && CastAt(this, song, 3000);
+        }
+
+        /// <summary>What the group is short of right now.</summary>
+        private Spell FightSong(GamePlayer owner)
+        {
+            // Power first. It is the one thing a fight will not give back, and
+            // a caster out of power has left the fight.
+            if (Kit.PowerSong != null && Thirsty(owner))
+                return Kit.PowerSong;
+
+            if (Wounded(owner) > 0)
+            {
+                if (Kit.ChantHeal != null)
+                    return Kit.ChantHeal;
+
+                if (Kit.HealthSong != null)
+                    return Kit.HealthSong;
+            }
+
+            // Nobody needs propping up: play something that helps them kill it.
+            return Kit.ChantDamage ?? Kit.ChantGuard
+                ?? Kit.HealthSong ?? Kit.ChantEndurance;
+        }
+
+        /// <summary>Whether a song is not already pulsing on the group.</summary>
+        private bool NeedsSong(GamePlayer owner, Spell song)
+        {
+            eEffect effect = EffectHelper.GetEffectFromSpell(song);
+
+            // Unknown means the effect cannot be tested for. The per-spell cast
+            // cooldown still paces it, so this errs towards playing.
+            if (effect is eEffect.Unknown)
+                return true;
+
+            return EffectListService.GetEffectOnTarget(owner, effect) == null;
+        }
+
+        /// <summary>Whether anybody in the group is running out of power.</summary>
+        private bool Thirsty(GamePlayer owner)
+        {
+            if (owner.MaxMana > 0 && owner.ManaPercent < 70)
+                return true;
+
+            foreach (GameMercenary mate in MercenaryManager.GetCompany(owner))
+            {
+                if (mate.IsAlive && mate.MaxMana > 0 && mate.ManaPercent < 70)
+                    return true;
+            }
+
+            return false;
+        }
+
+        /// <summary>
+        /// How much a given realm ability is worth to THIS class.
+        ///
+        /// Matched on the name rather than on a hard-coded table of keys, so a
+        /// server that has renamed or added abilities still gets sensible
+        /// choices, and anything unrecognised simply scores zero and is bought
+        /// last with whatever is left over.
+        /// </summary>
+        private int Worth(RealmAbility ability)
+        {
+            string key = ((ability.KeyName ?? string.Empty) + " " +
+                          (ability.Name ?? string.Empty)).ToLowerInvariant();
+
+            int worth = 0;
+
+            // Everyone wants out of crowd control, and everyone wants to live.
+            if (key.Contains("purge")) worth += 100;
+            if (key.Contains("determination")) worth += 55;
+            if (key.Contains("avoidance of magic")) worth += 40;
+            if (key.Contains("toughness")) worth += 25;
+
+            if (Profile.Has(Duty.Heal))
+            {
+                if (key.Contains("mastery of healing")) worth += 95;
+                if (key.Contains("divine intervention")) worth += 90;
+                if (key.Contains("perfect recovery")) worth += 85;
+                if (key.Contains("ameliorating")) worth += 80;
+                if (key.Contains("serenity")) worth += 75;
+                if (key.Contains("mystic crystal")) worth += 70;
+                if (key.Contains("concentration")) worth += 65;
+            }
+
+            if (Profile.Has(Duty.Buffs) || Profile.Has(Duty.Bubble) ||
+                Profile.Has(Duty.Chants))
+            {
+                if (key.Contains("barrier of fortitude")) worth += 85;
+                if (key.Contains("soldier")) worth += 75;
+                if (key.Contains("dashing defense")) worth += 70;
+                if (key.Contains("strike prediction")) worth += 65;
+                if (key.Contains("augmented") || key.Contains("acuity")) worth += 45;
+            }
+
+            if (Profile.Has(Duty.Nuke) || Profile.Has(Duty.PBAoE) ||
+                Profile.Has(Duty.DoT))
+            {
+                if (key.Contains("wild power") || key.Contains("mastery of magery"))
+                    worth += 80;
+
+                if (key.Contains("raging power")) worth += 70;
+                if (key.Contains("mystic crystal")) worth += 65;
+                if (key.Contains("maelstrom") || key.Contains("tempest")) worth += 55;
+                if (key.Contains("ichor")) worth += 50;
+            }
+
+            if (Profile.Has(Duty.CC))
+            {
+                if (key.Contains("mastery of concentration")) worth += 90;
+                if (key.Contains("bedazzling")) worth += 60;
+            }
+
+            if (Profile.Has(Duty.Tank))
+            {
+                if (key.Contains("ignore pain")) worth += 80;
+                if (key.Contains("mastery of blocking")) worth += 65;
+                if (key.Contains("mastery of parrying")) worth += 60;
+                if (key.Contains("charge")) worth += 55;
+            }
+
+            if (Profile.Has(Duty.Melee))
+            {
+                if (key.Contains("mastery of pain")) worth += 75;
+                if (key.Contains("adrenaline")) worth += 65;
+                if (key.Contains("anger of the gods")) worth += 60;
+                if (key.Contains("charge")) worth += 55;
+            }
+
+            if (Profile.Has(Duty.Archer))
+            {
+                if (key.Contains("falcon")) worth += 75;
+                if (key.Contains("arrow summoning")) worth += 60;
+                if (key.Contains("rapid fire")) worth += 55;
+            }
+
+            if (Profile.Has(Duty.Pet) && key.Contains("juggernaut"))
+                worth += 75;
+
+            return worth;
         }
 
         /// <summary>Heals the worst hurt, or the group when several are.</summary>
@@ -1658,8 +1840,13 @@ namespace DOL.GS.Scripts
             _leash ??= new ECSGameTimer(this, Leash);
             _leash.Start(1000);
 
-            if (Profile != null && Profile.Pets.Length > 0)
-                SummonServants();
+            // Servants are NOT summoned here.
+            //
+            // This ran on every login, every zone line and every teleport, and
+            // nothing ever retired the previous set -- so a Druid came back
+            // from a trip to the frontier with three pets, and an Animist with
+            // six. MaintainServants owns the count now: it sweeps the dead,
+            // retires the surplus, and tops up to what the class should have.
 
             return true;
         }
@@ -1667,6 +1854,7 @@ namespace DOL.GS.Scripts
         public override bool RemoveFromWorld()
         {
             _leash?.Stop();
+            RetireServants();
             return base.RemoveFromWorld();
         }
 
@@ -1776,21 +1964,13 @@ namespace DOL.GS.Scripts
             ApplyGear();
             Health = Math.Max(1, MaxHealth);
 
-            if (this is MercenaryServant || Profile == null || Profile.Pets.Length == 0)
+            if (this is MercenaryServant || Profile == null || !Profile.Has(Duty.Pet))
                 return;
 
             // Servants do not re-level in place -- they are released and called
-            // up again at the caster's new level.
-            foreach (GameMercenary mate in new List<GameMercenary>(MercenaryManager.GetCompany(Employer)))
-            {
-                if (mate is MercenaryServant servant && servant.Master == this)
-                {
-                    MercenaryManager.GetCompany(Employer).Remove(servant);
-                    servant.Retire();
-                }
-            }
-
-            SummonServants();
+            // up again at the caster's new level. MaintainServants notices the
+            // empty slots on its next tick and refills them.
+            RetireServants();
         }
 
         // -------------------------------------------------------------------
@@ -2027,7 +2207,22 @@ namespace DOL.GS.Scripts
             if (available == null)
                 return;
 
-            foreach (RealmAbility ability in available)
+            // Buy in the order this class would buy, not in whatever order
+            // the list happens to arrive in. Spent greedily down a raw list, a
+            // healer's points went on the first thing that fit rather than on
+            // Purge and the group saves -- which is most of what a support
+            // character's realm points are for.
+            List<RealmAbility> wanted = new();
+
+            foreach (RealmAbility candidate in available)
+            {
+                if (candidate != null)
+                    wanted.Add(candidate);
+            }
+
+            wanted.Sort((a, b) => Worth(b).CompareTo(Worth(a)));
+
+            foreach (RealmAbility ability in wanted)
             {
                 if (ability == null)
                     continue;
@@ -2307,48 +2502,166 @@ namespace DOL.GS.Scripts
         // Servants
         // -------------------------------------------------------------------
 
-        protected virtual void SummonServants()
+        /// <summary>How many servants this class should have standing.</summary>
+        protected virtual int ServantTarget()
         {
-            int spread = 40;
+            if (Profile == null || !Profile.Has(Duty.Pet) || Kit == null)
+                return 0;
 
-            foreach (string label in Profile.Pets)
-            {
-                SummonServant(label, ServantModel(label), spread);
-                spread = -spread - 10;
-            }
+            // A turret class plants a field and keeps planting. One wandering
+            // mushroom is not an Animist.
+            if (Kit.Turrets.Count > 0)
+                return TURRET_FIELD;
+
+            return Math.Max(1, Profile.Pets.Length);
         }
 
-        private static ushort ServantModel(string label)
-        {
-            switch (label)
-            {
-                case "bone commander":       return 921;
-                case "bone healer":          return 920;
-                case "spirit servant":
-                case "spirit champion":      return 923;
-                case "spirit of the forest": return 903;
-                case "emerald simulacrum":   return 441;
-                case "air elemental":        return 440;
-                case "earth elemental":      return 110;
-                case "spotted lynx":         return  25;
-                case "functional turret":
-                case "hardy turret":         return 938;
-                default:                     return 903;
-            }
-        }
-
-        protected void SummonServant(string label, ushort model, int spread)
+        /// <summary>Sends every servant of this hire home.</summary>
+        protected void RetireServants()
         {
             if (Employer == null)
                 return;
+
+            List<GameMercenary> company = MercenaryManager.GetCompany(Employer);
+
+            foreach (GameMercenary mate in new List<GameMercenary>(company))
+            {
+                if (mate is MercenaryServant servant && servant.Master == this)
+                {
+                    company.Remove(servant);
+                    servant.Retire();
+                }
+            }
+        }
+
+        /// <summary>
+        /// Keeps exactly the right number of servants standing.
+        ///
+        /// This is the only thing that summons them, which is the point: the
+        /// count is derived from what the class should have rather than added
+        /// to by whatever happened to call a summon. It sweeps the dead, so an
+        /// Animist replaces burnt turrets the way an Animist does, and it
+        /// retires the surplus, so nothing accumulates across a zone line.
+        /// </summary>
+        protected void MaintainServants()
+        {
+            if (Employer == null || Profile == null || !Profile.Has(Duty.Pet))
+                return;
+
+            List<GameMercenary> company = MercenaryManager.GetCompany(Employer);
+            List<MercenaryServant> mine = new();
+
+            foreach (GameMercenary mate in new List<GameMercenary>(company))
+            {
+                if (mate is not MercenaryServant servant || servant.Master != this)
+                    continue;
+
+                if (!servant.IsAlive || servant.ObjectState != eObjectState.Active)
+                {
+                    company.Remove(servant);
+                    servant.Retire();
+                    continue;
+                }
+
+                mine.Add(servant);
+            }
+
+            int target = ServantTarget();
+
+            for (int i = mine.Count - 1; i >= target && i >= 0; i--)
+            {
+                company.Remove(mine[i]);
+                mine[i].Retire();
+                mine.RemoveAt(i);
+            }
+
+            if (mine.Count >= target)
+                return;
+
+            // Paced, because summoning is a cast. Turrets should appear at the
+            // speed somebody plants them, not all at once.
+            if (GameLoop.GameLoopTime < _nextServant)
+                return;
+
+            _nextServant = GameLoop.GameLoopTime + SERVANT_INTERVAL;
+            SummonServant(mine.Count);
+        }
+
+        /// <summary>The summon this class would actually cast.</summary>
+        protected virtual Spell ServantSpell()
+        {
+            if (Kit == null)
+                return null;
+
+            // Turrets are level-ordered, so the last is the best one known.
+            if (Kit.Turrets.Count > 0)
+                return Kit.Turrets[Kit.Turrets.Count - 1];
+
+            return Kit.PetSummon;
+        }
+
+        /// <summary>
+        /// Calls up one servant, wearing whatever the game says that spell
+        /// summons -- the real name, the real model, the real size.
+        /// </summary>
+        protected void SummonServant(int index)
+        {
+            if (Employer == null)
+                return;
+
+            Spell summon = ServantSpell();
+            DbNpcTemplate template = MercenaryLoadout.PetTemplate(summon);
+
+            string label;
+            ushort model;
+            ushort size;
+
+            if (template != null)
+            {
+                label = template.Name;
+                model = MercenaryLoadout.FirstOf(template.Model, FALLBACK_MODEL);
+                size  = MercenaryLoadout.FirstOf(template.Size, 45);
+            }
+            else
+            {
+                // No data for it: fall back to whatever the roster named, which
+                // is the old behaviour and is only cosmetic.
+                label = Profile.Pets.Length > 0
+                    ? Profile.Pets[index % Profile.Pets.Length]
+                    : "servant";
+                model = FALLBACK_MODEL;
+                size  = 45;
+            }
+
+            bool turret = Kit != null && Kit.Turrets.Count > 0;
+
+            // Planted around the caster rather than stacked on it, so a field
+            // of turrets covers ground instead of being one pile.
+            int spread = 40 + index * 35;
+            int angle  = index * 2048 / Math.Max(1, ServantTarget());
 
             MercenaryServant servant = new MercenaryServant();
             servant.Master = this;
             servant.Profile = Profile;
             servant.Configure(Employer, MercenaryManager.GetTier(Employer));
-            servant.Shape(label, model);
-            servant.X = X + spread;
-            servant.Y = Y + spread;
+            servant.Shape(label, model, size);
+            servant.Stationary = turret;
+
+            // A turret is a bomb on a stick. It cannot chase, so what it has is
+            // reach and a blast -- the caster's own area spell, which is what
+            // makes a field of them level whatever walks in.
+            if (turret)
+            {
+                servant.Bombs = Kit.Pbaoe ?? Kit.AreaNuke ?? Kit.Nuke;
+
+                // Planted, literally: an NPC with no speed cannot be walked
+                // anywhere by anything, which is simpler and more reliable
+                // than teaching the brain about turrets.
+                servant.MaxSpeedBase = 0;
+            }
+
+            servant.X = X + (int) (spread * Math.Cos(angle * Math.PI / 1024.0));
+            servant.Y = Y + (int) (spread * Math.Sin(angle * Math.PI / 1024.0));
             servant.Z = Z;
             servant.Heading = Heading;
             servant.CurrentRegion = CurrentRegion;
@@ -2356,6 +2669,17 @@ namespace DOL.GS.Scripts
             servant.AddToWorld();
             MercenaryManager.Register(Employer, servant);
         }
+
+        /// <summary>How many turrets a turret class keeps planted.</summary>
+        private const int TURRET_FIELD = 5;
+
+        /// <summary>Pacing between summons, so a field goes up like a field.</summary>
+        private const int SERVANT_INTERVAL = 2500;
+
+        /// <summary>Only ever reached when a summon has no template at all.</summary>
+        private const ushort FALLBACK_MODEL = 1910;
+
+        private long _nextServant;
     }
 
     /// <summary>A servant belonging to a hire rather than to the player.</summary>
@@ -2365,29 +2689,54 @@ namespace DOL.GS.Scripts
         public GameMercenary Master;
 
         private string _label = "Servant";
-        private ushort _model = 903;
+        private ushort _model = 1910;
+
+        /// <summary>Planted where it was summoned. A turret does not follow.</summary>
+        public bool Stationary;
+
+        /// <summary>What it throws when something comes into reach.</summary>
+        public Spell Bombs;
 
         public override bool CanWearGear => false;
         public override string RoleName => _label;
         public override string RoleKey => "servant";
         public override bool EngagesInMelee => true;
 
-        public void Shape(string label, ushort model)
+        public void Shape(string label, ushort model, ushort size)
         {
             _label = label;
             _model = model;
             Name = label;
             Model = model;
+            Size = (byte) Math.Clamp((int) size, 10, 255);
         }
 
-        /// <summary>A servant fights; it does not run its master's duties.</summary>
-        public override void RoleThink(GamePlayer owner) { }
+        /// <summary>
+        /// A servant fights; it does not run its master's duties.
+        ///
+        /// A turret is the exception: it cannot close, so if it does not throw
+        /// something it does nothing at all.
+        /// </summary>
+        public override void RoleThink(GamePlayer owner)
+        {
+            if (Bombs == null)
+                return;
+
+            GameLiving foe = FoeOf(owner);
+
+            if (foe == null)
+                return;
+
+            int reach = Bombs.Range > 0 ? Bombs.Range : Math.Max(350, Bombs.Radius);
+
+            if (IsWithinRadius(foe, reach))
+                CastAt(foe, Bombs, 3000);
+        }
 
         public override void ApplyTier(int tier)
         {
             base.ApplyTier(tier);
             Level = (byte) (Level > 4 ? Level - 4 : 1);
-            Size = 45;
             Health = MaxHealth;
         }
 

@@ -164,14 +164,34 @@ namespace DOL.GS.Scripts
                     lines.AddRange(found);
             }
 
-            int castingSpecs = Math.Max(1, lines.Select(l => l.Spec).Distinct().Count());
+            // Master Level paths are deliberately NOT counted here.
+            //
+            // The even split divides a character's points across the lines it
+            // specialises in, and a Master Level path is not one of those --
+            // it is separate progression, earned by raiding rather than bought
+            // with spec points. Counting it turned Atlantis into a straight
+            // downgrade: a Druid went from three casting specs to four, so
+            // every Nurture, Regrowth and Nature spell it knew dropped from
+            // spec 20 to spec 15 in exchange for spells it would have got
+            // anyway. Turning a feature on should not make the class worse.
+            int castingSpecs = Math.Max(1, lines
+                .Where(l => !IsMasterPath(l.Spec))
+                .Select(l => l.Spec).Distinct().Count());
+
             int specLevel = Math.Clamp((int) (level * EVEN_SPEC_SHARE / castingSpecs), 1, level);
 
             foreach (DbSpellLine line in lines)
             {
-                // A base line comes with the class; a spec line only as far as
-                // the points reach.
-                int reach = line.IsBaseLine ? level : specLevel;
+                // A base line comes with the class; a spec line only as far
+                // as the points reach; a Master Level path by its own rule.
+                //
+                // ML spells are numbered 1 to 10 -- those are Master Levels,
+                // not character levels -- so measuring them against a spec
+                // level is meaningless. Atlantis is level 50 content, so that
+                // is the gate.
+                int reach = IsMasterPath(line.Spec)
+                    ? (level >= 50 ? 10 : 0)
+                    : (line.IsBaseLine ? level : specLevel);
 
                 foreach (Spell spell in SkillBase.GetSpellList(line.KeyName))
                 {
@@ -306,6 +326,18 @@ namespace DOL.GS.Scripts
                 return "Sojourner";
 
             return null;
+        }
+
+        /// <summary>The eight Master Level paths, by spec name.</summary>
+        private static readonly HashSet<string> MasterPaths = new()
+        {
+            "Banelord", "Battlemaster", "Convoker", "Perfecter",
+            "Sojourner", "Spymaster", "Stormlord", "Warlord",
+        };
+
+        private static bool IsMasterPath(string spec)
+        {
+            return spec != null && MasterPaths.Contains(spec);
         }
 
         private static List<string> SpecsOf(eCharacterClass characterClass)

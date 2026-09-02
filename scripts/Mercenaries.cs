@@ -373,6 +373,23 @@ namespace DOL.GS.Scripts
             foreach (GameMercenary merc in GetCompany(player))
             {
                 merc.ApplyTier(tier);
+
+                // Learn() re-spends the realm points, and this is the only
+                // place that can notice they have gone up.
+                //
+                // Without it, abilities were bought at three moments only:
+                // when a hire was taken on, when it re-levelled, and when it
+                // was fielded again on login. Earning realm points -- the
+                // actual thing that pays for them -- triggered nothing. Turn in
+                // a pile of seals at level 50, where there is no levelling left
+                // to do, and the company would have kept whatever it had until
+                // the next relog.
+                //
+                // Safe to repeat: GetClassRealmAbilities hands back fresh
+                // instances, and AddAbility is add-OR-UPDATE keyed on name, so
+                // re-spending upgrades rather than duplicating.
+                merc.Learn();
+
                 merc.ApplyGear(); // Item caps move with level, so re-read the gear.
             }
         }
@@ -1406,6 +1423,38 @@ namespace DOL.GS.Scripts
         }
 
         /// <summary>
+        /// How many realm ability points the company has to spend.
+        ///
+        /// This used to be the company TIER -- one point per fifty thousand
+        /// realm points -- which is the scale that decides their LEVEL and is
+        /// far too coarse to buy abilities with. A player at realm rank seven
+        /// has spent points on several; a company that had earned the same
+        /// realm points had a budget of zero and bought nothing at all, so the
+        /// whole realm-ability system was dead code in practice.
+        ///
+        /// Now it is a realm rank, worked out against the game's own realm
+        /// point table so the curve matches what a player would have earned.
+        /// </summary>
+        private int RealmAbilityPoints()
+        {
+            if (Employer == null)
+                return 0;
+
+            long earned = MercenaryManager.GetRealmPoints(Employer);
+            int rank = 0;
+
+            for (int level = 1; level < GamePlayer.REALMPOINTS_FOR_LEVEL.Length; level++)
+            {
+                if (earned >= GamePlayer.REALMPOINTS_FOR_LEVEL[level])
+                    rank = level;
+                else
+                    break;
+            }
+
+            return rank;
+        }
+
+        /// <summary>
         /// How much a given realm ability is worth to THIS class.
         ///
         /// Matched on the name rather than on a hard-coded table of keys, so a
@@ -2197,7 +2246,7 @@ namespace DOL.GS.Scripts
             if (Profile == null || Employer == null)
                 return;
 
-            int budget = MercenaryManager.GetTier(Employer);
+            int budget = RealmAbilityPoints();
 
             if (budget <= 0)
                 return;

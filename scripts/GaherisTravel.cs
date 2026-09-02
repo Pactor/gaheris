@@ -29,7 +29,6 @@ namespace DOL.GS.Scripts
         public const string CATALOGUE = "gaheris";
 
         private static readonly List<Stop> _stops = new();
-        private static readonly Dictionary<int, string> _families = new();
         private static readonly object _lock = new();
         private static bool _loaded;
 
@@ -49,7 +48,7 @@ namespace DOL.GS.Scripts
         private static readonly string[] Order =
         {
             "Cities", "Albion", "Midgard", "Hibernia",
-            "Shrouded Isles", "Atlantis", "Dungeons", "Elsewhere",
+            "Shrouded Isles", "Atlantis", "Battlegrounds", "Dungeons", "Elsewhere",
         };
 
         public override bool AddToWorld()
@@ -113,12 +112,6 @@ namespace DOL.GS.Scripts
 
                 _loaded = true;
 
-                foreach (DbZone zone in DOLDB<DbZone>.SelectAllObjects())
-                {
-                    if (zone != null && !_families.ContainsKey(zone.RegionID))
-                        _families[zone.RegionID] = RealmName(zone.Realm);
-                }
-
                 var rows = DOLDB<DbTeleport>.SelectObjects(
                     DB.Column("Type").IsEqualTo(CATALOGUE));
 
@@ -153,40 +146,85 @@ namespace DOL.GS.Scripts
             }
         }
 
-        private static string RealmName(int realm)
-        {
-            switch (realm)
-            {
-                case 1:  return "Albion";
-                case 2:  return "Midgard";
-                case 3:  return "Hibernia";
-                default: return "Elsewhere";
-            }
-        }
 
+        /// <summary>
+        /// Which heading a destination belongs under.
+        ///
+        /// This used to read the realm off the zone, which sounds right and is
+        /// useless: `zones.Realm` is ZERO for every region in this database --
+        /// Albion, Midgard, Hibernia, the Shrouded Isles, all of it. So every
+        /// realm resolved to "Elsewhere" and eighty-five of the hundred and
+        /// forty-two destinations landed under one heading, in a single
+        /// undifferentiated wall of names. There was no Albion heading, no
+        /// Midgard, no Hibernia. The catalogue was complete and unusable.
+        ///
+        /// Region numbering is the reliable answer, because the game assigns
+        /// it: Albion below 100, Midgard below 200, Hibernia below 300. The
+        /// special cases come first, since a battleground sits inside
+        /// Hibernia's numeric range and the Shrouded Isles sit across all
+        /// three.
+        /// </summary>
         private static string FamilyOf(ushort region, string name)
         {
+            // Grouped by region number, deliberately.
+            //
+            // The obvious implementation reads zones.Realm -- except that
+            // column is 0 for every row in this database, so every
+            // destination came out under one heading. The region id is the
+            // thing that is actually populated, so the region id is what we
+            // group on. Every case below is a region that really appears in
+            // the catalogue; verified against the regions table.
             switch (region)
             {
-                case 10:                     // Camelot
+                case 10:                     // Camelot City
                 case 101:                    // Jordheim
-                case 201: return "Cities";   // Tir na Nog
+                case 201:                    // Tir na Nog
+                case 360:                    // King Eirik's Throne Room
+                case 394:                    // King Constantine's Throne Room
+                case 395: return "Cities";   // King Lamfhotas' Throne Room
 
-                case 30:
-                case 73:
-                case 130: return "Atlantis";
+                case 50:                     // Avalon City
+                case 51:                     // Avalon
+                case 150:                    // Trollheim
+                case 151:                    // Aegir
+                case 180:                    // Fomor City
+                case 181: return "Shrouded Isles";   // HyBrasil
 
-                case 51:
-                case 151:
-                case 181: return "Shrouded Isles";
+                case 30: case 45: case 46: case 47:
+                case 70: case 71: case 72:
+                case 73:                     // Oceanus
+                case 88:                     // The Great Pyramid
+                case 89:
+                case 90:                     // Aerus City
+                case 93:                     // Shar Labyrinth
+                case 130: case 145: case 146: case 147:
+                    return "Atlantis";
+
+                case 165:                    // Cathal Valley
+                case 234: case 235: case 236: case 237: case 238: case 239:
+                case 240:                    // Wilton
+                case 241:                    // Molvik
+                case 242:                    // Leirvik
+                case 244:                    // Passage of Conflict
+                case 250:                    // Caledonia
+                case 251:                    // Murdaigean
+                case 252:
+                case 253:                    // Abermenai
+                    return "Battlegrounds";
+
+                case 23: case 24: case 60: case 61: case 65:
+                case 125: case 126: case 127: case 128: case 129:
+                case 160: case 161: case 190: case 191:
+                case 220: case 221: case 222: case 223: case 224:
+                case 243: case 246: case 248:
+                    return "Dungeons";
             }
 
-            // A dungeon has no zone realm of its own worth showing under a
-            // realm heading, and there are a lot of them.
-            if (_families.TryGetValue(region, out string family) && family != "Elsewhere")
-                return family;
+            if (region < 100) return "Albion";
+            if (region < 200) return "Midgard";
+            if (region < 300) return "Hibernia";
 
-            return region > 200 ? "Dungeons" : "Elsewhere";
+            return "Dungeons";
         }
 
         private static int Rank(string family)

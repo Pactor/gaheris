@@ -1296,9 +1296,21 @@ namespace DOL.GS.Scripts
             if (Profile.Has(Duty.DoT) && Kit.Dot != null && CastAt(foe, Kit.Dot, 5000))
                 return;
 
-            // Thrown area damage first: it reaches, and it does not require
+            // Under PBAoE, a class that HAS a point-blank spell goes in and
+            // uses it, and the thrown area spell waits its turn.
+            //
+            // This is the whole tactic, and it did not work. The order here was
+            // thrown-first, and a Wizard has both -- Steaming Wind at range 0,
+            // radius 300, and Explosive Blast at range 1500. So it stood at
+            // fifteen hundred, threw the weaker spell, returned, and never
+            // reached the code below that would have walked it in. Setting the
+            // tactic changed nothing you could see.
+            bool goInAndBlast = tactic == Tactic.PBAoE && Kit.Pbaoe != null;
+
+            // Thrown area damage otherwise: it reaches, and it does not require
             // walking a caster into the middle of the pile to use it.
-            if (Kit.AreaNuke != null && IsWithinRadius(foe, Kit.AreaNuke.Range) &&
+            if (!goInAndBlast && Kit.AreaNuke != null &&
+                IsWithinRadius(foe, Kit.AreaNuke.Range) &&
                 CastAt(foe, Kit.AreaNuke, 3500))
                 return;
 
@@ -2681,6 +2693,8 @@ namespace DOL.GS.Scripts
                 mine.Add(servant);
             }
 
+            WearShadeIfPetIsUp(mine.Count);
+
             int target = ServantTarget();
 
             for (int i = mine.Count - 1; i >= target && i >= 0; i--)
@@ -2701,6 +2715,38 @@ namespace DOL.GS.Scripts
             _nextServant = GameLoop.GameLoopTime + SERVANT_INTERVAL;
             SummonServant(mine.Count);
         }
+
+        /// <summary>
+        /// A Necromancer stands as a shade while its pet is up.
+        ///
+        /// The core mechanic is a player one -- CharacterClass.Shade, gated on
+        /// HasShadeModel -- and a hire is a GameNPC, so none of it applies to
+        /// them. What it comes down to is the model, and that we can do: 1353
+        /// is the Briton shade, which is the right shape for an Albion
+        /// Necromancer.
+        ///
+        /// It goes back to its own face when the pet goes, so a Necromancer
+        /// standing there in flesh is a Necromancer that has lost its pet --
+        /// worth being able to see at a glance across a fight.
+        /// </summary>
+        private void WearShadeIfPetIsUp(int crop)
+        {
+            if (Profile == null || Profile.ClassId is not eCharacterClass.Necromancer)
+                return;
+
+            ushort wanted = crop > 0 ? SHADE_MODEL : Profile.Model;
+
+            if (Model == wanted)
+                return;
+
+            Model = wanted;
+
+            foreach (GamePlayer nearby in GetPlayersInRadius(WorldMgr.VISIBILITY_DISTANCE))
+                nearby.Out.SendModelChange(this, wanted);
+        }
+
+        /// <summary>Briton shade -- what GamePlayer.ShadeModel picks by race.</summary>
+        private const ushort SHADE_MODEL = 1353;
 
         /// <summary>The summon this class would actually cast.</summary>
         protected virtual Spell ServantSpell()
@@ -2949,11 +2995,29 @@ namespace DOL.GS.Scripts
         {
             GamePlayer player = sender as GamePlayer;
 
-            if (player == null)
+            if (player?.Group == null)
                 return;
 
-            foreach (GameMercenary merc in new List<GameMercenary>(MercenaryManager.GetCompany(player)))
-                merc.Group?.RemoveMember(merc);
+            // Read the GROUP, not our own roster.
+            //
+            // This used to walk MercenaryManager.GetCompany and remove each
+            // hire it found. That trusts our bookkeeping to be a perfect mirror
+            // of the group, and when it is not -- a servant registered but
+            // never grouped, a hire whose ObjectState had already flipped, a
+            // company list pruned a moment too early -- a hire stays in the
+            // group, the player leaves, and Group.RemoveMember throws exactly
+            // as before. It came back on a fresh character doing nothing
+            // unusual.
+            //
+            // The group knows who is in the group. Anything in it that is not
+            // a player comes out, and there is nothing left to be wrong about.
+            Group group = player.Group;
+
+            foreach (GameLiving member in new List<GameLiving>(group.GetMembersInTheGroup()))
+            {
+                if (member is not GamePlayer)
+                    group.RemoveMember(member);
+            }
         }
 
         /// <summary>

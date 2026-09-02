@@ -28,3 +28,8 @@ gear_methods.txt
 obj/
 bin/
 __pycache__/
+
+# Generated from db-public, which is a separate project with its own history.
+# 11 MB of INSERTs is not ours to redistribute, and tools/mkatlantis.py rebuilds
+# it in seconds from a db-public checkout.
+sql/13-atlantis-mobs.sql

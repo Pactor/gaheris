@@ -80,22 +80,92 @@ namespace DOL.GS.Scripts
         /// <summary>Puts one person on the path. True if this changed anything.</summary>
         private bool Enrol(GamePlayer player)
         {
-            if (player.MLGranted)
+            // Granted but still at Master Level 0 counts as unfinished. The
+            // first attempt at this set the flag and nothing else, which left
+            // players enrolled in a state they could not see.
+            if (player.MLGranted && player.MLLevel >= 1)
                 return false;
 
             player.MLGranted = true;
+
+            // Master Level 1 comes with enrolment, and that is a decision
+            // rather than an accident. On live it is the reward for completing
+            // the first trial, and the trials do not exist here -- nothing in
+            // OpenDAoC awards an ML step. Leaving the player at ML0 leaves
+            // RefreshSpecDependantSkills refusing to hand over the Master Level
+            // specialisation, which is gated on MLLevel >= 1, so all 64 ML
+            // spells we imported stay out of reach and the window has nothing
+            // to show. The Arbiter opens the first door; the other nine are
+            // earned below.
+            if (player.MLLevel < 1)
+            {
+                player.MLLevel = 1;
+                player.MLExperience = 0;
+            }
+
             player.SaveIntoDatabase();
 
-            // MLLevel is deliberately left at 0. Being on the path and having
-            // walked any of it are different things, and the experience below
-            // is what closes the gap.
+            // Said twice on purpose. The base class has just put two popup
+            // windows on the screen, and a line in the system window behind
+            // them is easy to miss -- which is exactly what happened the first
+            // time this ran: the flag was set in the database and the player
+            // saw nothing at all.
+            SayTo(player, eChatLoc.CL_PopupWindow,
+                  "You have begun the trials of Atlantis. You are now Master " +
+                  "Level 1, and your deeds against the creatures of this place " +
+                  "will carry you further.");
+
             player.Out.SendMessage(
-                "You have begun the trials of Atlantis. Your deeds against the " +
-                "creatures of this place will now count towards your Master Levels.",
+                "You have begun the trials of Atlantis. You are now Master Level 1.",
                 eChatType.CT_Important, eChatLoc.CL_SystemWindow);
 
-            player.Out.SendMasterLevelWindow((byte) player.MLLevel);
+            Announce(player);
             return true;
+        }
+
+        /// <summary>
+        /// Tell the client what it does not otherwise get told.
+        ///
+        /// Nothing in OpenDAoC sends the Master Level window outside a dialog
+        /// response, the GM command and step completion -- so a client that has
+        /// just been enrolled, or that has simply logged in, has never been
+        /// told the player has Master Levels and will not offer the Master
+        /// Level experience bar.
+        /// </summary>
+        public static void Announce(GamePlayer player)
+        {
+            if (player?.Out == null || !player.MLGranted)
+                return;
+
+            player.RefreshSpecDependantSkills(false);
+            player.Out.SendUpdatePlayer();
+            player.Out.SendUpdatePoints();
+            player.Out.SendMasterLevelWindow((byte) player.MLLevel);
+        }
+    }
+
+    /// <summary>
+    /// Sends the Master Level window to anyone already on the path as they
+    /// enter the world, so the client knows before they ask.
+    /// </summary>
+    public static class MasterLevelLogin
+    {
+        [ScriptLoadedEvent]
+        public static void OnScriptLoaded(DOLEvent e, object sender, EventArgs args)
+        {
+            GameEventMgr.AddHandler(GamePlayerEvent.GameEntered, new DOLEventHandler(Entered));
+        }
+
+        [ScriptUnloadedEvent]
+        public static void OnScriptUnloaded(DOLEvent e, object sender, EventArgs args)
+        {
+            GameEventMgr.RemoveHandler(GamePlayerEvent.GameEntered, new DOLEventHandler(Entered));
+        }
+
+        private static void Entered(DOLEvent e, object sender, EventArgs args)
+        {
+            if (sender is GamePlayer player && player.MLGranted)
+                GaherisArbiter.Announce(player);
         }
     }
 

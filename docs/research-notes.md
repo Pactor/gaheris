@@ -224,6 +224,66 @@ none of the scripting exists.
 
 ---
 
+## 3c. disorder.dk -- a good reference, not a source
+
+`https://disorder.dk/daoc/bestiary/zone.php?load=NN` -- the **Uthgard 2.0**
+bestiary, built from submitted kill logs. 67 zones indexed, and the zone list
+is at `/daoc/bestiary/`.
+
+What a zone page gives, per monster:
+
+```
+name    level from / level to    aggro    total killed    droprate    avg kill value
+```
+
+Example, Abermenai (`load=64`), 24 monsters:
+
+```
+crag bear        24-25  aggressive     chinook      29-30  aggressive
+crag wolf        23-24  aggressive     squall       27-28  aggressive
+crag lynx        25-26  aggressive     gust         22-23  neutral
+crag badger      27-28  aggressive     rubble       25-26  neutral
+crag crab        20-21  aggressive     shifter      26-27  neutral
+Viking Huscarl   23-25  aggressive     Seism        31-32  aggressive
+Viking Jarl      25-26  aggressive     Jarl Abermenai  32  aggressive
+```
+
+**It has no coordinates and no models.** It says what lives in a zone and how
+dangerous it is; it cannot place anything.
+
+That makes it excellent for cross-checking levels and aggro across the 67
+zones it covers, and useless on its own for filling an empty one.
+
+### The two empty battlegrounds
+
+`Wilton` (region 240) and `Abermenai` (region 253) hold zero mobs. Checked
+every source:
+
+| source | Wilton | Abermenai |
+|---|---|---|
+| our database | 0 mobs | 0 mobs |
+| db-public | nothing | nothing |
+| capnbry | not indexed | **indexed as zone 253, but 0 mobs surveyed** |
+| disorder.dk | not indexed | **24 monsters, no coordinates** |
+
+So Abermenai has a creature list and nothing else, and Wilton has nothing at
+all.
+
+Reconstructing Abermenai would mean inventing **every position** -- no source
+has one -- and roughly seven of the 24 models. Matching the rest by name only
+half works: `crag bear` finds `umber bear` (96) and `crag wolf` finds
+`white wolf` (459), but a naive substring match also pairs `gust` with
+`evocatus Augusti` and `river rat` with `crater cicada`, so it needs a human
+eye.
+
+**Worth naming the line this crosses.** Everything imported so far has been
+real data: db-public's rows, capnbry's radar coordinates, Eve's teleport
+table. Abermenai would be the first zone we made up. That may well be fine --
+it is your server -- but it should be a decision to *design* a battleground,
+not a belief that we restored one.
+
+---
+
 ## 4. GitHub: is there an old DOL Gaheris project?
 
 Searched. **No dedicated Gaheris server repository exists.** What is out there:

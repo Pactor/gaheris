@@ -119,11 +119,30 @@ namespace DOL.GS.Scripts
         /// <summary>Never move something onto a player's lap.</summary>
         private const int NOT_ON_TOP_OF = 900;
 
-        /// <summary>Beyond this from every trail point, a creature is unreachable.</summary>
-        private const int STRANDED = 2500;
+        /// <summary>
+        /// Close enough to count as having been met.
+        ///
+        /// Straight-line distance from the trail was the wrong test and failed
+        /// for the same reason every earlier attempt did: it measures geometry
+        /// on a map whose geometry we do not have. In a dungeon of corridors a
+        /// creature sealed behind rock is fifteen hundred units from the path
+        /// and completely unreachable, so it never qualified as stranded and
+        /// was never moved. Walking the whole western arm changed nothing --
+        /// the count sat at twenty-four the entire way.
+        ///
+        /// Whether a player has ever come near it is not a guess about the
+        /// map. It is a fact about what happened.
+        /// </summary>
+        private const int MET = 1000;
+
+        /// <summary>Wait until there is a real trail before moving anything.</summary>
+        private const int TRAIL_BEFORE_MOVING = 5;
 
         /// <summary>How many to rescue per tick.</summary>
         private const int PER_TICK = 6;
+
+        /// <summary>Everything a player has been near, and so had the chance to fight.</summary>
+        private readonly HashSet<GameNPC> _met = new();
 
         private ECSGameTimer _tidy;
 
@@ -167,6 +186,7 @@ namespace DOL.GS.Scripts
                     return 5000;
 
                 Remember(inside);
+                NoteWhoWasMet(inside);
                 Report(inside);
                 MoveTheStranded(inside);
             }
@@ -221,6 +241,26 @@ namespace DOL.GS.Scripts
                                     " true " + nearest.GetDistanceTo(p)));
         }
 
+        /// <summary>Anything near a player has been met, whether or not it was fought.</summary>
+        private void NoteWhoWasMet(List<GamePlayer> inside)
+        {
+            foreach (GameObject obj in TaskRegion.Objects)
+            {
+                if (obj is not GameNPC npc || npc is GameMercenary ||
+                    npc.Brain is IControlledBrain)
+                    continue;
+
+                foreach (GamePlayer p in inside)
+                {
+                    if (npc.GetDistanceTo(p) <= MET)
+                    {
+                        _met.Add(npc);
+                        break;
+                    }
+                }
+            }
+        }
+
         /// <summary>Add where everybody is standing to the trail.</summary>
         private void Remember(List<GamePlayer> inside)
         {
@@ -254,7 +294,7 @@ namespace DOL.GS.Scripts
         /// </summary>
         private void MoveTheStranded(List<GamePlayer> inside)
         {
-            if (_trail.Count < 3)
+            if (_trail.Count < TRAIL_BEFORE_MOVING)
                 return;
 
             int moved = 0;
@@ -270,12 +310,9 @@ namespace DOL.GS.Scripts
                 if (npc.InCombat || npc.IsVisibleToPlayers)
                     continue;
 
-                int nearest = int.MaxValue;
-
-                foreach (Point3D seen in _trail)
-                    nearest = Math.Min(nearest, seen.GetDistanceTo(npc));
-
-                if (nearest <= STRANDED)
+                // Met means the player had their chance at it. Anything else
+                // is somewhere they cannot get to, however near it looks.
+                if (_met.Contains(npc))
                     continue;
 
                 Point3D spot = _trail[Util.Random(_trail.Count - 1)];

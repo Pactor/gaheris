@@ -29,5 +29,20 @@ namespace DOL.GS.Scripts
         [ServerProperty("gaheris", "gaheris_atlantis",
             "Do hired companions draw on Atlantis (Master Level) lines?", false)]
         public static bool ATLANTIS;
+
+        /// <summary>
+        /// Log every buff a hire casts: who, at whom, which spell, which slot.
+        ///
+        /// A diagnostic, off by default and meant to come out again. It is
+        /// here because a Cleric and a Shaman kept buffing over each other
+        /// after the fix that was supposed to stop them, and reasoning about
+        /// which pair of spells is fighting has already produced one wrong
+        /// answer. This produces the actual pair.
+        ///
+        ///     /serverproperty gaheris_log_buffs true
+        /// </summary>
+        [ServerProperty("gaheris", "gaheris_log_buffs",
+            "Log every buff a hired companion casts, for diagnosing buff loops.", false)]
+        public static bool LOG_BUFFS;
     }
 }

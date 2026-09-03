@@ -1755,7 +1755,18 @@ namespace DOL.GS.Scripts
                 GameLiving needs = WhoNeeds(owner, buff, effect);
 
                 if (needs != null && CastAt(needs, buff, RETRY))
+                {
+                    // Temporary, and here because the buff war outlived the
+                    // fix for it. Guessing at which pair of spells is fighting
+                    // has been wrong once already, so this says plainly who
+                    // cast what, at whom, and which slot it was aimed at.
+                    if (GaherisSettings.LOG_BUFFS)
+                        Console.WriteLine("Buff: " + Name + " -> " + needs.Name +
+                                          " : " + buff.Name + " [" + buff.SpellType +
+                                          " / " + effect + "]");
+
                     return true;
+                }
             }
 
             return false;

@@ -2157,6 +2157,7 @@ namespace DOL.GS.Scripts
 
             _ownerMissingSince = 0;
             WearSpectralForm();
+            KeepGroupBreathing();
 
             // At camp the company holds the ground and the employer does the
             // walking. That is the whole point of a pull camp: you go and
@@ -2364,7 +2365,15 @@ namespace DOL.GS.Scripts
         /// </summary>
         public static bool Committed(GamePlayer owner)
         {
-            if (Fighting(owner))
+            // Swinging, or already traded blows, is commitment outright. So is
+            // casting -- but only AT something. A player standing there with a
+            // mob selected while he puts a self buff up has not started
+            // anything, and counting that opened fights he never called for.
+            if (owner.InCombat || owner.attackComponent.AttackState)
+                return true;
+
+            if (owner.IsCasting && owner.TargetObject is GameLiving aim &&
+                aim.IsAlive && GameServer.ServerRules.IsAllowedToAttack(owner, aim, true))
                 return true;
 
             // The GROUP being in a fight is what starts a fight, not the player
@@ -2372,6 +2381,13 @@ namespace DOL.GS.Scripts
             // everyone is in it -- waiting for the employer to throw the first
             // punch means the rest of them stand and watch a fight they are
             // already part of.
+            // A hire counts only when it is genuinely in a fight.
+            //
+            // Casting used to count here as well, and buffing is casting, so a
+            // single hire dressing the group marked the whole company as
+            // committed -- and a buff pass runs for minutes. For all of it,
+            // merely TARGETING a mob was enough to send everyone at it. That is
+            // the pulling-on-a-glance bug: a look read as an order.
             foreach (GameMercenary mate in MercenaryManager.GetCompany(owner))
             {
                 if (mate.IsAlive && Fighting(mate))
@@ -2387,9 +2403,13 @@ namespace DOL.GS.Scripts
             return pet != null && pet.IsAlive && Fighting(pet);
         }
 
+        /// <summary>
+        /// Actually in a fight -- blows landed or being thrown. Casting is
+        /// deliberately not here: a hire that is casting is usually buffing.
+        /// </summary>
         private static bool Fighting(GameLiving living)
         {
-            return living.InCombat || living.IsCasting || living.attackComponent.AttackState;
+            return living.InCombat || living.attackComponent.AttackState;
         }
 
         /// <summary>The employer's current foe, if there is a legitimate one.</summary>
@@ -3080,6 +3100,37 @@ namespace DOL.GS.Scripts
         /// standing there in flesh is a Necromancer that has lost its pet --
         /// worth being able to see at a glance across a fight.
         /// </summary>
+        /// <summary>
+        /// Air, when the group is under water.
+        ///
+        /// Nobody was ever going to ask for this in the half-minute before they
+        /// drowned, and a hire holding a spell that stops it is no use if it
+        /// waits to be told. Cast on sight of water and left to run; it is half
+        /// an hour long and group targeted, so one cast covers everybody who
+        /// came in with you.
+        ///
+        /// Deliberately not gated on being in combat or out of it. Drowning
+        /// does not care which you are.
+        /// </summary>
+        private void KeepGroupBreathing()
+        {
+            if (Kit?.WaterBreathing == null || Employer == null || !IsAlive)
+                return;
+
+            // Somebody has to actually be in the water -- the hire itself or
+            // the employer, since one of them reaches it first.
+            if (!IsUnderwater && !Employer.IsUnderwater)
+                return;
+
+            // CanBreathUnderWater belongs to GamePlayer rather than to an NPC,
+            // and the employer is the one who drowns, so his is the answer that
+            // matters. If he is already covered the group is.
+            if (Employer.CanBreathUnderWater)
+                return;
+
+            CastAt(this, Kit.WaterBreathing, 60000);
+        }
+
         /// <summary>
         /// The Bainshee's fighting form.
         ///

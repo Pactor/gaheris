@@ -109,6 +109,16 @@ namespace DOL.GS.Scripts
         /// </summary>
         public List<Spell> MlBuffs = new();
 
+        /// <summary>
+        /// Air underwater, and the speed to swim in it -- one spell does both,
+        /// with Value carrying the swim speed.
+        ///
+        /// Four tiers in the Bard's Music, the Minstrel's Instruments and the
+        /// Skald's Battlesongs at spec 10/20/30/40, plus Sojourner's Unending
+        /// Breath at Master Level 2. All group targeted and half an hour long.
+        /// </summary>
+        public Spell WaterBreathing;
+
         public bool Has(Spell spell) => spell != null;
     }
 
@@ -549,6 +559,16 @@ namespace DOL.GS.Scripts
                     // without a slot to sit in they stayed in Known and were
                     // never cast. A hire could hold all ten levels of Perfecter
                     // and never once drop a Font of Power.
+                    case eSpellType.WaterBreathing:
+                        // Ranked by Value, which is the swim speed the buff
+                        // grants as a percentage of running speed -- 70 at
+                        // Neriad's Call up to full speed at Breath of
+                        // Leviathan. Every tier lasts the same half hour, so
+                        // duration cannot tell them apart and ranking by it
+                        // would keep whichever happened to be read first.
+                        Keep(ref loadout.WaterBreathing, spell, s => s.Value);
+                        break;
+
                     case eSpellType.FOP:            // Font of Power
                     case eSpellType.FOH:            // Sphere of Rejuvenation
                     case eSpellType.FOR:            // Determination Ward

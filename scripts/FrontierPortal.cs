@@ -41,13 +41,24 @@ namespace DOL.GS.Scripts
         /// <summary>
         /// How wide the trigger is.
         ///
-        /// Deliberately small. The zonepoints that bring people BACK from the
-        /// frontier land between 799 and 997 units from these same passages --
-        /// Druim Cain's return is 799 away -- so a generous radius would catch
-        /// players the moment they arrived home and fire them straight back.
-        /// At 350 they land outside it and can walk away.
+        /// It was 350, because the zonepoints bringing people HOME used to
+        /// land 799 to 997 units from these same passages and a wide circle
+        /// would have fired them straight back. Migration 64 pushed those
+        /// returns out to about 3,000, so that reason is gone -- and 350 was
+        /// far too mean in practice. A border keep's own arrival spot is 684
+        /// units from the passage midpoint at Druim Ligen, so a player porting
+        /// in landed OUTSIDE the trigger and had to find an invisible circle
+        /// on foot.
+        ///
+        /// The six border keeps do not arrive you at a consistent distance
+        /// from their own passage: Vindsaul and Druim Cain put you about 100
+        /// units away, Druim Ligen 684, and Castle Sauvage, Snowdonia and
+        /// Svasud between 1,000 and 1,100. So the circle has to reach 1,100 to
+        /// catch a player at any of them, and 1,200 gives that a margin while
+        /// still leaving about 1,800 units of clearance to the nearest way
+        /// home.
         /// </summary>
-        private const int RADIUS = 350;
+        private const int RADIUS = 1200;
 
         /// <summary>
         /// Seconds after arriving in a realm before an airlock will take you.
@@ -59,6 +70,7 @@ namespace DOL.GS.Scripts
         private const int GRACE_SECONDS = 20;
 
         private const string ARRIVED = "GaherisFrontierArrival";
+        private const string LAST_REGION = "GaherisFrontierLastRegion";
 
         private readonly struct Gate
         {
@@ -130,12 +142,26 @@ namespace DOL.GS.Scripts
         }
 
         /// <summary>
-        /// Stamp the moment a player changes region, so an airlock will not
-        /// grab somebody who has this instant come home through one.
+        /// Stamp a player who has just come home FROM the frontier, so the
+        /// airlock does not turn them round and send them back.
+        ///
+        /// Only that direction is stamped. Stamping every region change meant
+        /// that porting to a border keep -- itself a region change on most
+        /// routes -- put the player under the grace period at the exact moment
+        /// they wanted to cross, so the airlock ignored them for twenty
+        /// seconds and appeared to be broken.
         /// </summary>
         private static void NoteArrival(DOLEvent e, object sender, EventArgs args)
         {
-            if (sender is GamePlayer player)
+            if (sender is not GamePlayer player)
+                return;
+
+            ushort now = player.CurrentRegionID;
+            ushort was = player.TempProperties.GetProperty<ushort>(LAST_REGION);
+
+            player.TempProperties.SetProperty(LAST_REGION, now);
+
+            if (was == FRONTIER && now != FRONTIER)
                 player.TempProperties.SetProperty(ARRIVED, GameLoop.GameLoopTime);
         }
 

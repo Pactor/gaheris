@@ -123,6 +123,61 @@ that coordinate will fail; the trail is the only sound basis.
 
 ---
 
+## New Frontiers: what to look at
+
+Region 163 holds **105 keeps** and **8,359 creatures**, all crossings are
+retargeted, and the border keep doors work in both directions. What has not
+been examined closely is the garrison.
+
+**Do the main keeps have guards?** This cannot be answered from the database
+and I got it wrong trying. Counting mob rows near each keep says twenty-seven
+have none -- including Caer Benowyc, Bledmeer Faste and Dun Scathaig, the ones
+that matter -- but that is the wrong measure. New Frontiers keeps raise their
+garrison at runtime from `keepposition` through their components, and all
+twenty-seven have components, thirty-nine to forty-one apiece. What the count
+actually found was ambient wildlife: the keeps that appeared defended were
+merely near imported creatures like `boreal cockatrice`.
+
+So it needs eyes. Ride to Caer Benowyc and Bledmeer Faste and see whether
+anything is standing on them. If they are bare, the thing to check is whether
+`keepposition` covers their component skins -- there are 2,044 components and
+only 279 positions, and positions key on skin rather than on keep, so thin
+coverage would show up as empty keeps rather than as an error.
+
+**The rest of the frontier list.**
+
+| | |
+|---|---|
+| Return stones | Six, now on model 2256. They were invisible until today -- worth confirming they are there |
+| Guard patrols | None. Guards stand where they spawn |
+| Keep levels | All 105 sit at level 4 |
+| Relics | Six exist. The relic keeps are in the old frontier zones, which is the intended design |
+
+---
+
+## The expansion classes: what to test
+
+`expansion-class-audit.md` has the per-class data. What is worth checking by
+feel, class by class:
+
+| Class | The thing that makes it itself |
+|---|---|
+| **Vampiir** | Power climbs while fighting AND while being hit. Refuses all stat buffs by design -- that is correct, not a bug |
+| **Mauler** (x3) | Same, and until today it had no power source at all. Fist Wraps and Power Strikes should stay usable |
+| **Warlock** | Chambers. Known broken, see above. Everything else -- six chambers, Powerless, Range, Uninterruptable -- is present and reachable |
+| **Bainshee** | Shifts to spectral form and casts cones from it. `Alarming Screech` moved to Spectral Force at 26 today |
+| **Heretic** | Ramping damage focus, and it keeps Shields and Slam at 42 |
+| **Valkyrie** | Spear and sword, mending. Only three trainers in the world -- worth checking that is enough |
+| **Bonedancer** | Sub-pets should assist the commander |
+| **Animist** | Turrets. `Purifying Rain` now casts in 3s |
+| **Valewalker** | Scythe, two-handed, trading health for magic |
+
+Two known-thin spots: **Valkyrie and Bainshee have three trainers each** where
+every other class has nine to twenty-five, and the **Maulers share 25 trainers
+across all three realms**.
+
+---
+
 ## How to test the dungeon work
 
 Take a task, walk in, and read the log:

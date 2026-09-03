@@ -21,6 +21,7 @@ namespace DOL.GS.Commands
         "/tactic balanced - tanks hold the line, healers mend whoever is worst off",
         "/tactic pbaoe    - they stack on you and the casters go in",
         "/tactic focus    - your pet holds everything; nobody taunts, the pet gets healed first",
+        "/tactic camp     - hold this ground while you pull to it; turn it off to follow you again",
         "/tactic cc       - turn crowd control on or off")]
     public class TacticCommandHandler : AbstractCommandHandler, ICommandHandler
     {
@@ -48,6 +49,28 @@ namespace DOL.GS.Commands
                     Set(player, Tactic.PBAoE,
                         "They will stay on top of you and burn everything around you.");
                     return;
+
+                case "camp":
+                {
+                    // Not a tactic, and listed here anyway.
+                    //
+                    // A camp can be a point-blank camp, a pet camp or a
+                    // single-pull camp -- it says nothing about how the fight
+                    // is fought, only that you are staying and the ground is
+                    // worth investing in, so it is its own switch rather than a
+                    // fourth Tactic. But /tactic is where a player looks for
+                    // it, and making them whisper a hire instead was a rule
+                    // that existed only because of how this was built.
+                    bool camped = !MercenaryManager.IsCamped(player);
+                    MercenaryManager.SetCamped(player, camped);
+
+                    player.Out.SendMessage(camped
+                        ? "Making camp here. They hold this ground while you pull to it, " +
+                          "the fonts go down, and the turret classes plant their fields."
+                        : "Breaking camp. They follow you again.",
+                        eChatType.CT_System, eChatLoc.CL_SystemWindow);
+                    return;
+                }
 
                 case "cc":
                 case "mez":

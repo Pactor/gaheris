@@ -408,16 +408,32 @@ verified against our own database, not assumed.
 | Warlock: every chamber and unique spell type | all 30 present and on reachable lines |
 | Heretic: Shields, and Slam at Shields 42 | present -- the stun slam is there |
 
-### Off, and checkable
+### Corrected -- `sql/95`
 
-| | Live | Ours |
-|---|---|---|
-| Bainshee specialisation name | Spectral Force | **Spectral Guard** |
-| Bainshee: Alarming Screech | Spectral Force, level 26 | **Phantasmal Wail, level 18** |
-| Bonedancer: Summon Bone Spellbinder | Bone Legion, level 11 | **absent entirely** |
-| Bonedancer: Summon Bone Deadeye | Bone Legion, level 21 | **level 45** |
-| Animist: Purifying Rain cast time | 3.0s | **5.0s** |
-| Bainshee/Warlock/Animist pet scare cast | 3.5s | 5.0s (unverified per spell) |
+| | Live | Was | Now |
+|---|---|---|---|
+| Bainshee: Alarming Screech | Spectral Force, 26 | Phantasmal Wail, 18 | Spectral Force, 26 |
+| Bonedancer: Summon Bone Deadeye | level 21 | level 45 | level 21 |
+| Animist: Purifying Rain cast | 3.0s | 5.0s | 3.0s |
+
+### Looked at and deliberately not changed
+
+**The Bainshee specialisation is not misnamed.** Spectral Force is a BASELINE
+line whose spec is Spectral Guard, which she has. Its thirty spells were
+always reachable; the first version of this audit misread the structure and
+reported a missing specialisation that was never missing.
+
+**Summon Bone Spellbinder cannot be restored.** It exists in no data we hold,
+neither this database nor the reference dump, so putting it back would mean
+inventing a spell rather than correcting one.
+
+**Pet scare cast times are already faster than the patch.** Live reduced them
+from 5.0 seconds to 3.5; ours cast in 2. Applying the change would slow them
+down.
+
+**Summon Bone Deadeye's line is still ours.** The patch names a Bone Legion
+line and we have none -- ours is Bone Warriors, under the Bone Army spec -- so
+only the level was corrected.
 
 ### Missing outright
 

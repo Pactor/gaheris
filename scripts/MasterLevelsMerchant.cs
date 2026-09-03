@@ -131,20 +131,32 @@ namespace DOL.GS.Scripts
             if (!player.Inventory.RemoveItem(item))
                 return false;
 
-            player.MLLevel = level;
-            player.MLExperience = 0;
+            // A credit buys the standing, not the rank.
+            //
+            // This used to set MLLevel outright and zero MLExperience, which
+            // got both halves wrong: it skipped the Arbiter, who is the one who
+            // actually teaches a Master Level, and it threw away every kill the
+            // player had banked towards the next one. Somebody who bought their
+            // way to Master Level 5 arrived with an empty bar, no new spells,
+            // and an Arbiter who refused to advance them without saying why.
+            //
+            // What a credit does is fill the bar. One rank's worth per token,
+            // added to whatever is already there, and then you go and be taught
+            // -- which is why buying five means speaking to him five times.
+            long worth = player.GetMLExperienceForLevel(player.MLLevel + 1);
+            player.MLExperience += worth;
             player.SaveIntoDatabase();
 
             SayTo(player, eChatLoc.CL_PopupWindow,
-                  "It is done. You are Master Level " + level + ".");
+                  "The credit is yours. Take it to the Arbiter and he will " +
+                  "raise you; he does the teaching, I only keep the books.");
 
-            player.Out.SendMessage("You have reached Master Level " + level + ".",
-                                   eChatType.CT_Important, eChatLoc.CL_SystemWindow);
+            player.Out.SendMessage(
+                "You have earned credit towards Master Level " + (player.MLLevel + 1) +
+                ". Speak to the Arbiter to be raised.",
+                eChatType.CT_Important, eChatLoc.CL_SystemWindow);
 
-            // The same refresh the Arbiter does. The specialisation is gated on
-            // MLLevel, and the client is never told about Master Levels at all
-            // unless something sends it the window.
-            GaherisArbiter.Announce(player);
+            player.Out.SendMasterLevelWindow((byte) player.MLLevel);
             return true;
         }
     }

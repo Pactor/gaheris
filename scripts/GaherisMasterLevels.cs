@@ -81,59 +81,22 @@ namespace DOL.GS.Scripts
                 }
             }
 
-            if (enrolled == 0 && !Promote(player))
-                SayTo(player, eChatLoc.CL_SystemWindow,
-                      "You have already begun the trials.");
+            // One popup, always.
+            //
+            // Three separate SayTo calls in a single interaction is three popup
+            // windows in the same tick, and the client shows one of them. That
+            // is why the disciplines stopped appearing for anybody already
+            // enrolled: the progress line was landing on top of the list. The
+            // whole conversation goes out as one message now.
+            string text = string.Empty;
 
-            OfferPaths(player);
-            return true;
-        }
+            if (enrolled > 1)
+                text += "Your company has begun the trials with you.\n\n";
 
-        /// <summary>
-        /// Give the player every Master Level their deeds have paid for.
-        ///
-        /// The experience handler used to promote as soon as the bar filled,
-        /// which meant the Master Levels arrived silently in the middle of a
-        /// fight and the Arbiter had nothing to do with them. He is who you
-        /// train with, so he is who hands them over -- and coming back to him
-        /// with a full bar is the reason to come back at all.
-        /// </summary>
-        private bool Promote(GamePlayer player)
-        {
-            if (!player.MLGranted || player.MLLevel >= GamePlayer.ML_MAX_LEVEL)
-                return false;
+            text += Promote(player) ?? Standing(player);
+            text += "\n" + PathList(player);
 
-            int gained = 0;
-
-            while (player.MLLevel < GamePlayer.ML_MAX_LEVEL)
-            {
-                long needed = player.GetMLExperienceForLevel(player.MLLevel + 1);
-
-                if (needed <= 0 || player.MLExperience < needed)
-                    break;
-
-                player.MLExperience -= needed;
-                player.MLLevel++;
-                gained++;
-            }
-
-            if (gained == 0)
-                return false;
-
-            if (player.MLLevel >= GamePlayer.ML_MAX_LEVEL)
-                player.MLExperience = 0;
-
-            player.SaveIntoDatabase();
-
-            SayTo(player, eChatLoc.CL_PopupWindow,
-                  gained == 1
-                      ? "You have earned it. You are Master Level " + player.MLLevel + "."
-                      : "You have earned several. You are Master Level " + player.MLLevel + ".");
-
-            player.Out.SendMessage("You have reached Master Level " + player.MLLevel + ".",
-                                   eChatType.CT_Important, eChatLoc.CL_SystemWindow);
-
-            Announce(player);
+            SayTo(player, eChatLoc.CL_PopupWindow, text);
             return true;
         }
 
@@ -166,6 +129,126 @@ namespace DOL.GS.Scripts
         }
 
         /// <summary>
+        /// Raise the player one rank, if the next one is paid for.
+        ///
+        /// One per conversation, deliberately. A Master Level is taught, and
+        /// being taught five of them is five lessons -- which is what buying
+        /// five credits and speaking to him five times means. Handing over
+        /// every rank at once on a single right-click made the credits feel
+        /// like they had done nothing.
+        ///
+        /// Returns what to say, or null if there was nothing to give.
+        /// </summary>
+        private string Promote(GamePlayer player)
+        {
+            if (!player.MLGranted || player.MLLevel >= GamePlayer.ML_MAX_LEVEL)
+                return null;
+
+            long needed = player.GetMLExperienceForLevel(player.MLLevel + 1);
+
+            if (needed <= 0 || player.MLExperience < needed)
+                return null;
+
+            player.MLExperience -= needed;
+            player.MLLevel++;
+
+            if (player.MLLevel >= GamePlayer.ML_MAX_LEVEL)
+                player.MLExperience = 0;
+
+            player.SaveIntoDatabase();
+
+            player.Out.SendMessage("You have reached Master Level " + player.MLLevel + ".",
+                                   eChatType.CT_Important, eChatLoc.CL_SystemWindow);
+
+            Announce(player);
+
+            string more = player.MLLevel < GamePlayer.ML_MAX_LEVEL &&
+                          player.MLExperience >= player.GetMLExperienceForLevel(player.MLLevel + 1)
+                ? " You have earned another. Speak again when you are ready for it."
+                : string.Empty;
+
+            return "You are Master Level " + player.MLLevel + " and what it teaches is yours." +
+                   more + "\n" + Learned(player) + "\n";
+        }
+
+        /// <summary>
+        /// Where the player stands when there is nothing to hand over.
+        ///
+        /// Refusing in silence is what this did before, and from the other side
+        /// of the screen a silent refusal and a broken NPC look identical. He
+        /// has the numbers, so he says them.
+        /// </summary>
+        private string Standing(GamePlayer player)
+        {
+            if (!player.MLGranted)
+                return string.Empty;
+
+            if (player.MLLevel >= GamePlayer.ML_MAX_LEVEL)
+                return "There is nothing further I can teach you. You are Master Level " +
+                       GamePlayer.ML_MAX_LEVEL + ".\n" + Learned(player) + "\n";
+
+            long needed = player.GetMLExperienceForLevel(player.MLLevel + 1);
+            long have = player.MLExperience;
+            int percent = needed > 0 ? (int) (100L * have / needed) : 0;
+
+            return "You are Master Level " + player.MLLevel + ". The next asks " +
+                   needed + " and you have " + have + " -- " + percent + " in the " +
+                   "hundred. Earn it against the creatures of this place, nothing " +
+                   "under the forty-fifth season counting, or buy the credit from " +
+                   "Demyphon and bring it back to me.\n" + Learned(player) + "\n";
+        }
+
+        /// <summary>
+        /// What the player actually holds, said plainly.
+        ///
+        /// Worth its own line because a rank and the spells behind it are not
+        /// the same thing, and when they disagree this is the only way to see
+        /// it from inside the game.
+        /// </summary>
+        private static string Learned(GamePlayer player)
+        {
+            string path = PathOf(player);
+
+            if (path == null)
+                return "You have taken no discipline yet, so there is nothing to teach you.";
+
+            List<Spell> known = new();
+
+            foreach (Spell spell in SkillBase.GetSpellList(path))
+            {
+                if (spell != null && spell.Level <= player.MLLevel)
+                    known.Add(spell);
+            }
+
+            if (known.Count == 0)
+                return "Of the " + path + " you hold nothing yet; its first art comes higher up.";
+
+            string text = "Of the " + path + " you hold " + known.Count + ":";
+
+            foreach (Spell spell in known)
+                text += "\n    " + spell.Name + "  (Master Level " + spell.Level + ")";
+
+            return text;
+        }
+
+        /// <summary>The disciplines, with the one being walked marked.</summary>
+        private string PathList(GamePlayer player)
+        {
+            if (!player.MLGranted)
+                return string.Empty;
+
+            string chosen = PathOf(player);
+            string text = chosen == null
+                ? "\nName a discipline and its arts open to you as you rise:\n"
+                : "\nName another and you take up its arts instead:\n";
+
+            foreach ((string key, string what) in Paths)
+                text += (key == chosen ? "  * [" : "  [") + key + "] -- " + what + "\n";
+
+            return text;
+        }
+
+        /// <summary>
         /// The eight Master Level paths, and what each one is for.
         ///
         /// Not class restricted, which is how it worked -- any class may walk
@@ -182,26 +265,6 @@ namespace DOL.GS.Scripts
             ("Stormlord",    "the sky turned against them -- storms, roots and ruin"),
             ("Warlord",      "holding a line, and keeping those behind it alive"),
         };
-
-        private void OfferPaths(GamePlayer player)
-        {
-            if (!player.MLGranted)
-                return;
-
-            string chosen = PathOf(player);
-            string text = chosen == null
-                ? "You have yet to choose your discipline. Name one, and its " +
-                  "arts open to you as you rise:\n\n"
-                : "You walk the path of the " + chosen + ". Name another and " +
-                  "you take up its arts instead:\n\n";
-
-            foreach ((string key, string what) in Paths)
-                text += "  [" + key + "] -- " + what + "\n";
-
-            // Eight lines of roughly seventy characters: nowhere near the
-            // client's 2048 byte packet ceiling, unlike the travel catalogue.
-            SayTo(player, eChatLoc.CL_PopupWindow, text);
-        }
 
         public override bool WhisperReceive(GameLiving source, string text)
         {
@@ -286,14 +349,13 @@ namespace DOL.GS.Scripts
             player.MLLine = index;
             player.SaveIntoDatabase();
 
-            SayTo(player, eChatLoc.CL_PopupWindow,
-                  "So be it. You are of the " + wanted + " now, and its arts " +
-                  "come to you as you rise through the Master Levels.");
-
             player.Out.SendMessage("You have taken up the path of the " + wanted + ".",
                                    eChatType.CT_Important, eChatLoc.CL_SystemWindow);
 
             Announce(player);
+
+            SayTo(player, eChatLoc.CL_PopupWindow,
+                  "So be it. You are of the " + wanted + " now.\n" + Learned(player));
             return true;
         }
 

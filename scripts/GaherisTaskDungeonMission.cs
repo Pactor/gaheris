@@ -77,7 +77,7 @@ namespace DOL.GS.Scripts
         /// </summary>
         private void NameTheBoss()
         {
-            if (TaskRegion == null || TDMissionType != eTDMissionType.Boss)
+            if (TaskRegion == null || string.IsNullOrEmpty(BossName))
                 return;
 
             foreach (GameObject obj in TaskRegion.Objects)
@@ -85,11 +85,29 @@ namespace DOL.GS.Scripts
                 if (obj is not GameNPC npc || npc.Name != BossName)
                     continue;
 
-                m_boss = npc;
-                m_bossTitle = FIRST_NAMES[Util.Random(FIRST_NAMES.Length - 1)] + " " +
-                              TITLES[Util.Random(TITLES.Length - 1)];
-                npc.Name = m_bossTitle;
-                npc.GuildName = BossName;
+                if (TDMissionType == eTDMissionType.Boss)
+                {
+                    m_boss = npc;
+                    m_bossTitle = FIRST_NAMES[Util.Random(FIRST_NAMES.Length - 1)] + " " +
+                                  TITLES[Util.Random(TITLES.Length - 1)];
+                    npc.Name = m_bossTitle;
+                    npc.GuildName = BossName;
+                }
+                else
+                {
+                    // No named creature on a clear or a count -- there was
+                    // never one on live, and a name standing in the dungeon
+                    // reads as a task you have not been given. He goes back to
+                    // being an ordinary big one of whatever he was made from,
+                    // which the template keeps in its guild line for exactly
+                    // this. He still counts towards the clear.
+                    if (!string.IsNullOrEmpty(npc.GuildName))
+                    {
+                        npc.Name = npc.GuildName;
+                        npc.GuildName = string.Empty;
+                    }
+                }
+
                 break;
             }
         }

@@ -132,8 +132,13 @@ namespace DOL.GS.Scripts
         ///
         /// Whether a player has ever come near it is not a guess about the
         /// map. It is a fact about what happened.
+        ///
+        /// Five hundred rather than a thousand, because a thousand still
+        /// reaches through a wall in a corridor dungeon and counted creatures
+        /// as met that were never reachable. Five hundred is about the range
+        /// at which something would have noticed you and come.
         /// </summary>
-        private const int MET = 1000;
+        private const int MET = 500;
 
         /// <summary>Wait until there is a real trail before moving anything.</summary>
         private const int TRAIL_BEFORE_MOVING = 5;
@@ -367,38 +372,44 @@ namespace DOL.GS.Scripts
         /// </summary>
         private void NameTheBoss()
         {
-            if (TaskRegion == null || string.IsNullOrEmpty(BossName))
+            if (TaskRegion == null)
                 return;
+
+            bool wanted = TDMissionType == eTDMissionType.Boss;
 
             foreach (GameObject obj in TaskRegion.Objects)
             {
-                if (obj is not GameNPC npc || npc.Name != BossName)
+                if (obj is not GameNPC npc || npc is GameMercenary ||
+                    npc.Brain is IControlledBrain)
                     continue;
 
-                if (TDMissionType == eTDMissionType.Boss)
+                // The core's own test for a named creature, and it has to be
+                // done this way round: MySQL compares case-insensitively by
+                // default, so asking the database which templates are
+                // capitalised answers nought however many there are. There are
+                // twenty-nine real ones in these dungeons -- Rat Matriarch,
+                // Batty Bill, Archivist Borath -- and they were always being
+                // treated as bosses.
+                if (npc.Name == npc.Name.ToLower())
+                    continue;
+
+                if (wanted && npc.Name == BossName && m_boss == null)
                 {
                     m_boss = npc;
                     m_bossTitle = FIRST_NAMES[Util.Random(FIRST_NAMES.Length - 1)] + " " +
                                   TITLES[Util.Random(TITLES.Length - 1)];
+                    npc.GuildName = npc.Name;
                     npc.Name = m_bossTitle;
-                    npc.GuildName = BossName;
-                }
-                else
-                {
-                    // No named creature on a clear or a count -- there was
-                    // never one on live, and a name standing in the dungeon
-                    // reads as a task you have not been given. He goes back to
-                    // being an ordinary big one of whatever he was made from,
-                    // which the template keeps in its guild line for exactly
-                    // this. He still counts towards the clear.
-                    if (!string.IsNullOrEmpty(npc.GuildName))
-                    {
-                        npc.Name = npc.GuildName;
-                        npc.GuildName = string.Empty;
-                    }
+                    continue;
                 }
 
-                break;
+                // Everything else loses its name. A clear or a count has no
+                // named creature in it -- one standing there reads as a task
+                // you were never given, which is exactly how it read.
+                npc.Name = string.IsNullOrEmpty(npc.GuildName)
+                    ? npc.Name.ToLower()
+                    : npc.GuildName.ToLower();
+                npc.GuildName = string.Empty;
             }
         }
 

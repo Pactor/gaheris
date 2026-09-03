@@ -1,34 +1,39 @@
 using System;
+using DOL.GS.PacketHandler;
 using DOL.GS.Quests;
 
 namespace DOL.GS.Scripts
 {
     /// <summary>
-    /// A taskmaster who will actually give you a task.
+    /// A taskmaster who gives you a task and takes you there.
     ///
-    /// The core's TaskMaster refuses everyone:
+    /// Two departures from the core, both forced by what is actually possible
+    /// here rather than by preference.
+    ///
+    /// The first is that it works at all. The core's TaskMaster refuses every
+    /// player outright --
     ///
     ///     //we need to disable them for players for now
     ///     if (player.Client.Account.PrivLevel == 1)
-    ///     {
-    ///         SayTo(player, "I'm sorry, Task Dungeons are currently disabled!");
-    ///         return true;
-    ///     }
     ///
-    /// Only a GM has ever been able to take one. That check sits at the top of
-    /// Interact, before anything else happens, so a subclass cannot call
-    /// through it -- base.Interact would hit the refusal. This is therefore a
-    /// copy of the core taskmaster with the gate removed, rather than an
-    /// override of it, and it stands on GameNPC directly for the same reason.
+    /// -- and that check sits above everything else in Interact, so a subclass
+    /// cannot call through it. This is a copy with the gate removed rather
+    /// than an override, and stands on GameNPC for the same reason.
     ///
-    /// Everything else is the core's, deliberately: the same conversation, the
-    /// same two dungeon shapes, the same mission construction. The one change
-    /// is that a player can now be given the assignment.
+    /// The second is that the taskmaster does the travelling. A task dungeon
+    /// entrance is a hole in the landscape: the server holds only a zonepoint
+    /// and the cave mouth is client terrain. It is in no database -- every
+    /// coordinate-bearing table in the reference dump was searched within 700
+    /// units of all fifteen known dungeon locations and there is nothing at
+    /// any of them -- and a marker cannot be built either, because the models
+    /// that look like a cave are static item models and do not render on an
+    /// NPC. So rather than send people to hunt for a hole that may no longer
+    /// be drawn, the taskmaster opens the way itself.
     ///
-    /// Long corridors are the ranged dungeons, labyrinths the melee ones --
-    /// and note the core's own quirk, kept here: a group always gets the
-    /// ranged shape and a solo player always the melee one, whichever they
-    /// asked for. The choice reads as flavour rather than as a setting.
+    /// That also makes two things possible the original could not do: going
+    /// back in after dying or stepping out, and dropping a task you do not
+    /// want. Both matter more when the entrance is a person rather than a
+    /// place you can walk back to.
     /// </summary>
     public class GaherisTaskMaster : GameNPC
     {
@@ -37,19 +42,22 @@ namespace DOL.GS.Scripts
             if (!base.Interact(player))
                 return false;
 
-            if (player.Mission == null)
+            if (Task(player) != null)
             {
                 SayTo(player,
-                    "I'm sure you're already aware that the guards protecting our towns often " +
-                    "pay bounties to young adventurers willing to help them deal with threats in " +
-                    "the area. We've decided to expand upon this idea and begin what we call the " +
-                    "Taskmaster program. Volunteers such as myself have been authorized to reward " +
-                    "those willing to confront the dangers lurking within our dungeons. If you " +
-                    "would like to assist I can give you such an [assignment] right now, and you " +
-                    "will be rewarded as soon as you complete it.");
+                    "You already have a task underway. I can [send] you back to it when you are " +
+                    "ready, or if it does not suit you I will [abandon] it and find you another.");
+                return true;
             }
-            else
-                SayTo(player, "You already have a task that requires completion.");
+
+            SayTo(player,
+                "I'm sure you're already aware that the guards protecting our towns often pay " +
+                "bounties to young adventurers willing to help them deal with threats in the " +
+                "area. We've decided to expand upon this idea and begin what we call the " +
+                "Taskmaster program. Volunteers such as myself have been authorized to reward " +
+                "those willing to confront the dangers lurking within our dungeons. If you would " +
+                "like to assist I can give you such an [assignment] right now, and you will be " +
+                "rewarded as soon as you complete it.");
 
             return true;
         }
@@ -59,47 +67,61 @@ namespace DOL.GS.Scripts
             if (!base.WhisperReceive(source, str))
                 return false;
 
-            if (source is not GamePlayer player || player.Mission != null)
+            if (source is not GamePlayer player)
                 return false;
 
             switch (str.ToLower())
             {
                 case "assignment":
+                    if (Task(player) != null)
+                        break;
+
                     SayTo(player,
                         "Based on your prowess and preference in engaging the enemy, I have " +
                         "assignments located in the [labyrinthine dungeons] for close quarter " +
-                        "melee and tasks awaiting in [long corridors] for those who prefer ranged " +
-                        "attacks. Select which you would prefer and I shall assign a task for you " +
-                        "to complete, or if you wish I can go into more detail about the " +
-                        "Taskmaster [program].");
+                        "melee and tasks awaiting in [long corridors] for those who prefer " +
+                        "ranged attacks. Select which you would prefer, or I can go into more " +
+                        "detail about the Taskmaster [program].");
                     break;
 
                 case "program":
                     SayTo(player,
-                        "Unlike the tasks which you can receive from guards by using /whisper task " +
-                        "when speaking to one, the taskmaster program is available to adventurers " +
-                        "across a wide range of experience. You'll find taskmasters in many of our " +
-                        "towns, ready to offer you the chance to aid the realm by confronting some " +
-                        "of the monsters which inhabit a nearby dungeon.");
+                        "The taskmaster program is open to adventurers of any experience. " +
+                        "You'll find us in many of our towns, ready to offer you the chance to " +
+                        "aid the realm by confronting the monsters below. I will open the way " +
+                        "myself -- the old entrances have long since fallen in.");
                     break;
 
                 case "long corridors":
                 case "labyrinthine dungeons":
                     GiveTask(player);
                     break;
+
+                case "send":
+                case "enter":
+                    Send(player);
+                    break;
+
+                case "abandon":
+                    Abandon(player);
+                    break;
             }
 
             return true;
         }
 
+        /// <summary>The task in force for this player, their group's first.</summary>
+        private static TaskDungeonMission Task(GamePlayer player)
+        {
+            if (player.Group?.Mission is TaskDungeonMission shared)
+                return shared;
+
+            return player.Mission as TaskDungeonMission;
+        }
+
         private void GiveTask(GamePlayer player)
         {
-            // Not if the player already has one, and not if the group does --
-            // a task belongs to the whole group, so one is one.
-            if (player.Mission != null)
-                return;
-
-            if (player.Group != null && player.Group.Mission != null)
+            if (Task(player) != null)
                 return;
 
             TaskDungeonMission mission;
@@ -112,9 +134,8 @@ namespace DOL.GS.Scripts
                 player.Mission = mission;
             }
 
-            // An empty dungeon is worse than no task at all: it cannot be
-            // finished and it blocks the player from taking another. If the
-            // instance came up with nothing to kill, say so and stand down.
+            // An empty dungeon cannot be finished and blocks the player from
+            // taking another, so stand the task down rather than hand it over.
             if (mission.TaskRegion == null)
             {
                 player.Mission = null;
@@ -132,19 +153,84 @@ namespace DOL.GS.Scripts
             switch (mission.TDMissionType)
             {
                 case TaskDungeonMission.eTDMissionType.Clear:
-                    msg += " Clear " + mission.TaskRegion.Description + " of creatures. Good luck!";
+                    msg += " Clear " + mission.TaskRegion.Description + " of creatures.";
                     break;
                 case TaskDungeonMission.eTDMissionType.Boss:
                     msg += " " + mission.BossName + " has taken over " +
-                           mission.TaskRegion.Description + " and needs to be disposed of. Good luck!";
+                           mission.TaskRegion.Description + " and needs to be disposed of.";
                     break;
                 case TaskDungeonMission.eTDMissionType.Specific:
                     msg += " Please remove " + mission.Total + " " + mission.TargetName +
-                           " from " + mission.TaskRegion.Description + "! The entrance is nearby.";
+                           " from " + mission.TaskRegion.Description + ".";
                     break;
             }
 
-            SayTo(player, msg);
+            SayTo(player, msg + " I will open the way now.");
+            Send(player);
+        }
+
+        /// <summary>
+        /// Put the player -- and anyone they hired -- inside their dungeon.
+        ///
+        /// The destination is the instance's own entrance, the row loaded out
+        /// of instancexelement when the region was built, which is what the
+        /// core's jump point handler uses too.
+        /// </summary>
+        private void Send(GamePlayer player)
+        {
+            TaskDungeonMission task = Task(player);
+
+            if (task == null)
+            {
+                SayTo(player, "You have no task to return to. Ask me for an [assignment].");
+                return;
+            }
+
+            GameLocation inside = task.TaskRegion?.InstanceEntranceLocation;
+
+            if (inside == null)
+            {
+                SayTo(player, "The way below has closed. Let me [abandon] this and find you another.");
+                return;
+            }
+
+            if (player.InCombat)
+            {
+                SayTo(player, "Not while you are fighting.");
+                return;
+            }
+
+            player.Out.SendMessage("The ground opens, and you climb down into the dark.",
+                                   eChatType.CT_System, eChatLoc.CL_SystemWindow);
+            player.MoveTo(inside.RegionID, inside.X, inside.Y, inside.Z, inside.Heading);
+
+            foreach (GameMercenary hire in MercenaryManager.GetCompany(player))
+            {
+                if (hire != null && hire.IsAlive)
+                    hire.MoveTo(inside.RegionID,
+                                inside.X + Util.Random(-120, 120),
+                                inside.Y + Util.Random(-120, 120),
+                                inside.Z, inside.Heading);
+            }
+        }
+
+        /// <summary>
+        /// Drop the task. ExpireMission is the core's own way out and clears
+        /// the owner properly, whether the task belongs to the player or to
+        /// the group.
+        /// </summary>
+        private void Abandon(GamePlayer player)
+        {
+            TaskDungeonMission task = Task(player);
+
+            if (task == null)
+            {
+                SayTo(player, "You have nothing to abandon.");
+                return;
+            }
+
+            task.ExpireMission();
+            SayTo(player, "Consider it forgotten. Ask me for an [assignment] when you want another.");
         }
     }
 }

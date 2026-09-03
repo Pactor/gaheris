@@ -13,7 +13,7 @@ requires you to build it.
 ```
 OpenDAoC-Core         stock, pulled as a Docker image -- 0 files changed
 OpenDAoC-Database     stock -- 0 files changed
-this repo             34 scripts, 91 migrations, a small compose delta
+this repo             46 scripts, 95 migrations, a small compose delta
 ```
 
 ---
@@ -403,10 +403,11 @@ that may no longer be drawn, the taskmaster opens the way itself, and can drop
 a task you do not want. Leaving the dungeon ends the task, and so does dying,
 which is how it worked on live.
 
-Boss missions could never be drawn before: the core decides an NPC is a boss
-by looking for a capital letter in its name, and all 230 templates these
-dungeons use are lower case. Each dungeon now has a named boss of its own,
-renamed again per task, and killing him finishes the mission on his own.
+Killing the named creature finishes a boss mission on its own, which is the
+point of that task -- slip past the aggro and take the one thing you were sent
+for. He is renamed per task, so the same dungeon does not hand out the same
+name twice, and on a clear or a count no creature is named at all, because
+one standing there reads as a task you were never given.
 
 The mission counts kills itself, because the core's cannot. It sizes an array
 by mob count and then indexes it by the world object id of whatever died:
@@ -420,6 +421,44 @@ Every kill reaches past the end of the array, and `GamePlayer.Notify` has no
 `try`/`catch` around `Mission.Notify`, so that exception escapes into the kill
 handler. Ours surveys what is still standing in the instance after each kill
 instead, skipping hired companions so a clear task can actually finish.
+
+Nothing respawns. Instance creatures are built as plain `GameNPC`s, which
+leaves `m_respawnInterval` at nought -- and nought does not mean never, it
+means work one out. Everything came back a few minutes after it died, so the
+count stood still while the dungeon was being cleared.
+
+**There is a way out.** There was not before. Leaving goes through a zonepoint
+looked up by the id the client sends, and not one of the 120 task dungeon
+regions has a row -- so the door shut again and the player was sealed in with
+no recourse but a server restart. The id cannot be supplied from here; it
+comes out of the client's own map data. So the exit is taken rather than
+described: a door used inside a task dungeon returns the player and their
+companions to where the taskmaster found them. Every other door in the world
+is handed to the core handler untouched.
+
+### The dungeons teach themselves
+
+These maps are not ours. Each of the 120 regions is 8x8 zone units -- 65,536
+game units square -- and the only coordinate we hold for any of them is an
+entrance marker that turns out not to be where players arrive: standing in
+one, the nearest entrance in the whole table was ten thousand units away.
+
+Three layouts were built on that marker -- a corridor, then three arms, then
+packs along them -- and each was a better guess resting on the same bad
+coordinate. On a map that size the result is always the same: a knot of
+creatures somewhere unreachable and a clear task stranded in the twenties.
+
+So the map is not guessed at any more. Every position a player occupies inside
+the instance is, by definition, ground that can be stood on and reached, and
+that trail is what the dungeon is laid out from. Creatures the player never
+came within five hundred units of are somewhere they cannot get to, however
+near they look on a straight line -- a corridor dungeon puts solid rock
+between things that are fifteen hundred units apart -- and those are moved
+onto walked ground, out of sight, a few at a time.
+
+The trail is kept between visits, keyed on the dungeon rather than the
+instance, so the first person to walk one teaches it permanently and every
+later run starts knowing where the floor is.
 
 ### 11. Atlantis &mdash; Master Levels, artifacts, encounters
 
@@ -471,7 +510,36 @@ the spell side: 81 spell lines, 1,886 spells, 1,667 line entries and 431 style
 procs. The Vampiir having no styles at all is why it had no attack icon to put
 on the bar.
 
-### 14. Odds and ends
+### 14. Classes that pay for their power &mdash; `GaherisVampiirPower.cs`
+
+A Vampiir and a Mauler do not regenerate power; they take it from a fight.
+Only half of that is in the core, and for the Maulers none of it.
+
+`AttackComponent` pays a Vampiir for landing a blow and that is the only place
+in the whole server where one is given power at all. Being hit grants nothing,
+so it filled at half the rate it should, and the missing half is the one that
+pays for standing in the middle of a fight.
+
+The Maulers are worse off. They carry a power bar keyed to Strength, and every
+means of filling it names the three of them beside the Vampiir and declines --
+`RegenBuff`, `PowerHealSpellHandler`, the Perfecter power heal. That is
+correct, because a Mauler is meant to earn it. Nothing granted them any. The
+bar filled once and never again, which makes Fist Wraps and Power Strikes
+something you use at the start of an evening and not after.
+
+Both now earn power from blows landed and blows taken, on the core's own
+curve. `gaheris_vampiir_power_rate` scales it.
+
+The same class of gap runs the other way. A Vampiir refuses every stat buff --
+`SingleStatBuff` and `DualStatBuff` check its abilities and apply nothing --
+and regeneration buffs are refused to the Vampiir and all three Maulers. The
+cast completes; only the effect is declined. A hired healer therefore casts,
+sees no effect, and casts again forever: three of them doing that at once
+looked exactly like a fight over the same buff. Rather than encode which class
+refuses what, a hire is allowed to find out -- three casts at one target for
+one slot with nothing to show for it and it stops offering that buff there.
+
+### 15. Odds and ends
 
 | | |
 |---|---|
@@ -480,6 +548,32 @@ on the bar.
 | `sql/57` | doppelgangers (the mobs; the invasion event itself is not built) |
 | `sql/58` | Hall of the Corrupt, 2,676 placements |
 | `sql/59` | the 1.129b class rebalance |
+
+### 16. Diagnostics kept in the tree
+
+Two of these earned their place and are worth knowing about before something
+looks mysterious.
+
+**Unhandled client packets.** 176 of the 256 packet codes had no handler, and
+the core drops those in silence -- no log, no warning. Anything the client
+sends on one is a feature that quietly does nothing, and there is no way to
+tell that from a key that was never pressed. Every code is now claimed and
+logs what it received, along with what the player was doing at the time, to
+the console and to `scripts/unknown-packets.log`. See
+[docs/unhandled-packets.md](docs/unhandled-packets.md).
+
+That question also turned up the rule that explains a whole class of silent
+failures: a packet handler is registered only if its **namespace ends with the
+client version**, the literal `v168`. A handler in `DOL.GS.Scripts` is skipped
+without a word however correct it is.
+
+**Characters saved inside instances.** An instance dies with the server, and a
+character autosaved in one keeps that region id. On the next boot there is no
+such region, and what the player sees is the client reaching character select
+and closing -- with nothing in the server log but a disconnect. Autosave runs
+every ten minutes and there is no shutdown handler, so ten minutes in a task
+dungeon plus a restart is all it takes. Any character holding an instance
+region at boot is stale by definition and goes back to its bind point.
 
 ---
 

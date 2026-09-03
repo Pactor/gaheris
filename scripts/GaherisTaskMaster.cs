@@ -260,6 +260,11 @@ namespace DOL.GS.Scripts
                 return;
             }
 
+            // Where they are standing now is where the way out will put them.
+            // The entrance is a person rather than a place, so without this
+            // the exit has nowhere honest to go.
+            TaskDungeonReturn.Remember(player);
+
             player.Out.SendMessage("The ground opens, and you climb down into the dark.",
                                    eChatType.CT_System, eChatLoc.CL_SystemWindow);
             player.MoveTo(inside.RegionID, inside.X, inside.Y, inside.Z, inside.Heading);

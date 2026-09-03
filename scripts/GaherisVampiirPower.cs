@@ -8,7 +8,8 @@ using DOL.GS.ServerProperties;
 namespace DOL.GS.Scripts
 {
     /// <summary>
-    /// A Vampiir draws power from blows taken as well as blows landed.
+    /// A Vampiir draws power from blows taken as well as blows landed, and a
+    /// Mauler draws it at all.
     ///
     /// Only half of that is in the core. AttackComponent.MakeAttack grants
     /// power when a Vampiir hits something --
@@ -30,16 +31,28 @@ namespace DOL.GS.Scripts
     /// level, which is there because damage grows with level and the share
     /// taken from it should not.
     ///
+    /// The Maulers are worse off still. They carry a power bar -- their class
+    /// keys mana to Strength -- and the game refuses them every way of filling
+    /// it: RegenBuff, PowerHealSpellHandler and the Perfecter power heal all
+    /// name the three of them alongside the Vampiir and decline. That is
+    /// correct, because a Mauler is supposed to earn its power by fighting.
+    /// Nothing in the server grants it any. So the bar fills once, drains, and
+    /// never recovers -- which makes Fist Wraps and Power Strikes something
+    /// you use at the start of an evening and not again.
+    ///
+    /// They are given the same deal as the Vampiir here: power for landing a
+    /// blow and for taking one, on the core's own curve.
+    ///
     /// Power comes only from a blow that actually lands. A block, a parry or
     /// an evade is a blow that did not happen.
     /// </summary>
     public static class VampiirPower
     {
         [ServerProperty("gaheris", "gaheris_vampiir_power_rate",
-            "How fast a Vampiir draws power from a fight, as a multiplier on " +
+            "How fast a Vampiir or Mauler draws power from a fight, as a multiplier on " +
             "the core's own formula. 1.0 grants exactly what the core grants " +
-            "for landing a blow, now also for taking one. Above 1.0 tops up " +
-            "both sides by the difference.", 1.0)]
+            "a Vampiir for landing a blow -- now also for taking one, and for " +
+            "the Maulers, who are granted nothing at all by the core.", 1.0)]
         public static double POWER_RATE;
 
         [ScriptLoadedEvent]
@@ -56,6 +69,13 @@ namespace DOL.GS.Scripts
             GameEventMgr.RemoveHandler(GameLivingEvent.AttackFinished, new DOLEventHandler(Landed));
         }
 
+        /// <summary>Classes that pay for their power with violence.</summary>
+        private static bool Feeds(GamePlayer player)
+        {
+            return player.CharacterClass is ClassVampiir
+                or ClassMaulerAlb or ClassMaulerMid or ClassMaulerHib;
+        }
+
         /// <summary>The half the core never had: power for being hit.</summary>
         private static void Struck(DOLEvent e, object sender, EventArgs args)
         {
@@ -66,19 +86,24 @@ namespace DOL.GS.Scripts
         }
 
         /// <summary>
-        /// The half the core does have, topped up only when the rate has been
-        /// raised. At 1.0 this grants nothing, because the core has already
-        /// paid for the blow by the time this runs.
+        /// Power for landing a blow.
+        ///
+        /// The core already pays a Vampiir for this, so it only tops that up
+        /// when the rate has been raised. A Mauler is paid nothing by anybody,
+        /// so it gets the whole share.
         /// </summary>
         private static void Landed(DOLEvent e, object sender, EventArgs args)
         {
-            if (POWER_RATE <= 1.0)
-                return;
-
             if (sender is not GamePlayer player || args is not AttackFinishedEventArgs swing)
                 return;
 
-            Draw(player, swing.AttackData, POWER_RATE - 1.0);
+            bool coreAlreadyPaid = player.CharacterClass is ClassVampiir;
+            double share = coreAlreadyPaid ? POWER_RATE - 1.0 : POWER_RATE;
+
+            if (share <= 0)
+                return;
+
+            Draw(player, swing.AttackData, share);
         }
 
         /// <summary>
@@ -89,7 +114,7 @@ namespace DOL.GS.Scripts
         {
             try
             {
-                if (ad == null || player.CharacterClass is not ClassVampiir || !player.IsAlive)
+                if (ad == null || !Feeds(player) || !player.IsAlive)
                     return;
 
                 if (ad.AttackResult is not eAttackResult.HitStyle and not eAttackResult.HitUnstyled)

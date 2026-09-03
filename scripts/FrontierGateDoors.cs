@@ -1,246 +1,256 @@
 using System;
 using System.Collections.Generic;
+using DOL.Events;
 using DOL.GS.PacketHandler;
-using DOL.GS.PacketHandler.Client.v168;
 
 namespace DOL.GS.Scripts
 {
     /// <summary>
-    /// The border keep doors are the way to New Frontiers.
+    /// Where the frontier is entered, and how the old one is kept shut.
     ///
-    /// They are switch-operated gates that open onto the old frontier, which
-    /// is not anywhere anyone should be going any more. So the switches are
-    /// dead -- the doors are locked in the database, and CanBeOpenedViaInteraction
-    /// is !Locked, so nothing opens them -- and clicking one crosses you
-    /// instead.
+    /// Each border keep has two doors. The one facing the realm stays an
+    /// ordinary door -- locking it shuts people in, which is exactly what
+    /// happened when both were locked. The one facing the frontier never opens
+    /// again: touching it carries you to New Frontiers instead.
     ///
-    /// This intercepts the door packet rather than changing the door, because
-    /// a door cannot be changed. DoorMgr builds every one as a bare GameDoor
-    /// and the table has no ClassType column, so there is no way to give a
-    /// door custom behaviour through data. A packet handler is the seam that
-    /// does exist: PacketProcessor loads the core's handlers first and then
-    /// walks ScriptMgr.Scripts into the same array, so a script handler for
-    /// the same packet code replaces the core's.
+    /// Which door faces which way is not guessed. The zonepoints that bring
+    /// players home from the frontier land on the realm side of each keep, so
+    /// the door nearer that landing point is the realm door and the far one
+    /// faces out.
     ///
-    /// Everything that is not a border keep door is handed straight back to
-    /// the core handler untouched. The packet is rewound first -- PacketIn is
-    /// a MemoryStream, so Position is settable -- because reading the door id
-    /// has already moved it and the core would otherwise read from the middle
-    /// of its own packet.
+    /// The crossing works by replacing the door OBJECT, not by locking it and
+    /// not by intercepting packets. A locked door is worse than useless here:
+    /// the core's handler reads
+    ///
+    ///     if (client.Account.PrivLevel == 1)
+    ///         if (!door.Locked) { ... UseDoor(); }
+    ///
+    /// so for an ordinary player a locked door falls straight through and
+    /// nothing happens at all -- which is what "clicking does nothing" was.
+    /// Unlocked, that same path ends in door.Open(player), and Open is
+    /// virtual. So the six doors are swapped at startup for a subclass that
+    /// overrides it. DoorMgr.RegisterDoor is public and keyed by door id,
+    /// which is the seam that makes the swap possible.
     /// </summary>
-    [PacketHandler(PacketHandlerType.TCP, eClientPackets.DoorRequest,
-                   "Border keep doors cross to New Frontiers", eClientStatus.PlayerInGame)]
-    public class FrontierGateDoors : DoorRequestHandler
+    public static class FrontierGates
     {
-        private const ushort FRONTIER = 163;
+        public const ushort FRONTIER = 163;
 
-        /// <summary>A border keep's two doors, and where they open onto.</summary>
-        private readonly struct Gate
+        /// <summary>An arrival camp in New Frontiers.</summary>
+        public readonly struct Camp
         {
-            public readonly int ToX, ToY, ToZ;
-            public readonly ushort ToHeading;
-            public readonly string Camp;
+            public readonly int X, Y, Z;
+            public readonly ushort Heading;
+            public readonly string Name;
 
-            public Gate(int toX, int toY, int toZ, ushort toHeading, string camp)
+            public Camp(int x, int y, int z, ushort heading, string name)
             {
-                ToX = toX; ToY = toY; ToZ = toZ; ToHeading = toHeading; Camp = camp;
+                X = x; Y = y; Z = z; Heading = heading; Name = name;
             }
         }
 
+        public static readonly Camp ForestSauvage = new(653995, 615343, 9411, 2000, "Forest Sauvage");
+        public static readonly Camp Snowdonia     = new(615354, 677360, 9372, 1648, "Snowdonia");
+        public static readonly Camp Uppland       = new(649670, 313898, 8797, 1006, "Uppland");
+        public static readonly Camp Yggdra        = new(714416, 366163, 9096,  268, "Yggdra Forest");
+        public static readonly Camp Cruachan      = new(396089, 616403, 9232, 1966, "Cruachan Gorge");
+        public static readonly Camp Collory       = new(433899, 678939, 9314, 2500, "Mount Collory");
+
         /// <summary>
-        /// Door id to destination. The ids are the core's own border keep
-        /// list, from GameDoor._borderKeepDoorIds -- six pairs, one pair per
-        /// keep -- so this covers every border keep door there is and nothing
-        /// else.
+        /// The frontier-facing door of each border keep, and the camp it opens
+        /// onto. Its partner -- the realm-facing one -- is deliberately absent
+        /// and stays an ordinary door.
         /// </summary>
-        private static readonly Dictionary<int, Gate> Gates = new()
+        private static readonly Dictionary<int, Camp> OuterDoors = new()
         {
-            // Castle Sauvage -> Forest Sauvage
-            { 11020501, new Gate(653995, 615343, 9411, 2000, "Forest Sauvage") },
-            { 11020502, new Gate(653995, 615343, 9411, 2000, "Forest Sauvage") },
-            // Snowdonia Fortress -> Snowdonia
-            { 12000101, new Gate(615354, 677360, 9372, 1648, "Snowdonia") },
-            { 12000102, new Gate(615354, 677360, 9372, 1648, "Snowdonia") },
-            // Vindsaul Faste -> Yggdra Forest
-            { 102093501, new Gate(714416, 366163, 9096, 268, "Yggdra Forest") },
-            { 102093502, new Gate(714416, 366163, 9096, 268, "Yggdra Forest") },
-            // Svasud Faste -> Uppland
-            { 111161301, new Gate(649670, 313898, 8797, 1006, "Uppland") },
-            { 111161302, new Gate(649670, 313898, 8797, 1006, "Uppland") },
-            // Druim Cain -> Mount Collory
-            { 206016801, new Gate(433899, 678939, 9314, 2500, "Mount Collory") },
-            { 206016802, new Gate(433899, 678939, 9314, 2500, "Mount Collory") },
-            // Druim Ligen -> Cruachan Gorge
-            { 207156901, new Gate(396089, 616403, 9232, 1966, "Cruachan Gorge") },
-            { 207156902, new Gate(396089, 616403, 9232, 1966, "Cruachan Gorge") },
+            { 11020502,  ForestSauvage },   // Castle Sauvage
+            { 12000102,  Snowdonia },       // Snowdonia Fortress
+            { 102093502, Yggdra },          // Vindsaul Faste
+            { 111161301, Uppland },         // Svasud Faste
+            { 206016801, Collory },         // Druim Cain
+            { 207156901, Cruachan },        // Druim Ligen
         };
 
-        protected override void HandlePacketInternal(GameClient client, GSPacketIn packet)
+        /// <summary>
+        /// The border keeps themselves. Three of them -- Castle Sauvage,
+        /// Snowdonia Fortress and Svasud Faste -- physically STAND in old
+        /// frontier zones, so the safety net below has to leave a hole around
+        /// each or a player could never stand on the keep they came to use.
+        /// </summary>
+        private static readonly (ushort Region, int X, int Y)[] BorderKeeps =
         {
-            long start = packet.Position;
-            int doorId = (int) packet.ReadInt();
-            packet.Position = start;
+            (1,   585237, 477238),   // Castle Sauvage
+            (1,   528529, 358945),   // Snowdonia Fortress
+            (100, 704018, 738932),   // Vindsaul Faste
+            (100, 766188, 669650),   // Svasud Faste
+            (200, 421251, 486389),   // Druim Cain
+            (200, 334165, 420570),   // Druim Ligen
+        };
 
-            if (Gates.TryGetValue(doorId, out Gate gate) &&
-                Cross(client.Player, doorId, gate))
-                return;
-
-            base.HandlePacketInternal(client, packet);
-        }
+        private const int KEEP_CLEARANCE = 5000;
+        private const int ZONE_SIZE = 65536;
 
         /// <summary>
-        /// Take the player across. Returns false to let the core have the
-        /// door back -- if they are too far away to be touching it, or busy.
+        /// The twelve leftover frontier zones, and the camp each one's strays
+        /// belong in. Bounds are the zone's own, from the zones table: offset
+        /// times 8192, eight by eight.
         /// </summary>
-        private static bool Cross(GamePlayer player, int doorId, Gate gate)
+        private static readonly (ushort Region, int X, int Y, string Zone, Camp To)[] OldFrontier =
         {
-            if (player == null || !player.IsAlive)
-                return false;
+            (1,   565248, 417792, "Forest Sauvage",     ForestSauvage),
+            (1,   499712, 303104, "Snowdonia",          Snowdonia),
+            (1,   565248, 352256, "Pennine Mountains",  ForestSauvage),
+            (1,   598016, 286720, "Hadrian's Wall",     ForestSauvage),
+            (100, 720896, 606208, "Uppland",            Uppland),
+            (100, 655360, 671744, "Yggdra Forest",      Yggdra),
+            (100, 655360, 606208, "Jamtland Mountains", Uppland),
+            (100, 589824, 573440, "Odin's Gate",        Uppland),
+            (200, 385024, 417792, "Mount Collory",      Collory),
+            (200, 319488, 352256, "Cruachan Gorge",     Cruachan),
+            (200, 385024, 352256, "Breifine",           Cruachan),
+            (200, 417792, 286720, "Emain Macha",        Cruachan),
+        };
 
-            // Border keep doors are reached from further out than ordinary
-            // ones -- the core allows WORLD_PICKUP_DISTANCE * 3 for exactly
-            // these -- so match that rather than inventing a range. If the
-            // door is not loaded or the player is nowhere near it, hand the
-            // packet back and let the core answer however it normally would.
-            GameDoorBase door = DoorMgr.GetDoorByID(doorId);
+        [GameServerStartedEvent]
+        public static void OnServerStarted(DOLEvent e, object sender, EventArgs args)
+        {
+            int swapped = 0;
 
-            if (door == null)
-                return false;
-
-            int reach = ServerProperties.Properties.WORLD_PICKUP_DISTANCE * 3;
-
-            if (!player.IsWithinRadius(door, reach))
-                return false;
-
-            if (player.InCombat)
+            // Doors are loaded by DoorMgr.Init during startup, so by now they
+            // exist and can be exchanged for ours.
+            foreach (KeyValuePair<int, Camp> gate in OuterDoors)
             {
-                player.Out.SendMessage("You cannot cross while you are fighting.",
-                                       eChatType.CT_System, eChatLoc.CL_SystemWindow);
-                return true;
+                GameDoorBase old = DoorMgr.GetDoorByID(gate.Key);
+
+                if (old?.DbDoor == null)
+                    continue;
+
+                FrontierGateDoor mine = new() { Opens = gate.Value };
+                mine.LoadFromDatabase(old.DbDoor);
+
+                old.RemoveFromWorld();
+                DoorMgr.UnregisterDoor(gate.Key);
+
+                mine.AddToWorld();
+                DoorMgr.RegisterDoor(mine);
+                swapped++;
             }
 
-            player.Out.SendMessage(
-                "You pass through the gate, and " + gate.Camp + " opens ahead of you.",
-                eChatType.CT_System, eChatLoc.CL_SystemWindow);
+            int nets = 0;
 
-            player.MoveTo(FRONTIER, gate.ToX, gate.ToY, gate.ToZ, gate.ToHeading);
+            foreach ((ushort region, int x, int y, string zone, Camp to) in OldFrontier)
+            {
+                Region r = WorldMgr.GetRegion(region);
 
-            // Hired companions cross with their employer.
+                if (r == null)
+                    continue;
+
+                r.AddArea(new StrayArea(zone, x, y, to));
+                nets++;
+            }
+
+            Console.WriteLine("Frontier gates: " + swapped + " doors open onto New Frontiers, " +
+                              nets + " old frontier zones send strays there");
+        }
+
+        /// <summary>Is this player close enough to a border keep to be left alone?</summary>
+        public static bool AtABorderKeep(GamePlayer player)
+        {
+            foreach ((ushort region, int x, int y) in BorderKeeps)
+            {
+                if (player.CurrentRegionID != region)
+                    continue;
+
+                long dx = x - player.X;
+                long dy = y - player.Y;
+
+                if (dx * dx + dy * dy < (long) KEEP_CLEARANCE * KEEP_CLEARANCE)
+                    return true;
+            }
+
+            return false;
+        }
+
+        public static void Send(GamePlayer player, Camp camp, string how)
+        {
+            player.Out.SendMessage(how, eChatType.CT_System, eChatLoc.CL_SystemWindow);
+            player.MoveTo(FRONTIER, camp.X, camp.Y, camp.Z, camp.Heading);
+
             foreach (GameMercenary hire in MercenaryManager.GetCompany(player))
             {
                 if (hire != null && hire.IsAlive)
-                    hire.MoveTo(FRONTIER,
-                                gate.ToX + Util.Random(-250, 250),
-                                gate.ToY + Util.Random(-250, 250),
-                                gate.ToZ, gate.ToHeading);
+                    hire.MoveTo(FRONTIER, camp.X + Util.Random(-250, 250),
+                                camp.Y + Util.Random(-250, 250), camp.Z, camp.Heading);
+            }
+        }
+
+        /// <summary>
+        /// A whole leftover frontier zone, watching for anyone who ends up in
+        /// it. There is no route into these any more, but a bind point, a
+        /// release, a summon or a stray zonepoint could still put someone
+        /// there, and the old frontier is not somewhere to be stranded.
+        ///
+        /// Staff are exempt: someone with a privilege level is there on
+        /// purpose, probably to look at exactly this.
+        /// </summary>
+        private class StrayArea : Area.Square
+        {
+            private readonly Camp _to;
+
+            public StrayArea(string zone, int x, int y, Camp to)
+                : base("old " + zone, x, y, ZONE_SIZE, ZONE_SIZE)
+            {
+                _to = to;
             }
 
-            return true;
+            public override void OnPlayerEnter(GamePlayer player)
+            {
+                base.OnPlayerEnter(player);
+
+                if (player == null || !player.IsAlive || player.Client.Account.PrivLevel > 1)
+                    return;
+
+                // Three border keeps stand inside these zones. Someone at one
+                // of them is exactly where they meant to be.
+                if (AtABorderKeep(player))
+                    return;
+
+                FrontierGates.Send(player, _to,
+                    "This ground was left behind when the frontier moved. " +
+                    _to.Name + " takes you in.");
+            }
         }
     }
-}
 
-namespace DOL.GS.Scripts
-{
     /// <summary>
-    /// The way back out, standing in each New Frontiers arrival camp.
+    /// The frontier-facing door of a border keep. It does not open; it takes
+    /// you across.
     ///
-    /// The border keep doors only exist in the realm regions, so clicking a
-    /// door to come home is not something the frontier side can offer -- there
-    /// is no door there to click. This is its counterpart: the same stone, in
-    /// the camp the gate delivers you to, sending you back to the keep you
-    /// came through.
-    ///
-    /// It works out which keep from where it stands, so the six of them need
-    /// no configuration beyond being placed in the right camp.
+    /// Open is the seam because that is where the core's handler ends up for
+    /// an ordinary player at an unlocked door -- door.Open(player), with the
+    /// player passed in as the opener. Never calling base means the door never
+    /// actually swings, which is the "locked" this gate needs: nobody walks
+    /// through it into the old frontier.
     /// </summary>
-    public class FrontierReturn : GameNPC
+    public class FrontierGateDoor : GameDoor
     {
-        private readonly struct Way
+        public FrontierGates.Camp Opens { get; set; }
+
+        public override void Open(GameLiving opener = null)
         {
-            public readonly int CampX, CampY;
-            public readonly ushort Region;
-            public readonly int ToX, ToY, ToZ;
-            public readonly ushort ToHeading;
-            public readonly string Keep;
-
-            public Way(int campX, int campY, ushort region,
-                       int toX, int toY, int toZ, ushort toHeading, string keep)
-            {
-                CampX = campX; CampY = campY; Region = region;
-                ToX = toX; ToY = toY; ToZ = toZ; ToHeading = toHeading; Keep = keep;
-            }
-        }
-
-        private static readonly Way[] Ways =
-        {
-            new(653995, 615343, 1,   584151, 477177, 2600, 2000, "Castle Sauvage"),
-            new(615354, 677360, 1,   527543, 358900, 8320, 1648, "Snowdonia Fortress"),
-            new(649670, 313898, 100, 767242, 669591, 5736, 1006, "Svasud Faste"),
-            new(714416, 366163, 100, 704110, 738883, 5704,  268, "Vindsaul Faste"),
-            new(396089, 616403, 200, 334435, 419941, 5184, 1966, "Druim Ligen"),
-            new(433899, 678939, 200, 421156, 486429, 1976, 2500, "Druim Cain"),
-        };
-
-        private bool Nearest(out Way found)
-        {
-            found = default;
-            double best = double.MaxValue;
-
-            foreach (Way w in Ways)
-            {
-                double dx = w.CampX - X;
-                double dy = w.CampY - Y;
-                double d = dx * dx + dy * dy;
-
-                if (d < best)
-                {
-                    best = d;
-                    found = w;
-                }
-            }
-
-            return best < 4000.0 * 4000.0;
-        }
-
-        public override bool AddToWorld()
-        {
-            if (!base.AddToWorld())
-                return false;
-
-            if (Nearest(out Way w))
-                GuildName = "Return to " + w.Keep;
-
-            return true;
-        }
-
-        public override bool Interact(GamePlayer player)
-        {
-            if (!base.Interact(player))
-                return false;
-
-            if (!Nearest(out Way w))
-                return false;
+            if (opener is not GamePlayer player)
+                return;   // Deliberately not base.Open -- this gate stays shut.
 
             if (player.InCombat)
             {
                 player.Out.SendMessage("You cannot cross while you are fighting.",
                                        eChatType.CT_System, eChatLoc.CL_SystemWindow);
-                return true;
+                return;
             }
 
-            player.Out.SendMessage("The stone takes you back to " + w.Keep + ".",
-                                   eChatType.CT_System, eChatLoc.CL_SystemWindow);
-            player.MoveTo(w.Region, w.ToX, w.ToY, w.ToZ, w.ToHeading);
-
-            foreach (GameMercenary hire in MercenaryManager.GetCompany(player))
-            {
-                if (hire != null && hire.IsAlive)
-                    hire.MoveTo(w.Region, w.ToX + Util.Random(-250, 250),
-                                w.ToY + Util.Random(-250, 250), w.ToZ, w.ToHeading);
-            }
-
-            return true;
+            FrontierGates.Send(player, Opens,
+                "The gate will not open. The frontier takes you instead, and " +
+                Opens.Name + " is ahead of you.");
         }
     }
 }

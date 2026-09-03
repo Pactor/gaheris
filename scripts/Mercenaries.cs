@@ -198,7 +198,7 @@ namespace DOL.GS.Scripts
               "Mesmerises the room, then burns what is left."),
             C("Necromancer", eRealm.Albion,  6, Duty.Pet | Duty.DoT | Duty.PBAoE,
               "A shade behind a bone pet.", "bone commander"),
-            C("Mauler",      eRealm.Albion, 63, Duty.Melee,
+            C("Mauler",      eRealm.Albion, 63, Duty.Melee | Duty.Nuke | Duty.Debuff | Duty.Buffs,
               "Fist and staff, and no armour worth the name."),
 
             // ---- Midgard ------------------------------------------------
@@ -230,7 +230,7 @@ namespace DOL.GS.Scripts
               "Chambered magic and a weakening touch."),
             C("Valkyrie",     eRealm.Midgard, 215, Duty.Melee | Duty.Heal,
               "Spear and a little mending."),
-            C("Mauler of Midgard", eRealm.Midgard, 216, Duty.Melee,
+            C("Mauler of Midgard", eRealm.Midgard, 216, Duty.Melee | Duty.Nuke | Duty.Debuff | Duty.Buffs,
               "Fist and staff, Midgard's own."),
 
             // ---- Hibernia -----------------------------------------------
@@ -270,7 +270,7 @@ namespace DOL.GS.Scripts
               "Screams. Everything in front of her stops."),
             C("Vampiir",     eRealm.Hibernia, 380, Duty.Melee | Duty.Debuff,
               "Closes, drains, and takes their strength with it."),
-            C("Mauler of Hibernia", eRealm.Hibernia, 334, Duty.Melee,
+            C("Mauler of Hibernia", eRealm.Hibernia, 334, Duty.Melee | Duty.Nuke | Duty.Debuff | Duty.Buffs,
               "Fist and staff, Hibernia's own."),
         };
 

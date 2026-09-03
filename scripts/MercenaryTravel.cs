@@ -22,8 +22,8 @@ namespace DOL.GS.Scripts
     /// and the companions are still inside at that moment. So the taskmaster
     /// turns DestroyWhenEmpty off, and the instance is closed here instead --
     /// once the last player has gone AND nothing that was hired is left in it.
-    /// The taskmaster's delayed close remains as a backstop for the case where
-    /// a companion cannot be moved at all.
+    /// The taskmaster's hour-long auto-closure is the leak guard behind that,
+    /// for a dungeon nobody ever walks out of.
     /// </summary>
     public static class MercenaryTravel
     {
@@ -62,7 +62,12 @@ namespace DOL.GS.Scripts
         {
             try
             {
-                if (sender is not GamePlayer player || !player.IsAlive)
+                // Deliberately not gated on the player being alive. Releasing
+                // after a death is a region change like any other, and it is
+                // the one time the company most needs to come along -- coming
+                // back to a corpse in a dungeon without them is how the next
+                // death happens.
+                if (sender is not GamePlayer player)
                     return;
 
                 Region left = null;
@@ -90,11 +95,25 @@ namespace DOL.GS.Scripts
                     brought++;
                 }
 
+                // The group window keeps whatever it last heard about a
+                // member, so a companion moved out from under it still reads
+                // as away or dead until it is told otherwise.
+                if (brought > 0 && player.Group != null)
+                    player.Group.UpdateGroupWindow();
+
                 if (brought > 0)
                     player.Out.SendMessage(
                         brought == 1 ? "Your companion follows you through."
                                      : "Your companions follow you through.",
                         eChatType.CT_System, eChatLoc.CL_SystemWindow);
+
+                // Said out loud while this is being trusted: if companions
+                // are being left behind, these numbers are the evidence.
+                Console.WriteLine("MercenaryTravel: " + player.Name + " -> region " +
+                                  player.CurrentRegionID + ", from " +
+                                  (left == null ? "?" : left.ID + (left is BaseInstance ? " (instance)" : "")) +
+                                  ", company " + MercenaryManager.GetCompany(player).Count +
+                                  ", brought " + brought);
 
                 CloseIfEmpty(left);
             }

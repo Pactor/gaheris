@@ -178,17 +178,27 @@ namespace DOL.GS.Scripts
                 return;
             }
 
-            // Hold the dungeon open one minute past the last player
-            // leaving. An instance is torn down the moment it empties --
-            // DestroyWhenEmpty -- and everything still standing inside goes
-            // with it, which is what was killing the hired company on the way
-            // out: the roster read seven going in and nought coming back. The
-            // companions are moved on the region change itself, so a short
-            // minute -- the shortest the timer takes -- is more than enough.
+            // Stop the dungeon being torn down out from under the hired
+            // company. An instance is destroyed the moment its last player
+            // leaves -- DestroyWhenEmpty -- and everything still standing
+            // inside goes with it, which is why the roster read seven going in
+            // and nought coming back out.
             //
-            // The task is a separate matter and still ends when you leave,
-            // which is how it worked on live.
-            mission.TaskRegion.BeginDelayCloseCountdown(1);
+            // Set directly rather than through BeginDelayCloseCountdown, which
+            // looks like the tool for this and is not: its timer does
+            //
+            //     m_instance.DestroyWhenEmpty = true;
+            //
+            // when it fires, so a minute into the dungeon the old behaviour is
+            // back and the companions die on the way out exactly as before.
+            //
+            // Closing the instance is handled in MercenaryTravel instead, once
+            // the player and everyone they hired is clear of it. The hour is
+            // only a leak guard, for a dungeon nobody ever walks out of --
+            // that timer removes the region when it is empty and re-ticks
+            // while anyone is still inside.
+            mission.TaskRegion.BeginAutoClosureCountdown(60);
+            mission.TaskRegion.DestroyWhenEmpty = false;
 
             string msg = "Very well " + player.Name +
                          ", it's good to see adventurers willing to help out the realm in such times.";

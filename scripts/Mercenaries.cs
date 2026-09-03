@@ -2755,6 +2755,31 @@ namespace DOL.GS.Scripts
             return Math.Max(1, Profile.Pets.Length);
         }
 
+        /// <summary>
+        /// Every turret standing near this hire, whoever planted it -- ours and
+        /// the real ones a player Animist puts down.
+        /// </summary>
+        private int TurretsAround()
+        {
+            int count = 0;
+            ushort radius = (ushort) Math.Max(1, ServerProperties.Properties.TURRET_AREA_CAP_RADIUS);
+
+            foreach (GameNPC npc in GetNPCsInRadius(radius))
+            {
+                if (npc is MercenaryServant servant)
+                {
+                    if (servant.Stationary)
+                        count++;
+                }
+                // Qualified from the root: we are inside DOL.GS.Scripts, so a
+                // bare DOL.AI.Brain resolves to DOL.GS.Scripts.DOL.AI.Brain.
+                else if (npc.Brain is global::DOL.AI.Brain.TurretFNFBrain)
+                    count++;
+            }
+
+            return count;
+        }
+
         /// <summary>Sends every servant of this hire home.</summary>
         protected void RetireServants()
         {
@@ -2817,6 +2842,23 @@ namespace DOL.GS.Scripts
             }
 
             if (mine.Count >= target)
+                return;
+
+            // Honour the turret area cap, which nothing else here does.
+            //
+            // Core enforces two caps in SummonAnimistFnF.CheckBeginCast -- ten
+            // turrets within a thousand units, and twelve per caster -- but a
+            // hire never goes near that code. It summons through SummonServant,
+            // and its turrets carry a MercenaryBrain rather than a
+            // TurretFNFBrain, so they are invisible to the area scan as well.
+            // The result was no cap at all: seven Animist hires at a camp would
+            // plant thirty-five turrets and nothing would object, which is both
+            // a framerate problem and a good reason to hire nothing else.
+            //
+            // Counting hire turrets and real ones together means a player
+            // Animist and the company share one budget, which is the point of
+            // an area cap.
+            if (Kit.Turrets.Count > 0 && TurretsAround() >= ServerProperties.Properties.TURRET_AREA_CAP_COUNT)
                 return;
 
             // Paced, because summoning is a cast. Turrets should appear at the

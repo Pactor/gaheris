@@ -53,6 +53,7 @@ namespace DOL.GS.Scripts
         [GameServerStartedEvent]
         public static void OnServerStarted(DOLEvent e, object sender, EventArgs args)
         {
+            int races = RestoreRaces();
             int opened = 0;
 
             opened += Allow(eRealm.Albion,   eCharacterClass.Heretic);
@@ -62,7 +63,63 @@ namespace DOL.GS.Scripts
             opened += Allow(eRealm.Hibernia, eCharacterClass.Vampiir);
             opened += Allow(eRealm.Hibernia, eCharacterClass.MaulerHib);
 
-            Console.WriteLine("Lost classes: " + opened + " reopened for character creation");
+            Console.WriteLine("Lost classes: " + opened + " reopened, " + races +
+                              " races given their starting stats back");
+        }
+
+        /// <summary>
+        /// Put back the starting stats of the races the core commented out.
+        ///
+        /// Six of them are missing from GlobalConstants.STARTING_STATS_DICT --
+        /// Half Ogre, Frostalf, Shar and the three Minotaurs -- and character
+        /// creation reads that dictionary by race with no guard:
+        ///
+        ///     Dictionary&lt;eStat, int&gt; raceStats =
+        ///         GlobalConstants.STARTING_STATS_DICT[(eRace) character.Race];
+        ///
+        /// A missing race therefore throws KeyNotFoundException inside
+        /// IsCharacterValid, which catches everything, marks the character
+        /// invalid and returns. The player is dropped back to the character
+        /// list with no message and nothing in the log except the exception --
+        /// which is exactly how a Shar Vampiir failed while a Lurikeen one
+        /// worked.
+        ///
+        /// The numbers are the core's own, taken from the commented lines
+        /// directly above the live ones, not invented.
+        ///
+        /// This also matters for the Maulers: their races include Korazh,
+        /// Deifrang and Graoch, which are the three Minotaurs, so all three
+        /// would have failed the same way.
+        /// </summary>
+        private static int RestoreRaces()
+        {
+            int added = 0;
+
+            added += Stats(eRace.HalfOgre,         90, 70, 40, 40, 60, 60, 60, 60);
+            added += Stats(eRace.Frostalf,         55, 55, 55, 60, 60, 75, 60, 60);
+            added += Stats(eRace.Shar,             60, 80, 50, 50, 60, 60, 60, 60);
+            added += Stats(eRace.AlbionMinotaur,   80, 70, 50, 40, 60, 60, 60, 60);
+            added += Stats(eRace.MidgardMinotaur,  80, 70, 50, 40, 60, 60, 60, 60);
+            added += Stats(eRace.HiberniaMinotaur, 80, 70, 50, 40, 60, 60, 60, 60);
+
+            return added;
+        }
+
+        private static int Stats(eRace race, int str, int con, int dex, int qui,
+                                 int intel, int pie, int emp, int chr)
+        {
+            if (GlobalConstants.STARTING_STATS_DICT.ContainsKey(race))
+                return 0;
+
+            GlobalConstants.STARTING_STATS_DICT[race] = new Dictionary<eStat, int>
+            {
+                { eStat.STR, str }, { eStat.CON, con },
+                { eStat.DEX, dex }, { eStat.QUI, qui },
+                { eStat.INT, intel }, { eStat.PIE, pie },
+                { eStat.EMP, emp }, { eStat.CHR, chr },
+            };
+
+            return 1;
         }
 
         private static int Allow(eRealm realm, eCharacterClass charClass)

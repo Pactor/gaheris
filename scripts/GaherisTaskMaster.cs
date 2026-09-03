@@ -124,13 +124,19 @@ namespace DOL.GS.Scripts
             if (Task(player) != null)
                 return;
 
+            // Ours, not the core's. The core's mission cannot count kills --
+            // it indexes an array sized by mob count using the world object id
+            // of whatever died, so every kill throws -- and since the mission
+            // is built here, the type is ours to choose.
             TaskDungeonMission mission;
 
             if (player.Group != null)
-                mission = new TaskDungeonMission(player.Group, TaskDungeonMission.eDungeonType.Ranged);
+                mission = new GaherisTaskDungeonMission(player.Group,
+                                                        TaskDungeonMission.eDungeonType.Ranged);
             else
             {
-                mission = new TaskDungeonMission(player, TaskDungeonMission.eDungeonType.Melee);
+                mission = new GaherisTaskDungeonMission(player,
+                                                        TaskDungeonMission.eDungeonType.Melee);
                 player.Mission = mission;
             }
 

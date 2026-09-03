@@ -116,3 +116,51 @@ So the choice is to generate them -- spawns by level band and dungeon type,
 which is inventing content -- or keep hunting for a dump that has them. Worth
 deciding before building 1 through 3, because on their own they produce a
 taskmaster who hands out a task in an empty room.
+
+---
+
+## Write up brains and scriptable encounters
+
+**Not started. Documentation, not code — the point is to be able to build
+custom content without rediscovering how any of it works each time.**
+
+Two systems, and we have already leaned on both without ever writing down how
+they fit together.
+
+**Brains** are the AI. `ABrain` is the base, `StandardMobBrain` is what almost
+everything runs, and the interesting behaviour lives in a handful of overrides
+— `Think`, `CheckNpcAggro`, `CheckPlayerAggro`, `AttackMostWanted`, and the
+aggro table those last two feed. We have already had to override two of them
+for reasons that are not obvious from the source:
+
+- `MonsterKeepGuardBrain.CheckNpcAggro`, because the core's version ignores
+  non-pet NPCs entirely and the hired companions are deliberately not pets.
+- `ABrain.IsActive` includes `Body.IsVisibleToPlayers`, so a brain simply
+  stops thinking when nobody is looking at it. Anything that has to keep
+  running out of sight belongs on an `ECSGameTimer`, which ticks regardless.
+  This one has caught us more than once.
+
+The write-up should cover: what each override is called with and when, how the
+aggro table is built and decayed, how to attach a brain to a mob from the
+database (`mob.Brain` / `npctemplate`) versus from a script, how pets and
+`IControlledBrain` differ from ordinary NPCs, and what the absence of
+pathfinding means in practice — there is no Detour library and no navmesh, so
+brains walk straight lines and snag on terrain, which is why the companions
+carry a teleport rescue.
+
+**Scriptable encounters** is the other half: making a fight do something
+beyond stand and swing. We have `GaherisEncounters.cs` already, and the core
+has more mechanism than we have used — `GameEventMgr` handlers, `AmteMob` and
+the DB-driven behaviour tables, `ECSGameTimer` for phases, region and area
+events, and the quest/mission classes as a model for state that survives
+across a fight.
+
+What would make this genuinely useful is a worked example rather than a tour:
+take one encounter and build it end to end — adds on a timer, a phase change
+at a health threshold, something that has to be interrupted, a reward on
+completion — and explain each piece as it goes in, with the database rows it
+needs alongside the script.
+
+Worth doing after the current round of content settles, since every fix so far
+has turned up another core behaviour that cannot be subclassed around, and
+those are exactly the things the document exists to record.

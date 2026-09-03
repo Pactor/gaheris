@@ -399,8 +399,14 @@ for the cave mouth in any coordinate-bearing table of the reference database
 within 700 units of any of the fifteen known locations. A marker cannot be
 built either, because the models that look like a cave are static-item models
 and do not render on an NPC. So rather than send people hunting for a hole
-that may no longer be drawn, the taskmaster opens the way itself -- and can
-send you back in after you die or step out, or drop a task you do not want.
+that may no longer be drawn, the taskmaster opens the way itself, and can drop
+a task you do not want. Leaving the dungeon ends the task, and so does dying,
+which is how it worked on live.
+
+Boss missions could never be drawn before: the core decides an NPC is a boss
+by looking for a capital letter in its name, and all 230 templates these
+dungeons use are lower case. Each dungeon now has a named boss of its own,
+renamed again per task, and killing him finishes the mission on his own.
 
 The mission counts kills itself, because the core's cannot. It sizes an array
 by mob count and then indexes it by the world object id of whatever died:

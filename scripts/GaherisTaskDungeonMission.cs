@@ -139,36 +139,6 @@ namespace DOL.GS.Scripts
             return alive;
         }
 
-        /// <summary>
-        /// Set only when the task is deliberately given up.
-        ///
-        /// TaskDungeonInstance.OnPlayerLeaveInstance ends the mission the
-        /// instant you step outside --
-        ///
-        ///     if (player.Mission == m_mission) player.Mission.ExpireMission();
-        ///
-        /// -- which makes going back in after dying impossible, and is why the
-        /// taskmaster could not find a task to send anybody back to. Expiry is
-        /// therefore ignored unless it was asked for, or unless the dungeon
-        /// itself has gone, at which point there is nothing to go back to.
-        /// </summary>
-        private bool m_abandoned;
-
-        /// <summary>Give the task up for good. The taskmaster's [abandon].</summary>
-        public void Abandon()
-        {
-            m_abandoned = true;
-            ExpireMission();
-        }
-
-        public override void ExpireMission()
-        {
-            if (!m_abandoned && TaskRegion != null && TaskRegion.IsInstance)
-                return;
-
-            base.ExpireMission();
-        }
-
         public override void Notify(DOLEvent e, object sender, EventArgs args)
         {
             // Deliberately never calls base: that is the throw.

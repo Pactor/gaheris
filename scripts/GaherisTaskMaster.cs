@@ -30,10 +30,13 @@ namespace DOL.GS.Scripts
     /// NPC. So rather than send people to hunt for a hole that may no longer
     /// be drawn, the taskmaster opens the way itself.
     ///
-    /// That also makes two things possible the original could not do: going
-    /// back in after dying or stepping out, and dropping a task you do not
-    /// want. Both matter more when the entrance is a person rather than a
-    /// place you can walk back to.
+    /// That also makes it possible to drop a task you do not want, which
+    /// matters more when the entrance is a person rather than a place you can
+    /// walk away from.
+    ///
+    /// Leaving the dungeon still ends the task, and so does dying, since
+    /// releasing takes you out of the instance. That is how it worked on live
+    /// and it is left alone.
     /// </summary>
     public class GaherisTaskMaster : GameNPC
     {
@@ -46,7 +49,7 @@ namespace DOL.GS.Scripts
             {
                 SayTo(player,
                     "You already have a task underway. I can remind you what the [task] is, " +
-                    "[send] you back to it when you are ready, or [abandon] it and find you another.");
+                    "[send] you to it, or [abandon] it and find you another.");
                 return true;
             }
 
@@ -175,13 +178,17 @@ namespace DOL.GS.Scripts
                 return;
             }
 
-            // Hold the dungeon open. An instance is destroyed the moment its
-            // last player leaves -- DestroyWhenEmpty -- and everything still
-            // inside goes with it, which is what was killing the hired company
-            // on the way out. A delayed close keeps the region standing for
-            // half an hour, so stepping out and coming back is possible and
-            // the companions survive the trip.
-            mission.TaskRegion.BeginDelayCloseCountdown(30);
+            // Hold the dungeon open a couple of minutes past the last player
+            // leaving. An instance is torn down the moment it empties --
+            // DestroyWhenEmpty -- and everything still standing inside goes
+            // with it, which is what was killing the hired company on the way
+            // out: the roster read seven going in and nought coming back. The
+            // companions are moved on the region change itself, so a short
+            // delay is all it takes for them to survive the trip.
+            //
+            // The task is a separate matter and still ends when you leave,
+            // which is how it worked on live.
+            mission.TaskRegion.BeginDelayCloseCountdown(2);
 
             string msg = "Very well " + player.Name +
                          ", it's good to see adventurers willing to help out the realm in such times.";
@@ -272,11 +279,7 @@ namespace DOL.GS.Scripts
                 return;
             }
 
-            if (task is GaherisTaskDungeonMission ours)
-                ours.Abandon();
-            else
-                task.ExpireMission();
-
+            task.ExpireMission();
             SayTo(player, "Consider it forgotten. Ask me for an [assignment] when you want another.");
         }
     }

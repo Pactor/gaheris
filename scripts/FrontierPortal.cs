@@ -1,24 +1,27 @@
 using System;
+using DOL.Events;
 using DOL.GS.PacketHandler;
 
 namespace DOL.GS.Scripts
 {
     /// <summary>
-    /// The portal inside a border keep that sends you to New Frontiers.
+    /// The border keep airlock.
     ///
-    /// This is how it always worked: you opened the first door, ran in, and
-    /// ported. The border keeps are the staging posts and the portal inside
-    /// each one is the way across -- you never walked into the frontier.
+    /// Every border keep has exactly two doors -- the core keeps the list, six
+    /// pairs of them -- and between them is a short passage. You open the first
+    /// door, step inside, and you are in the frontier. You never reach the
+    /// second switch, and the second door never opens onto the old frontier at
+    /// all, because you are gone before you can touch it.
     ///
-    /// It has to be a portal rather than a door or a boundary, because the
-    /// old frontier zones are part of the realm regions. Castle Sauvage
-    /// physically stands in Forest Sauvage, region 1, so stepping out of its
-    /// gate is a walk across Albion and there is no crossing to intercept.
-    /// New Frontiers is region 163 and the only way into another region is to
-    /// be sent there.
+    /// It has to work by sending rather than by walking. The old frontier zones
+    /// are part of the realm regions: Castle Sauvage physically stands in
+    /// Forest Sauvage, region 1. Stepping out of its outer door is a walk
+    /// across Albion, not a border crossing, so there is nothing to intercept
+    /// and no door that can be repointed -- DoorMgr builds every door as a bare
+    /// GameDoor and the table has no ClassType to override. New Frontiers is
+    /// region 163, and the only way into another region is to be sent there.
     ///
-    /// Each portal knows its own destination from where it stands, so the six
-    /// of them need no configuration beyond being placed:
+    /// Each airlock opens onto the arrival camp on its own side of the map:
     ///
     ///     Castle Sauvage      -> Forest Sauvage Entrance
     ///     Snowdonia Fortress  -> Snowdonia Entrance
@@ -27,129 +30,163 @@ namespace DOL.GS.Scripts
     ///     Druim Ligen         -> Cruachan Gorge Entrance
     ///     Druim Cain          -> Mount Collory Entrance
     ///
-    /// Those are the small arrival camps, which sit on the coordinates the
-    /// game's own crossings already target -- known-good ground, and each has
-    /// a hastener waiting.
+    /// Those are the small camps that sit on the coordinates the game's own
+    /// crossings already target, so the ground is known good and each has a
+    /// hastener standing on it.
     /// </summary>
-    public class FrontierPortal : GameNPC
+    public static class FrontierGates
     {
-        /// <summary>Region the frontier lives in.</summary>
         private const ushort FRONTIER = 163;
 
-        /// <summary>A border keep and the arrival camp it opens onto.</summary>
-        private readonly struct Crossing
+        /// <summary>
+        /// How wide the trigger is.
+        ///
+        /// Deliberately small. The zonepoints that bring people BACK from the
+        /// frontier land between 799 and 997 units from these same passages --
+        /// Druim Cain's return is 799 away -- so a generous radius would catch
+        /// players the moment they arrived home and fire them straight back.
+        /// At 350 they land outside it and can walk away.
+        /// </summary>
+        private const int RADIUS = 350;
+
+        /// <summary>
+        /// Seconds after arriving in a realm before an airlock will take you.
+        ///
+        /// The radius alone is not quite enough: someone who comes home and
+        /// then walks toward the keep would be sent back before they had done
+        /// anything. This gives them a moment to get clear either way.
+        /// </summary>
+        private const int GRACE_SECONDS = 20;
+
+        private const string ARRIVED = "GaherisFrontierArrival";
+
+        private readonly struct Gate
         {
             public readonly ushort Region;
-            public readonly int KeepX, KeepY;
+            public readonly int X, Y, Z;
             public readonly int ToX, ToY, ToZ;
             public readonly ushort ToHeading;
-            public readonly string From, To;
+            public readonly string Keep, Camp;
 
-            public Crossing(ushort region, int keepX, int keepY,
-                            int toX, int toY, int toZ, ushort toHeading,
-                            string from, string to)
+            public Gate(ushort region, int x, int y, int z,
+                        int toX, int toY, int toZ, ushort toHeading,
+                        string keep, string camp)
             {
-                Region = region; KeepX = keepX; KeepY = keepY;
+                Region = region; X = x; Y = y; Z = z;
                 ToX = toX; ToY = toY; ToZ = toZ; ToHeading = toHeading;
-                From = from; To = to;
+                Keep = keep; Camp = camp;
             }
         }
 
-        private static readonly Crossing[] Crossings =
+        /// <summary>
+        /// The midpoint between each keep's two doors, from the core's own
+        /// border keep door list.
+        /// </summary>
+        private static readonly Gate[] Gates =
         {
-            new(1,   584151, 477177, 653995, 615343, 9411, 2000,
+            new(1,   585237, 477238, 2600, 653995, 615343, 9411, 2000,
                 "Castle Sauvage",     "Forest Sauvage"),
-            new(1,   515959, 372539, 615354, 677360, 9372, 1648,
+            new(1,   528529, 358945, 8320, 615354, 677360, 9372, 1648,
                 "Snowdonia Fortress", "Snowdonia"),
-            new(100, 765518, 673661, 649670, 313898, 8797, 1006,
+            new(100, 766188, 669650, 5736, 649670, 313898, 8797, 1006,
                 "Svasud Faste",       "Uppland"),
-            new(100, 704110, 738883, 714416, 366163, 9096,  268,
+            new(100, 704018, 738932, 5704, 714416, 366163, 9096,  268,
                 "Vindsaul Faste",     "Yggdra Forest"),
-            new(200, 334435, 419941, 396089, 616403, 9232, 1966,
+            new(200, 334165, 420570, 5336, 396089, 616403, 9232, 1966,
                 "Druim Ligen",        "Cruachan Gorge"),
-            new(200, 421156, 486429, 433899, 678939, 9314, 2500,
+            new(200, 421251, 486389, 1976, 433899, 678939, 9314, 2500,
                 "Druim Cain",         "Mount Collory"),
         };
 
-        /// <summary>
-        /// Which crossing this portal is standing in, by proximity. Nothing to
-        /// configure per portal: place it in a border keep and it knows.
-        /// </summary>
-        private bool Nearest(out Crossing found)
+        [ScriptLoadedEvent]
+        public static void OnScriptLoaded(DOLEvent e, object sender, EventArgs args)
         {
-            found = default;
-            double best = double.MaxValue;
+            GameEventMgr.AddHandler(GamePlayerEvent.RegionChanged,
+                                    new DOLEventHandler(NoteArrival));
 
-            foreach (Crossing c in Crossings)
+            int placed = 0;
+
+            foreach (Gate gate in Gates)
             {
-                if (c.Region != CurrentRegionID)
+                Region region = WorldMgr.GetRegion(gate.Region);
+
+                if (region == null)
                     continue;
 
-                double dx = c.KeepX - X;
-                double dy = c.KeepY - Y;
-                double dist = dx * dx + dy * dy;
+                region.AddArea(new GateArea(gate));
+                placed++;
+            }
 
-                if (dist < best)
+            if (placed > 0)
+                Console.WriteLine("Frontier airlocks: " + placed +
+                                  " border keeps open onto New Frontiers");
+        }
+
+        [ScriptUnloadedEvent]
+        public static void OnScriptUnloaded(DOLEvent e, object sender, EventArgs args)
+        {
+            GameEventMgr.RemoveHandler(GamePlayerEvent.RegionChanged,
+                                       new DOLEventHandler(NoteArrival));
+        }
+
+        /// <summary>
+        /// Stamp the moment a player changes region, so an airlock will not
+        /// grab somebody who has this instant come home through one.
+        /// </summary>
+        private static void NoteArrival(DOLEvent e, object sender, EventArgs args)
+        {
+            if (sender is GamePlayer player)
+                player.TempProperties.SetProperty(ARRIVED, GameLoop.GameLoopTime);
+        }
+
+        private static bool JustArrived(GamePlayer player)
+        {
+            long at = player.TempProperties.GetProperty<long>(ARRIVED);
+            return at > 0 && GameLoop.GameLoopTime - at < GRACE_SECONDS * 1000L;
+        }
+
+        private class GateArea : Area.Circle
+        {
+            private readonly Gate _gate;
+
+            public GateArea(Gate gate)
+                : base("the way to " + gate.Camp, gate.X, gate.Y, gate.Z, RADIUS)
+            {
+                _gate = gate;
+            }
+
+            public override void OnPlayerEnter(GamePlayer player)
+            {
+                base.OnPlayerEnter(player);
+
+                if (player == null || !player.IsAlive || JustArrived(player))
+                    return;
+
+                if (player.InCombat)
                 {
-                    best = dist;
-                    found = c;
+                    player.Out.SendMessage(
+                        "You cannot cross while you are fighting.",
+                        eChatType.CT_System, eChatLoc.CL_SystemWindow);
+                    return;
+                }
+
+                player.Out.SendMessage(
+                    "The passage folds around you, and " + _gate.Camp + " opens ahead.",
+                    eChatType.CT_System, eChatLoc.CL_SystemWindow);
+
+                player.MoveTo(FRONTIER, _gate.ToX, _gate.ToY, _gate.ToZ, _gate.ToHeading);
+
+                // The group crosses together. A hire left standing in the keep
+                // is a hire the employer has to walk back for.
+                foreach (GameMercenary hire in MercenaryManager.GetCompany(player))
+                {
+                    if (hire != null && hire.IsAlive)
+                        hire.MoveTo(FRONTIER,
+                                    _gate.ToX + Util.Random(-250, 250),
+                                    _gate.ToY + Util.Random(-250, 250),
+                                    _gate.ToZ, _gate.ToHeading);
                 }
             }
-
-            // Roughly a keep's width. Beyond that it is not in a border keep
-            // and should not be claiming to be a way across.
-            return best < 8000.0 * 8000.0;
-        }
-
-        public override bool AddToWorld()
-        {
-            if (!base.AddToWorld())
-                return false;
-
-            if (Nearest(out Crossing c))
-                GuildName = "Gateway to " + c.To;
-
-            return true;
-        }
-
-        public override bool Interact(GamePlayer player)
-        {
-            if (!base.Interact(player))
-                return false;
-
-            if (!Nearest(out Crossing c))
-            {
-                player.Out.SendMessage(
-                    "This gateway is not anchored to anywhere.",
-                    eChatType.CT_System, eChatLoc.CL_PopupWindow);
-                return false;
-            }
-
-            if (player.InCombat)
-            {
-                player.Out.SendMessage(
-                    "You cannot step through while you are fighting.",
-                    eChatType.CT_System, eChatLoc.CL_PopupWindow);
-                return false;
-            }
-
-            player.Out.SendMessage(
-                "The air folds, and " + c.To + " opens in front of you.",
-                eChatType.CT_System, eChatLoc.CL_PopupWindow);
-
-            player.MoveTo(FRONTIER, c.ToX, c.ToY, c.ToZ, c.ToHeading);
-
-            // The group came to the frontier together or not at all. Anyone
-            // hired walks through with their employer rather than being left
-            // standing in the keep.
-            foreach (GameMercenary hire in MercenaryManager.GetCompany(player))
-            {
-                if (hire != null && hire.IsAlive)
-                    hire.MoveTo(FRONTIER, c.ToX + Util.Random(-200, 200),
-                                c.ToY + Util.Random(-200, 200), c.ToZ, c.ToHeading);
-            }
-
-            return true;
         }
     }
 }

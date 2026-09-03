@@ -129,7 +129,18 @@ namespace DOL.GS.Scripts
 
         private void WatchTheTrail()
         {
-            if (TaskRegion == null || m_owner is not GamePlayer owner)
+            if (TaskRegion == null)
+                return;
+
+            // A task taken while grouped belongs to the GROUP, not to the
+            // player -- the taskmaster builds it that way, and anyone playing
+            // with hired companions is always grouped. Requiring a GamePlayer
+            // owner here meant the trail never ran for the only case that
+            // actually occurs, and the dungeon stayed as unreachable as it was
+            // before any of this was written.
+            GamePlayer owner = m_owner as GamePlayer ?? (m_owner as Group)?.Leader;
+
+            if (owner == null)
                 return;
 
             _tidy = new ECSGameTimer(owner, Tidy, 5000);

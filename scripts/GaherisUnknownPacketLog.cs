@@ -83,6 +83,16 @@ namespace DOL.GS.PacketHandler.Client.v168
                 string text = "UnknownPacket: " + line;
                 Console.WriteLine(text);
 
+                // Say it to whoever caused it, as well. Otherwise finding out
+                // what a key sends means pressing it, stopping, and having
+                // somebody else read a log -- which is no way to hunt for a
+                // keybind. This way the answer arrives in the chat window at
+                // the moment the key goes down.
+                client?.Player?.Out?.SendMessage(
+                    "[packet] unhandled 0x" + code.ToString("X2") + ", " +
+                    packet.PacketSize + " bytes",
+                    eChatType.CT_Staff, eChatLoc.CL_SystemWindow);
+
                 lock (_lock)
                 {
                     try

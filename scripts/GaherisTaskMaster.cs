@@ -178,17 +178,17 @@ namespace DOL.GS.Scripts
                 return;
             }
 
-            // Hold the dungeon open a couple of minutes past the last player
+            // Hold the dungeon open one minute past the last player
             // leaving. An instance is torn down the moment it empties --
             // DestroyWhenEmpty -- and everything still standing inside goes
             // with it, which is what was killing the hired company on the way
             // out: the roster read seven going in and nought coming back. The
             // companions are moved on the region change itself, so a short
-            // delay is all it takes for them to survive the trip.
+            // minute -- the shortest the timer takes -- is more than enough.
             //
             // The task is a separate matter and still ends when you leave,
             // which is how it worked on live.
-            mission.TaskRegion.BeginDelayCloseCountdown(2);
+            mission.TaskRegion.BeginDelayCloseCountdown(1);
 
             string msg = "Very well " + player.Name +
                          ", it's good to see adventurers willing to help out the realm in such times.";

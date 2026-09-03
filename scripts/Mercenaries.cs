@@ -2953,7 +2953,17 @@ namespace DOL.GS.Scripts
 
             text += "\nHow we play it, now [" + MercenaryManager.GetTactic(player) + "] -- say " +
                     "[balanced], [pbaoe] or [focus] to change it. Any of us, any time.\n" +
-                    "Say [return] and I will hand all of it back.";
+                    // Every order any of them can take, listed where it can be
+                    // clicked. The formation words were always accepted -- the
+                    // whisper handler below has taken them from any hire in the
+                    // field since they were written -- but a keyword nobody is
+                    // shown is a keyword nobody uses, so formations were being
+                    // changed by walking back to a recruiter, which is the only
+                    // thing that ever mentioned them.
+                    "How we stand, now [" + MercenaryManager.GetFormation(player) + "] -- say " +
+                    "[circle], [line], [column] or [wedge].\n" +
+                    "Say [camp] if we are holding this ground, and [return] " +
+                    "to have all of it back.";
             SayTo(player, eChatLoc.CL_PopupWindow, text);
             return true;
         }

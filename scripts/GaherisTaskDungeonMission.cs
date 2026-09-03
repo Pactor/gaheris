@@ -122,6 +122,9 @@ namespace DOL.GS.Scripts
         /// <summary>Beyond this from every trail point, a creature is unreachable.</summary>
         private const int STRANDED = 2500;
 
+        /// <summary>How many to rescue per tick.</summary>
+        private const int PER_TICK = 6;
+
         private ECSGameTimer _tidy;
 
         private void WatchTheTrail()
@@ -153,6 +156,7 @@ namespace DOL.GS.Scripts
                     return 5000;
 
                 Remember(inside);
+                Report(inside);
                 MoveTheStranded(inside);
             }
             catch (Exception)
@@ -161,6 +165,49 @@ namespace DOL.GS.Scripts
             }
 
             return 5000;
+        }
+
+        /// <summary>
+        /// Say where the nearest living creature is, and by how much.
+        ///
+        /// "Right in front of me and out of range" is a measurable claim and
+        /// worth measuring rather than guessing at twice more. If the flat
+        /// distance is small and the height difference is large, everything is
+        /// floating above or sunk below the floor and the layout is a height
+        /// problem. If both are large, they are simply somewhere else.
+        /// </summary>
+        private void Report(List<GamePlayer> inside)
+        {
+            GamePlayer p = inside[0];
+            GameNPC nearest = null;
+            int best = int.MaxValue;
+
+            foreach (GameObject obj in TaskRegion.Objects)
+            {
+                if (obj is not GameNPC npc || !npc.IsAlive)
+                    continue;
+
+                if (npc is GameMercenary || npc.Brain is IControlledBrain)
+                    continue;
+
+                int dx = npc.X - p.X;
+                int dy = npc.Y - p.Y;
+                int flat = (int) Math.Sqrt((double) dx * dx + (double) dy * dy);
+
+                if (flat < best)
+                {
+                    best = flat;
+                    nearest = npc;
+                }
+            }
+
+            Console.WriteLine("Dungeon: " + p.Name + " at " + p.X + "," + p.Y + "," + p.Z +
+                              " | trail " + _trail.Count +
+                              " | alive " + Remaining() +
+                              (nearest == null ? " | nothing alive"
+                                  : " | nearest " + nearest.Name + " flat " + best +
+                                    " height " + (nearest.Z - p.Z) +
+                                    " true " + nearest.GetDistanceTo(p)));
         }
 
         /// <summary>Add where everybody is standing to the trail.</summary>
@@ -185,15 +232,21 @@ namespace DOL.GS.Scripts
         }
 
         /// <summary>
-        /// Bring one stranded creature at a time onto ground somebody has
-        /// walked, out of sight and not on top of anybody. One at a time
-        /// because a dungeon that rearranges itself wholesale in front of you
-        /// is worse than one with a few creatures missing.
+        /// Bring stranded creatures onto ground somebody has walked, out of
+        /// sight and not on top of anybody.
+        ///
+        /// A handful per tick rather than one. At one every five seconds a
+        /// dungeon with twenty stranded creatures takes two minutes to become
+        /// playable, which reads as an empty dungeon for the whole of the
+        /// first fight. They are still only moved while nobody can see them,
+        /// which is what stops it looking like conjuring.
         /// </summary>
         private void MoveTheStranded(List<GamePlayer> inside)
         {
             if (_trail.Count < 3)
                 return;
+
+            int moved = 0;
 
             foreach (GameObject obj in TaskRegion.Objects)
             {
@@ -233,7 +286,9 @@ namespace DOL.GS.Scripts
                            spot.X + Util.Random(-200, 200),
                            spot.Y + Util.Random(-200, 200),
                            spot.Z, (ushort) Util.Random(4095));
-                return;
+
+                if (++moved >= PER_TICK)
+                    return;
             }
         }
 

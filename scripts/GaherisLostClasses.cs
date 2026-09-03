@@ -112,6 +112,29 @@ namespace DOL.GS.Scripts
                 }
             }
 
+            // Say what is actually left, because "30 retired" was true and a
+            // Stalker was still created two minutes later. If a base class
+            // survives, this is where it will show.
+            foreach (KeyValuePair<eRealm, List<eCharacterClass>> realm
+                     in GlobalConstants.STARTING_CLASSES_DICT)
+            {
+                List<string> left = new();
+
+                foreach (eCharacterClass c in realm.Value)
+                {
+                    ICharacterClass found = ScriptMgr.FindCharacterClass((int) c);
+
+                    if (found != null && !found.HasAdvancedFromBaseClass())
+                        left.Add(c + "(" + (int) c + ")");
+                }
+
+                Console.WriteLine("  " + realm.Key + ": " + realm.Value.Count +
+                                  " classes offered" +
+                                  (left.Count > 0
+                                      ? ", STILL BASE: " + string.Join(", ", left)
+                                      : ", no base classes remain"));
+            }
+
             return removed;
         }
 

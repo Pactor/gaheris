@@ -372,19 +372,23 @@ INSERT INTO `classxspecialization` (`ClassID`, `SpecKeyName`, `LevelAcquired`, `
 
 -- The Kings, in their throne rooms.
 --
+-- The class is KingNPC; GameKingThroneNpc is only the file it lives in,
+-- and naming the file instead of the class left three Kings loading as
+-- plain GameNPC with nothing to say.
+--
 -- Placed on the arrival point of each throne room, which is where the travel
 -- catalogue already puts a player who asks to go there, and so the one spot in
 -- an otherwise empty region they are certain to be standing.
-DELETE FROM `mob` WHERE `ClassType` = 'DOL.GS.GameKingThroneNpc';
+DELETE FROM `mob` WHERE `ClassType` = 'DOL.GS.KingNPC';
 INSERT INTO `mob` (`Mob_ID`, `ClassType`, `Name`, `Guild`, `X`, `Y`, `Z`, `Heading`, `Region`,
                   `Model`, `Size`, `Level`, `Realm`, `Flags`, `PackageID`, `LastTimeRowUpdated`, `OwnerID`, `NPCTemplateID`) VALUES
-  (UUID(), 'DOL.GS.GameKingThroneNpc', 'King Eirik', 'King', 32331, 30410, 15563, 3, 360,
+  (UUID(), 'DOL.GS.KingNPC', 'King Eirik', 'King', 32331, 30410, 15563, 3, 360,
    40, 55, 75, 2, 16, 'gaheris-champion', '2000-01-01 00:00:00', '', 0);
 INSERT INTO `mob` (`Mob_ID`, `ClassType`, `Name`, `Guild`, `X`, `Y`, `Z`, `Heading`, `Region`,
                   `Model`, `Size`, `Level`, `Realm`, `Flags`, `PackageID`, `LastTimeRowUpdated`, `OwnerID`, `NPCTemplateID`) VALUES
-  (UUID(), 'DOL.GS.GameKingThroneNpc', 'King Constantine', 'King', 32328, 31795, 15901, 17, 394,
+  (UUID(), 'DOL.GS.KingNPC', 'King Constantine', 'King', 32328, 31795, 15901, 17, 394,
    40, 55, 75, 1, 16, 'gaheris-champion', '2000-01-01 00:00:00', '', 0);
 INSERT INTO `mob` (`Mob_ID`, `ClassType`, `Name`, `Guild`, `X`, `Y`, `Z`, `Heading`, `Region`,
                   `Model`, `Size`, `Level`, `Realm`, `Flags`, `PackageID`, `LastTimeRowUpdated`, `OwnerID`, `NPCTemplateID`) VALUES
-  (UUID(), 'DOL.GS.GameKingThroneNpc', 'King Lamfhota', 'King', 32329, 31779, 15715, 12, 395,
+  (UUID(), 'DOL.GS.KingNPC', 'King Lamfhota', 'King', 32329, 31779, 15715, 12, 395,
    40, 55, 75, 3, 16, 'gaheris-champion', '2000-01-01 00:00:00', '', 0);

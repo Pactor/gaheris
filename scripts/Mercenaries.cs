@@ -141,6 +141,9 @@ namespace DOL.GS.Scripts
 
         /// <summary>Whether the company is dug in where it stands.</summary>
         public const string CAMP_KEY = "GaherisMercCamp";
+
+        /// <summary>Where camp was pitched: region|x|y|z.</summary>
+        public const string CAMP_SPOT_KEY = "GaherisMercCampSpot";
         public const string CC_KEY = "GaherisMercCrowdControl";
         public const string FORMATION_KEY = "GaherisMercFormation";
         public const int MAX_TIER = 10;
@@ -370,6 +373,32 @@ namespace DOL.GS.Scripts
         public static void SetCamped(GamePlayer player, bool camped)
         {
             SetParam(player, CAMP_KEY, camped ? "1" : "0");
+
+            // Where camp is, is where you were standing when you called it.
+            // The company holds this ground rather than following you, so the
+            // spot has to be remembered rather than recomputed from wherever
+            // the employer has since wandered off to.
+            if (camped && player != null)
+                SetParam(player, CAMP_SPOT_KEY,
+                         player.CurrentRegionID + "|" + player.X + "|" + player.Y + "|" + player.Z);
+        }
+
+        /// <summary>The camp, or null if there is not one.</summary>
+        public static GameLocation CampSpot(GamePlayer player)
+        {
+            if (player == null || !IsCamped(player))
+                return null;
+
+            string[] parts = (GetParam(player, CAMP_SPOT_KEY) ?? string.Empty).Split('|');
+
+            if (parts.Length != 4 ||
+                !ushort.TryParse(parts[0], out ushort region) ||
+                !int.TryParse(parts[1], out int x) ||
+                !int.TryParse(parts[2], out int y) ||
+                !int.TryParse(parts[3], out int z))
+                return null;
+
+            return new GameLocation("camp", region, x, y, z);
         }
 
         public static long GetRealmPoints(GamePlayer player)
@@ -2046,6 +2075,16 @@ namespace DOL.GS.Scripts
             }
 
             _ownerMissingSince = 0;
+
+            // At camp the company holds the ground and the employer does the
+            // walking. That is the whole point of a pull camp: you go and
+            // fetch, they are already set up when you get back. Following you
+            // out would drag the point-blank casters away from the spot they
+            // are meant to be standing on and bring the turrets nowhere,
+            // since turrets do not move at all.
+            if (HoldingCamp())
+                return 1000;
+
             KeepPace();
 
             // Rescue anyone who cannot walk home.
@@ -2747,13 +2786,66 @@ namespace DOL.GS.Scripts
             // an investment in ground you are going to keep pulling to -- and
             // so much wasted power on ground you are walking through. Camp is
             // where that investment pays, the same as the Master Level fonts.
+            // Turrets are planted, not carried. Outside a camp the company is
+            // moving, and a field left behind on ground nobody returns to is
+            // power spent on nothing -- so a turret class plants only once you
+            // have said you are staying.
             if (Kit.Turrets.Count > 0)
                 return Employer != null && MercenaryManager.IsCamped(Employer)
                     ? TURRET_FIELD
-                    : TURRET_ROAMING;
+                    : 0;
 
             return Math.Max(1, Profile.Pets.Length);
         }
+
+        /// <summary>
+        /// Stand at camp rather than following, and say whether that happened.
+        ///
+        /// Two exceptions, and both are the reason a company is worth having.
+        /// A hire already fighting finishes the fight -- walking back to camp
+        /// mid-swing would be worse than useless. And a healer whose employer
+        /// is lying dead goes and gets them; a camp you cannot be resurrected
+        /// at is a camp that ends at the first bad pull.
+        /// </summary>
+        private bool HoldingCamp()
+        {
+            GameLocation camp = MercenaryManager.CampSpot(Employer);
+
+            if (camp == null)
+                return false;
+
+            if (InCombat || attackComponent.AttackState)
+                return true;
+
+            // The rescue. A healer breaks camp for a dead employer, brings them
+            // back up, and the ordinary rule returns them here afterwards.
+            if (Employer.IsAlive == false &&
+                Profile != null && Profile.Has(Duty.Heal) && Kit?.Rez != null)
+                return false;
+
+            if (CurrentRegionID != camp.RegionID)
+            {
+                MoveTo(camp.RegionID, camp.X + FormationOffset, camp.Y + FormationOffset,
+                       camp.Z, Heading);
+                return true;
+            }
+
+            int dx = camp.X - X;
+            int dy = camp.Y - Y;
+
+            if (dx * dx + dy * dy > CAMP_SPREAD * CAMP_SPREAD)
+                WalkTo(new Point3D(camp.X + FormationOffset, camp.Y + FormationOffset, camp.Z),
+                       MaxSpeed);
+
+            return true;
+        }
+
+        /// <summary>
+        /// How far from the camp marker a hire may stand. Wide enough that
+        /// eight of them are not inside one another, tight enough that a
+        /// point-blank spell centred on any of them still covers the pile.
+        /// </summary>
+        private const int CAMP_SPREAD = 250;
 
         /// <summary>
         /// Every turret standing near this hire, whoever planted it -- ours and

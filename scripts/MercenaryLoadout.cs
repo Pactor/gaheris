@@ -482,21 +482,31 @@ namespace DOL.GS.Scripts
         /// specialisation or it does not. A Blademaster has Blades, Blunt,
         /// Piercing and Celtic Dual, and nothing that fires an arrow.
         /// </summary>
-        public static bool CanWield(eCharacterClass characterClass, eObjectType type)
+        public static bool CanWield(GameLiving living, DbInventoryItem item)
         {
-            string spec = SkillBase.ObjectTypeToSpec(type);
-
-            // No mapping at all: not something proficiency governs.
-            if (string.IsNullOrEmpty(spec))
+            if (living == null || item == null)
                 return true;
 
-            foreach (string mine in SpecsOf(characterClass))
-            {
-                if (string.Equals(mine, spec, StringComparison.OrdinalIgnoreCase))
-                    return true;
-            }
-
-            return false;
+            // Ask the server rules, which is the same question the game asks
+            // before it lets a player equip anything.
+            //
+            // This used to compare the item's spec against the class's
+            // specialization list, and that is the wrong question. Proficiency
+            // with a weapon is an ability, not a specialization:
+            //
+            //     case eObjectType.Staff: abilityCheck = Abilities.Weapon_Staves;
+            //
+            // A Wizard has Weapon_Staves and no Staff specialization at all --
+            // it never trains in one, because a staff is what it holds rather
+            // than what it fights with. So every caster was told it had never
+            // been trained with a staff while holding the ability that says
+            // otherwise, and focus staves, the one weapon that class actually
+            // wants, could not be given to anybody.
+            //
+            // CheckAbilityToUseItem takes a GameLiving rather than a
+            // GamePlayer, so a hire is a legitimate thing to ask about, and it
+            // covers realm and per-item class restrictions on the way past.
+            return GameServer.ServerRules.CheckAbilityToUseItem(living, item.Template);
         }
 
         private static List<string> SpecsOf(eCharacterClass characterClass)

@@ -1806,6 +1806,70 @@ namespace DOL.GS.Scripts
         /// player leaves the rest of the group running around bare. A real
         /// Druid works down the group; so does this one.
         /// </summary>
+        /// <summary>
+        /// Buffs that occupy the same slot as each other.
+        ///
+        /// A Cleric's Strength buff and a Shaman's Strength/Constitution buff
+        /// are one eEffect each -- StrengthBuff and StrengthConBuff -- and the
+        /// game treats them as different effects entirely. It does not treat
+        /// them as different buffs: they write to the same base-buff category,
+        /// so one replaces the other on the target.
+        ///
+        /// Asking only whether MY effect is on the target therefore always
+        /// answers no while the other one is up. The Cleric buffs, the Shaman
+        /// sees no StrengthConBuff and buffs over it, the Cleric sees no
+        /// StrengthBuff and buffs over that, and the two of them do it for as
+        /// long as they are both stood there -- which is exactly what a Cleric
+        /// and a Shaman in the same company did, without pause, instead of
+        /// healing.
+        ///
+        /// So the question is asked of the slot rather than the effect. The
+        /// singles and the combined version of each are one family, and so are
+        /// the resist groups, where the same thing happens between a single
+        /// resist buff and the three-way or all-resist versions.
+        /// </summary>
+        private static readonly eEffect[][] BUFF_FAMILIES =
+        {
+            new[] { eEffect.StrengthBuff,     eEffect.StrengthConBuff },
+            new[] { eEffect.ConstitutionBuff, eEffect.StrengthConBuff },
+            new[] { eEffect.DexterityBuff,    eEffect.DexQuickBuff },
+            new[] { eEffect.QuicknessBuff,    eEffect.DexQuickBuff },
+
+            new[] { eEffect.BodyResistBuff,   eEffect.SpiritResistBuff, eEffect.EnergyResistBuff,
+                    eEffect.BodySpiritEnergyBuff, eEffect.AllMagicResistsBuff, eEffect.AllResistsBuff },
+            new[] { eEffect.HeatResistBuff,   eEffect.ColdResistBuff,   eEffect.MatterResistBuff,
+                    eEffect.HeatColdMatterBuff,   eEffect.AllMagicResistsBuff, eEffect.AllResistsBuff },
+            new[] { eEffect.SlashResistBuff,  eEffect.CrushResistBuff,  eEffect.ThrustResistBuff,
+                    eEffect.AllMeleeResistsBuff,  eEffect.AllResistsBuff },
+        };
+
+        /// <summary>
+        /// Whether this one already has something standing in that slot --
+        /// its own buff, or anybody else's that would displace it.
+        /// </summary>
+        private static bool AlreadyCovered(GameLiving target, eEffect effect)
+        {
+            if (target == null)
+                return true;
+
+            if (EffectListService.GetEffectOnTarget(target, effect) != null)
+                return true;
+
+            foreach (eEffect[] family in BUFF_FAMILIES)
+            {
+                if (Array.IndexOf(family, effect) < 0)
+                    continue;
+
+                foreach (eEffect kin in family)
+                {
+                    if (EffectListService.GetEffectOnTarget(target, kin) != null)
+                        return true;
+                }
+            }
+
+            return false;
+        }
+
         private GameLiving WhoNeeds(GamePlayer owner, Spell buff, eEffect effect)
         {
             // A self-only buff can only ever be on the caster.
@@ -1816,15 +1880,15 @@ namespace DOL.GS.Scripts
             // an Eldritch, looked like: casting without pause and apparently
             // buffing itself over and over. It was.
             if (buff.Target is eSpellTarget.SELF)
-                return EffectListService.GetEffectOnTarget(this, effect) == null ? this : null;
+                return AlreadyCovered(this, effect) ? null : this;
 
-            if (EffectListService.GetEffectOnTarget(owner, effect) == null)
+            if (!AlreadyCovered(owner, effect))
                 return owner;
 
             foreach (GameMercenary mate in MercenaryManager.GetCompany(owner))
             {
                 if (mate.IsAlive && IsWithinRadius(mate, 1500) &&
-                    EffectListService.GetEffectOnTarget(mate, effect) == null)
+                    !AlreadyCovered(mate, effect))
                     return mate;
             }
 
@@ -1833,7 +1897,7 @@ namespace DOL.GS.Scripts
             GameLiving pet = owner.ControlledBrain?.Body;
 
             if (pet != null && pet.IsAlive && IsWithinRadius(pet, 1500) &&
-                EffectListService.GetEffectOnTarget(pet, effect) == null)
+                !AlreadyCovered(pet, effect))
                 return pet;
 
             return null;
@@ -3861,9 +3925,7 @@ namespace DOL.GS.Scripts
                 // any melee weapon, and AttackComponent switches it BACK to
                 // ranged every time its aggro list empties. One gift turned a
                 // melee class into a permanent archer.
-                if (merc.Profile != null &&
-                    !MercenaryLoadout.CanWield(merc.Profile.ClassId,
-                        (eObjectType) item.Object_Type))
+                if (!MercenaryLoadout.CanWield(merc, item))
                 {
                     return "I have never been trained with " +
                            ((eObjectType) item.Object_Type).ToString().ToLower() +

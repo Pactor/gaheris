@@ -2873,7 +2873,14 @@ namespace DOL.GS.Scripts
             // until level 15 when the first minion summon is learned -- so a
             // young Bonedancer walking around with only a commander is correct
             // and not a fault.
-            if (Kit.PetSummon != null && Kit.Turrets.Count > 0)
+            // A commander, specifically -- not merely a pet and a field.
+            //
+            // An Animist has both: Forest's Servant is a SummonAnimistPet and
+            // lands in PetSummon, and the Tanglers and Sporespawn land in the
+            // field. Testing for "has both" therefore caught him too, and he
+            // planted whether or not there was a camp, which is the opposite of
+            // what the camp rule is for. Only SummonCommander commands.
+            if (HasCommander)
                 return 1 + MinionsAllowed();
 
             if (Kit.Turrets.Count > 0)
@@ -3158,9 +3165,8 @@ namespace DOL.GS.Scripts
             if (Kit == null)
                 return null;
 
-            // Slot zero is the commander, for anything that has both. The rest
-            // are the crowd it answers for.
-            if (Kit.PetSummon != null && Kit.Turrets.Count > 0)
+            // Slot zero is the commander. The rest are the crowd it answers for.
+            if (HasCommander)
             {
                 if (index == 0)
                     return Kit.PetSummon;
@@ -3293,7 +3299,7 @@ namespace DOL.GS.Scripts
             servant.Stationary = turret;
 
             // Slot zero of a commander class is the commander itself.
-            servant.Commands = index == 0 && Kit.PetSummon != null && Kit.Turrets.Count > 0;
+            servant.Commands = index == 0 && HasCommander;
 
             // A turret is a bomb on a stick. It cannot chase, so what it has is
             // reach and a blast -- the caster's own area spell, which is what
@@ -3333,6 +3339,15 @@ namespace DOL.GS.Scripts
         /// counting the commander itself.
         /// </summary>
         private const int MINION_LIMIT = 3;
+
+        /// <summary>
+        /// Whether this class fields a commander with a crowd under it, rather
+        /// than a pet and a field of turrets, which are not the same thing.
+        /// </summary>
+        protected bool HasCommander =>
+            Kit?.PetSummon != null &&
+            Kit.PetSummon.SpellType is eSpellType.SummonCommander &&
+            Kit.Turrets.Count > 0;
 
         /// <summary>
         /// The commander's total level budget for minions.

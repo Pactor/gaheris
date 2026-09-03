@@ -2331,6 +2331,22 @@ namespace DOL.GS.Scripts
             if (spell.Range > 0 && target != this && !IsWithinRadius(target, spell.Range))
                 return false;
 
+            // A pet-line spell with no pet to cast it is fatal here, not
+            // merely useless. PetSpellHandler.CheckBeginCast wants to tell the
+            // caster why it cannot be cast, and does it like this:
+            //
+            //     if (Caster.ControlledBrain == null)
+            //         MessageToCaster(LanguageMgr.GetTranslation(
+            //             (Caster as GamePlayer).Client, ...
+            //
+            // A hire is not a GamePlayer, so that cast yields null and the
+            // dereference throws inside CastingService -- and the service's
+            // answer to a component that throws is to remove the entity that
+            // owns it from the world. A Necromancer whose servant was down
+            // simply vanished mid-fight, roster and all.
+            if (spell.SpellType is eSpellType.PetSpell && ControlledBrain == null)
+                return false;
+
             long now = GameLoop.GameLoopTime;
 
             if (_cooldowns.TryGetValue(spell.ID, out long ready) && ready > now)

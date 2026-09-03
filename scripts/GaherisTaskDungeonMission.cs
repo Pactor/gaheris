@@ -156,6 +156,16 @@ namespace DOL.GS.Scripts
             if (TaskRegion == null)
                 return;
 
+            // Start with whatever this dungeon has already been taught. A
+            // region walked once before does not need teaching again, and the
+            // creatures can be laid out on known ground from the moment the
+            // instance is built rather than after somebody has explored it.
+            _trail.AddRange(DungeonTrail.Load(TaskRegion.Skin));
+
+            if (_trail.Count > 0)
+                Console.WriteLine("Dungeon: region " + TaskRegion.Skin + " remembered from " +
+                                  _trail.Count + " known points.");
+
             // A task taken while grouped belongs to the GROUP, not to the
             // player -- the taskmaster builds it that way, and anyone playing
             // with hired companions is always grouped. Requiring a GamePlayer
@@ -282,8 +292,11 @@ namespace DOL.GS.Scripts
                     }
                 }
 
-                if (!known)
-                    _trail.Add(new Point3D(p.X, p.Y, p.Z));
+                if (known)
+                    continue;
+
+                _trail.Add(new Point3D(p.X, p.Y, p.Z));
+                DungeonTrail.Teach(TaskRegion.Skin, p.X, p.Y, p.Z);
             }
         }
 

@@ -244,10 +244,48 @@ namespace DOL.GS.Scripts
     {
         public FrontierGates.Camp Opens { get; set; }
 
+        /// <summary>
+        /// Guards against crossing twice off one touch.
+        ///
+        /// Open and Close both cross, so a client that sends one then the
+        /// other would otherwise fire this gate twice in a few milliseconds.
+        /// </summary>
+        private const int SETTLE_MILLIS = 2000;
+
+        private const string LAST_CROSS = "GaherisLastGateCross";
+
         public override void Open(GameLiving opener = null)
         {
-            if (opener is not GamePlayer player)
-                return;   // Deliberately not base.Open -- this gate stays shut.
+            Cross(opener);   // Deliberately not base.Open -- this gate stays shut.
+        }
+
+        /// <summary>
+        /// Close crosses too, and that is not tidiness.
+        ///
+        /// The core's handler picks between them on the state the CLIENT sends:
+        ///
+        ///     if (doorState == 0x01) door.Open(player); else door.Close(player);
+        ///
+        /// and since this gate never actually opens, the client's idea of its
+        /// state and the server's drift apart -- so the first touch often
+        /// arrives as a Close, does nothing, and only the second one crosses.
+        /// That is the wasted click. Both now do the same thing, so the first
+        /// touch is the one that works.
+        /// </summary>
+        public override void Close(GameLiving closer = null)
+        {
+            Cross(closer);
+        }
+
+        private void Cross(GameLiving who)
+        {
+            if (who is not GamePlayer player)
+                return;
+
+            long last = player.TempProperties.GetProperty<long>(LAST_CROSS);
+
+            if (last > 0 && GameLoop.GameLoopTime - last < SETTLE_MILLIS)
+                return;
 
             if (player.InCombat)
             {
@@ -255,6 +293,8 @@ namespace DOL.GS.Scripts
                                        eChatType.CT_System, eChatLoc.CL_SystemWindow);
                 return;
             }
+
+            player.TempProperties.SetProperty(LAST_CROSS, GameLoop.GameLoopTime);
 
             FrontierGates.Send(player, Opens,
                 "The gate will not open. The frontier takes you instead, and " +

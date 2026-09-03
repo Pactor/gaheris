@@ -83,7 +83,16 @@ namespace DOL.GS.Scripts
             if (!player.Inventory.RemoveItem(item))
                 return false;
 
-            player.MLLine = 0;
+            // 255, not 0. MLLine is an index into the disciplines and every
+            // value from 0 upwards names a real one, so there is no number
+            // that means "not chosen" -- setting it to 0 quietly moved the
+            // player onto Banelord and left the Arbiter hiding the list,
+            // because he only offers it to somebody who has not chosen. A
+            // value past the end of the list is unchosen: PathOf finds nothing
+            // at it, so the Arbiter offers the disciplines again, and
+            // RefreshSpecDependantSkills matches nothing at it either, so the
+            // old path's spells come away with the star.
+            player.MLLine = GaherisArbiter.NO_PATH;
             player.SaveIntoDatabase();
             player.RefreshSpecDependantSkills(true);
             player.Out.SendUpdatePlayer();

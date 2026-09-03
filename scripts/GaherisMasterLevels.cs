@@ -40,6 +40,16 @@ namespace DOL.GS.Scripts
         /// </summary>
         private const int WITH_YOU = 2000;
 
+        /// <summary>
+        /// The MLLine value that means no discipline chosen.
+        ///
+        /// MLLine is an index and every value from 0 up names a real
+        /// discipline, so there is no natural way to say "none". Past the end
+        /// of the list is unambiguous: nothing matches it, so the player holds
+        /// no Master Level spells and the Arbiter offers the choice again.
+        /// </summary>
+        public const byte NO_PATH = 255;
+
         public override bool Interact(GamePlayer player)
         {
             // The welcome is for people who have not heard it. Arbiter.Interact
@@ -252,12 +262,17 @@ namespace DOL.GS.Scripts
         /// </summary>
         private string PathList(GamePlayer player)
         {
-            // Master Level 0 is the whole test, and it is DOLSharp's: you are on
-            // the path but have not walked any of it, so the discipline is
-            // still open. Asking PathOf instead would never offer it at all --
-            // MLLine defaults to 0, so an unchosen player already "walks"
-            // whichever discipline happens to sit first in their career.
-            if (!player.MLGranted || player.MLLevel > 0)
+            // Offered while there is a choice to make, and only then.
+            //
+            // Two ways to have one. Master Level 0 is DOLSharp's: on the path,
+            // none of it walked, discipline still open. The other is a Star of
+            // Destiny, which sets MLLine past the end of the list -- so PathOf
+            // finds nothing and the choice is open again at whatever rank the
+            // player has reached, which is the entire point of buying one.
+            if (!player.MLGranted)
+                return string.Empty;
+
+            if (player.MLLevel > 0 && PathOf(player) != null)
                 return string.Empty;
 
             string text = "\nName a discipline and its arts open to you as you rise:\n";

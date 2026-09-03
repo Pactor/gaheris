@@ -2144,6 +2144,7 @@ namespace DOL.GS.Scripts
             }
 
             _ownerMissingSince = 0;
+            WearSpectralForm();
 
             // At camp the company holds the ground and the employer does the
             // walking. That is the whole point of a pull camp: you go and
@@ -2859,6 +2860,22 @@ namespace DOL.GS.Scripts
             // moving, and a field left behind on ground nobody returns to is
             // power spent on nothing -- so a turret class plants only once you
             // have said you are staying.
+            // A commander and its minions is not a turret field.
+            //
+            // Moving SummonMinion into the turret list made a Bonedancer look
+            // like an Animist to the count below, so away from camp it summoned
+            // nothing at all -- no commander either. That is backwards: a
+            // Bonedancer controls exactly one pet directly, the commander, and
+            // everything else answers to it. Kill the commander and the minions
+            // are released, which is why it is the one that must always be up.
+            //
+            // Three minions under it at the top end, four pets in all, and none
+            // until level 15 when the first minion summon is learned -- so a
+            // young Bonedancer walking around with only a commander is correct
+            // and not a fault.
+            if (Kit.PetSummon != null && Kit.Turrets.Count > 0)
+                return 1 + Math.Min(MINION_LIMIT, Kit.Turrets.Count);
+
             if (Kit.Turrets.Count > 0)
                 return Employer != null && MercenaryManager.IsCamped(Employer)
                     ? TURRET_FIELD
@@ -3044,6 +3061,42 @@ namespace DOL.GS.Scripts
         /// standing there in flesh is a Necromancer that has lost its pet --
         /// worth being able to see at a glance across a fight.
         /// </summary>
+        /// <summary>
+        /// The Bainshee's fighting form.
+        ///
+        /// She is a wailing spirit and takes the shape when she goes to work --
+        /// her whole line is sound and her spells are screams. The core has a
+        /// BainsheePulseDmgSpellHandler for the auras and it never touches the
+        /// model, so nothing anywhere put her in the form; she fought as an
+        /// ordinary elf.
+        ///
+        /// Driven by combat rather than by a spell, because there is no form
+        /// spell in the data to hang it on -- the four lines she has carry
+        /// screams, bolts and wards and nothing that shifts shape.
+        /// </summary>
+        private void WearSpectralForm()
+        {
+            if (Profile == null || Profile.ClassId is not eCharacterClass.Bainshee)
+                return;
+
+            bool fighting = InCombat || attackComponent.AttackState;
+            ushort wanted = fighting ? BAINSHEE_MODEL : Profile.Model;
+
+            if (Model == wanted)
+                return;
+
+            Model = wanted;
+
+            foreach (GamePlayer nearby in GetPlayersInRadius(WorldMgr.VISIBILITY_DISTANCE))
+                nearby.Out.SendModelChange(this, wanted);
+        }
+
+        /// <summary>
+        /// The spectral shape. Model 1885 is the game's own banshee, used by 56
+        /// NPCs -- not a ghost picked to look about right.
+        /// </summary>
+        private const ushort BAINSHEE_MODEL = 1885;
+
         private void WearShadeIfPetIsUp(int crop)
         {
             if (Profile == null || Profile.ClassId is not eCharacterClass.Necromancer)
@@ -3096,8 +3149,42 @@ namespace DOL.GS.Scripts
         /// <summary>The summon this class would actually cast.</summary>
         protected virtual Spell ServantSpell()
         {
+            return ServantSpell(0);
+        }
+
+        /// <summary>What to summon for this slot.</summary>
+        protected virtual Spell ServantSpell(int index)
+        {
             if (Kit == null)
                 return null;
+
+            // Slot zero is the commander, for anything that has both. The rest
+            // are the crowd it answers for.
+            if (Kit.PetSummon != null && Kit.Turrets.Count > 0)
+            {
+                if (index == 0)
+                    return Kit.PetSummon;
+
+                Spell mender = null;
+                Spell best = null;
+
+                foreach (Spell minion in Kit.Turrets)
+                {
+                    if (best == null || minion.Level > best.Level)
+                        best = minion;
+
+                    if (MercenaryLoadout.IsHealingMinion(minion) &&
+                        (mender == null || minion.Level > mender.Level))
+                        mender = minion;
+                }
+
+                // At camp the crowd is menders: a Bonedancer holding a pull
+                // spot wants the group kept standing, and on his own they are
+                // what keeps HIM standing. On the move he takes what fights.
+                bool camped = Employer != null && MercenaryManager.IsCamped(Employer);
+
+                return camped && mender != null ? mender : best ?? Kit.PetSummon;
+            }
 
             // At camp, a class that can summon menders summons menders.
             //
@@ -3165,7 +3252,7 @@ namespace DOL.GS.Scripts
             if (Employer == null)
                 return;
 
-            Spell summon = ServantSpell();
+            Spell summon = ServantSpell(index);
             DbNpcTemplate template = MercenaryLoadout.PetTemplate(summon);
 
             string label;
@@ -3237,6 +3324,12 @@ namespace DOL.GS.Scripts
         /// for.
         /// </summary>
         private const int TURRET_ROAMING = 2;
+
+        /// <summary>
+        /// Minions a commander will answer for. Three at the top end, four pets
+        /// counting the commander itself.
+        /// </summary>
+        private const int MINION_LIMIT = 3;
 
         /// <summary>Pacing between summons, so a field goes up like a field.</summary>
         private const int SERVANT_INTERVAL = 2500;

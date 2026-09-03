@@ -1079,6 +1079,18 @@ namespace DOL.GS.Scripts
         /// </summary>
         private void GoHome(GamePlayer owner)
         {
+            // A minion goes where its commander goes. It is the commander's,
+            // not the employer's, so it has no business walking back to a
+            // player it does not belong to -- and the commander is already
+            // being sent to camp or after the employer by its own tick.
+            if (Body is MercenaryServant servant && servant.Commander != null &&
+                servant.Commander.IsAlive &&
+                servant.Commander.ObjectState == GameObject.eObjectState.Active)
+            {
+                Body.Follow(servant.Commander, 80, MercenaryBrain.FOLLOW_GIVE_UP);
+                return;
+            }
+
             GameLocation camp = MercenaryManager.CampSpot(owner);
 
             bool rescuing = camp != null && !owner.IsAlive &&
@@ -3301,6 +3313,19 @@ namespace DOL.GS.Scripts
             // Slot zero of a commander class is the commander itself.
             servant.Commands = index == 0 && HasCommander;
 
+            // Everything after slot zero answers to whatever is standing in it.
+            if (HasCommander && index > 0)
+            {
+                foreach (GameMercenary mate in MercenaryManager.GetCompany(Employer))
+                {
+                    if (mate is MercenaryServant boss && boss.Master == this && boss.Commands)
+                    {
+                        servant.Commander = boss;
+                        break;
+                    }
+                }
+            }
+
             // A turret is a bomb on a stick. It cannot chase, so what it has is
             // reach and a blast -- the caster's own area spell, which is what
             // makes a field of them level whatever walks in.
@@ -3403,12 +3428,8 @@ namespace DOL.GS.Scripts
                 foreach (GameMercenary other in
                          new List<GameMercenary>(MercenaryManager.GetCompany(Employer)))
                 {
-                    if (other is MercenaryServant minion &&
-                        minion.Master == Master &&
-                        !ReferenceEquals(minion, this))
-                    {
+                    if (other is MercenaryServant minion && ReferenceEquals(minion.Commander, this))
                         minion.Retire();
-                    }
                 }
 
                 Employer?.Out.SendMessage(
@@ -3437,6 +3458,18 @@ namespace DOL.GS.Scripts
         /// without it the commander is just the first of four things to kill.
         /// </summary>
         public bool Commands;
+
+        /// <summary>
+        /// The commander this one answers to, or null if it answers to nobody.
+        ///
+        /// A Bonedancer does not own his minions. He owns the commander, the
+        /// commander owns the minions, and it lends them to him -- which is why
+        /// they follow it rather than him, fight what it fights, and fall when
+        /// it falls. Master stays pointed at the hire so the bookkeeping that
+        /// counts and replaces servants still works; this is the chain of
+        /// command laid over the top of it.
+        /// </summary>
+        public MercenaryServant Commander;
 
         /// <summary>What it throws when something comes into reach.</summary>
         public Spell Bombs;

@@ -260,7 +260,13 @@ namespace DOL.GS.Scripts
               "Turrets, and more turrets.", "functional turret", "hardy turret"),
             C("Valewalker",  eRealm.Hibernia, 389, Duty.Melee | Duty.DoT,
               "A scythe, and the field rots behind it."),
-            C("Bainshee",    eRealm.Hibernia, 302, Duty.PBAoE | Duty.Nuke,
+            // A Bainshee is female. That is not decoration -- it is the class:
+            // she is a wailing spirit, and the game has never let anyone make a
+            // male one. Model 302 is male, and the mob table settles it without
+            // any guessing: twenty-five NPCs use it and every one is Gender 1.
+            // 310 is the female model, used eighteen times, Chieftess Crimthain
+            // among them.
+            C("Bainshee",    eRealm.Hibernia, 310, Duty.PBAoE | Duty.Nuke,
               "Screams. Everything in front of her stops."),
             C("Vampiir",     eRealm.Hibernia, 380, Duty.Melee | Duty.Debuff,
               "Closes, drains, and takes their strength with it."),
@@ -1215,6 +1221,15 @@ namespace DOL.GS.Scripts
             Name = RoleName;
             GuildName = "Free Company";
             Model = RoleModel;
+
+            // Keep the gender flag agreeing with the model. Nothing much reads
+            // it today, but a female model on an NPC the server believes is
+            // male is the kind of disagreement that surfaces later in a
+            // pronoun or an emote and takes an hour to trace back to here.
+            Gender = Profile != null && Profile.Name == "Bainshee"
+                ? eGender.Female
+                : eGender.Neutral;
+
             Size = 50;
             Realm = owner.Realm;
             Flags = 0;

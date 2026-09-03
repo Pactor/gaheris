@@ -33,3 +33,11 @@ __pycache__/
 # harness -- and nobody installing the server needs them. The SQL they produce
 # is committed instead, so a clone is self-contained.
 tools/
+
+# tools/ is generators nobody else needs -- except this one, which is how an
+# operator switches frontiers and puts them back.
+!tools/frontier.sh
+
+# Database snapshots taken by tools/frontier.sh. Local safety nets, not
+# repository content.
+backups/

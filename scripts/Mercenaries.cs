@@ -3047,9 +3047,35 @@ namespace DOL.GS.Scripts
             if (Kit == null)
                 return null;
 
-            // Turrets are level-ordered, so the last is the best one known.
+            // The best turret is not simply the last one learned.
+            //
+            // An Animist knows four families of them and only two are for
+            // fighting. Creeping Path plants Sporespawn and Spore Cannons;
+            // Verdant Path plants Vents of Physical Protection and Ligneous
+            // Seals, which are wards. Taking the highest level turret known
+            // planted wards at a point-blank camp -- correct by level, useless
+            // by purpose, and it looked exactly like the bomb group being
+            // broken.
+            //
+            // The templates say which is which without any guessing at names:
+            // a fighting turret carries a spell aimed at an enemy, and a ward
+            // carries nothing at all. Prefer one that does; fall back to the
+            // highest level if this class has no such thing.
             if (Kit.Turrets.Count > 0)
-                return Kit.Turrets[Kit.Turrets.Count - 1];
+            {
+                Spell best = null;
+
+                foreach (Spell turret in Kit.Turrets)
+                {
+                    if (!MercenaryLoadout.IsFightingTurret(turret))
+                        continue;
+
+                    if (best == null || turret.Level > best.Level)
+                        best = turret;
+                }
+
+                return best ?? Kit.Turrets[Kit.Turrets.Count - 1];
+            }
 
             return Kit.PetSummon;
         }

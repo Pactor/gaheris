@@ -724,6 +724,42 @@ namespace DOL.GS.Scripts
         }
 
         /// <summary>
+        /// Whether a turret is one that fights.
+        ///
+        /// An Animist plants four families and only two of them are weapons.
+        /// Creeping Path grows Sporespawn and Spore Cannons -- the bomb group.
+        /// Verdant Path grows Vents of Elemental and Physical Protection and
+        /// Ligneous shields, which are wards. They are all the same spell type
+        /// and the ward line reaches level 50 as well, so taking the highest
+        /// turret known planted a camp full of shields: right by level, wrong
+        /// by purpose, and indistinguishable from the bomb group being broken.
+        ///
+        /// The summoned template settles it with no guessing at names. A
+        /// fighting turret's npctemplate carries a spell pointed at an enemy;
+        /// a ward's carries none at all.
+        /// </summary>
+        public static bool IsFightingTurret(Spell summon)
+        {
+            DbNpcTemplate template = PetTemplate(summon);
+
+            if (template == null || string.IsNullOrWhiteSpace(template.Spells))
+                return false;
+
+            foreach (string part in template.Spells.Split(';'))
+            {
+                if (!int.TryParse(part.Trim(), out int id))
+                    continue;
+
+                Spell carried = SkillBase.GetSpellByID(id);
+
+                if (carried != null && carried.Target == eSpellTarget.ENEMY)
+                    return true;
+            }
+
+            return false;
+        }
+
+        /// <summary>
         /// What a summon spell actually brings.
         ///
         /// The pet id lives in LifeDrainReturn -- the field is reused, which is

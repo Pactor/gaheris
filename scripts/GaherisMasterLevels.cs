@@ -93,8 +93,18 @@ namespace DOL.GS.Scripts
             if (enrolled > 1)
                 text += "Your company has begun the trials with you.\n\n";
 
+            // Speaking to him re-applies what you hold, whatever put it there.
+            //
+            // Demyphon does the advancing -- that is DOLSharp's arrangement and
+            // it is two lines in his ReceiveItem -- but coming here afterwards
+            // is how a lot of people remember it, and a rank whose spells never
+            // arrived is the exact failure this whole thing was reported as. A
+            // refresh costs nothing and closes that gap from either direction.
+            if (player.MLGranted && player.MLLevel > 0)
+                Announce(player);
+
             text += Promote(player) ?? Standing(player);
-            text += "\n" + PathList(player);
+            text += PathList(player);
 
             SayTo(player, eChatLoc.CL_PopupWindow, text);
             return true;
@@ -231,19 +241,29 @@ namespace DOL.GS.Scripts
             return text;
         }
 
-        /// <summary>The disciplines, with the one being walked marked.</summary>
+        /// <summary>
+        /// The disciplines -- offered only while there is a choice to make.
+        ///
+        /// DOLSharp puts the choice behind "MLGranted && MLLevel == 0" and
+        /// never raises it again; changing path afterwards costs a Star of
+        /// Destiny, which is Demyphon's business. Listing all eight on every
+        /// visit to somebody who settled the question long ago is noise on top
+        /// of the thing they actually came for.
+        /// </summary>
         private string PathList(GamePlayer player)
         {
-            if (!player.MLGranted)
+            // Master Level 0 is the whole test, and it is DOLSharp's: you are on
+            // the path but have not walked any of it, so the discipline is
+            // still open. Asking PathOf instead would never offer it at all --
+            // MLLine defaults to 0, so an unchosen player already "walks"
+            // whichever discipline happens to sit first in their career.
+            if (!player.MLGranted || player.MLLevel > 0)
                 return string.Empty;
 
-            string chosen = PathOf(player);
-            string text = chosen == null
-                ? "\nName a discipline and its arts open to you as you rise:\n"
-                : "\nName another and you take up its arts instead:\n";
+            string text = "\nName a discipline and its arts open to you as you rise:\n";
 
             foreach ((string key, string what) in Paths)
-                text += (key == chosen ? "  * [" : "  [") + key + "] -- " + what + "\n";
+                text += "  [" + key + "] -- " + what + "\n";
 
             return text;
         }
@@ -347,7 +367,17 @@ namespace DOL.GS.Scripts
             }
 
             player.MLLine = index;
+
+            // The choice confers the first rank, as it does in DOLSharp:
+            //
+            //     player.MLLine = (byte)index;
+            //     player.MLLevel = 1;
+            //     player.RefreshSpecDependantSkills(true);
+            if (player.MLLevel < 1)
+                player.MLLevel = 1;
+
             player.SaveIntoDatabase();
+            player.RefreshSpecDependantSkills(true);
 
             player.Out.SendMessage("You have taken up the path of the " + wanted + ".",
                                    eChatType.CT_Important, eChatLoc.CL_SystemWindow);
@@ -385,46 +415,24 @@ namespace DOL.GS.Scripts
         /// <summary>Puts one person on the path. True if this changed anything.</summary>
         private bool Enrol(GamePlayer player)
         {
-            // Granted but still at Master Level 0 counts as unfinished. The
-            // first attempt at this set the flag and nothing else, which left
-            // players enrolled in a state they could not see.
-            if (player.MLGranted && player.MLLevel >= 1)
+            if (player.MLGranted)
                 return false;
 
+            // Enrolment sets the flag and nothing else. Master Level 1 arrives
+            // with the choice of discipline, not before it -- which is how
+            // DOLSharp does it, and the reason is that MLLevel 0 IS the "no
+            // discipline chosen yet" state. MLLine defaults to 0, so there is
+            // no value of it that means unchosen; the rank is what carries
+            // that. Granting Master Level 1 at enrolment quietly locked every
+            // player into whichever discipline sat first in their career.
             player.MLGranted = true;
-
-            // Master Level 1 comes with enrolment, and that is a decision
-            // rather than an accident. On live it is the reward for completing
-            // the first trial, and the trials do not exist here -- nothing in
-            // OpenDAoC awards an ML step. Leaving the player at ML0 leaves
-            // RefreshSpecDependantSkills refusing to hand over the Master Level
-            // specialisation, which is gated on MLLevel >= 1, so all 64 ML
-            // spells we imported stay out of reach and the window has nothing
-            // to show. The Arbiter opens the first door; the other nine are
-            // earned below.
-            if (player.MLLevel < 1)
-            {
-                player.MLLevel = 1;
-                player.MLExperience = 0;
-            }
-
             player.SaveIntoDatabase();
 
-            // Said twice on purpose. The base class has just put two popup
-            // windows on the screen, and a line in the system window behind
-            // them is easy to miss -- which is exactly what happened the first
-            // time this ran: the flag was set in the database and the player
-            // saw nothing at all.
-            SayTo(player, eChatLoc.CL_PopupWindow,
-                  "You have begun the trials of Atlantis. You are now Master " +
-                  "Level 1, and your deeds against the creatures of this place " +
-                  "will carry you further.");
-
             player.Out.SendMessage(
-                "You have begun the trials of Atlantis. You are now Master Level 1.",
+                "You have begun the trials of Atlantis. Choose your discipline.",
                 eChatType.CT_Important, eChatLoc.CL_SystemWindow);
 
-            Announce(player);
+            player.Out.SendMasterLevelWindow((byte) player.MLLevel);
             return true;
         }
 

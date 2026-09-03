@@ -120,43 +120,53 @@ namespace DOL.GS.Scripts
                 return false;
             }
 
-            if (player.MLLevel >= level)
+            // The credit has to be for the very next rank, which is how DOLSharp
+            // does it and how the ranks stay a ladder rather than a menu:
+            //
+            //     if (item.Id_nb.EndsWith(string.Format("token_{0}", player.MLLevel+1)))
+            //
+            // Buy the credit for six when you are five, hand it over, and you
+            // are six. Buying five credits means five of these conversations,
+            // in order.
+            if (level != player.MLLevel + 1)
             {
                 SayTo(player, eChatLoc.CL_PopupWindow,
-                      "You are already Master Level " + player.MLLevel +
-                      ". Keep this for a rank you have yet to reach.");
+                      "You need to give me the credit for Master Level " +
+                      (player.MLLevel + 1) + " to continue learning your path.");
                 return false;
             }
 
             if (!player.Inventory.RemoveItem(item))
                 return false;
 
-            // A credit buys the standing, not the rank.
+            // Handing the credit over IS the training. This is the merchant's
+            // job in DOLSharp and it is two lines there:
             //
-            // This used to set MLLevel outright and zero MLExperience, which
-            // got both halves wrong: it skipped the Arbiter, who is the one who
-            // actually teaches a Master Level, and it threw away every kill the
-            // player had banked towards the next one. Somebody who bought their
-            // way to Master Level 5 arrived with an empty bar, no new spells,
-            // and an Arbiter who refused to advance them without saying why.
+            //     player.MLLevel++;
+            //     player.RefreshSpecDependantSkills(true);
             //
-            // What a credit does is fill the bar. One rank's worth per token,
-            // added to whatever is already there, and then you go and be taught
-            // -- which is why buying five means speaking to him five times.
-            long worth = player.GetMLExperienceForLevel(player.MLLevel + 1);
-            player.MLExperience += worth;
+            // Earlier attempts put the teaching on the Arbiter and had this
+            // grant experience instead, which is not how it worked and left the
+            // player holding a rank with no spells behind it. The refresh is
+            // the part that matters: MLLevel decides which spells the Master
+            // Level specialisation hands over, so changing the rank without
+            // recomputing the spec leaves you at whatever you had before.
+            player.MLLevel++;
+            player.MLExperience = 0;
             player.SaveIntoDatabase();
+            player.RefreshSpecDependantSkills(true);
 
             SayTo(player, eChatLoc.CL_PopupWindow,
-                  "The credit is yours. Take it to the Arbiter and he will " +
-                  "raise you; he does the teaching, I only keep the books.");
+                  "You have been granted knowledge of the Master Level " +
+                  player.MLLevel + "!");
 
             player.Out.SendMessage(
-                "You have earned credit towards Master Level " + (player.MLLevel + 1) +
-                ". Speak to the Arbiter to be raised.",
+                "You have been granted knowledge of the Master Level " +
+                player.MLLevel + "!",
                 eChatType.CT_Important, eChatLoc.CL_SystemWindow);
 
-            player.Out.SendMasterLevelWindow((byte) player.MLLevel);
+            // Refresh the client and bring the company along.
+            GaherisArbiter.Announce(player);
             return true;
         }
     }

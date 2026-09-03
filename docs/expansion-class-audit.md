@@ -435,13 +435,21 @@ down.
 line and we have none -- ours is Bone Warriors, under the Bone Army spec -- so
 only the level was corrected.
 
-### Missing outright
+### The three "missing" abilities were not missing
 
-| | |
+They were looked for in the `spell` table. All three are realm abilities and
+live in `ability`, which is why the first pass found nothing.
+
+| | State |
 |---|---|
-| Heretic: Ichor of the Deep | added to its trainable realm abilities; no such spell here |
-| Valkyrie: Call of a Thousand Storms | level 40 self buff; no such spell here |
-| Vampiir: Mark of Prey | group +20% melee and spell crit for 30s; no such spell here |
+| **Mark of Prey** | Present, implemented (`MarkofPreyAbility`), and already linked to the Vampiir. Nothing wrong with it. |
+| **Ichor of the Deep** | Present and implemented, linked to Shaman (28) and Valkyrie (34) as `AtlasOF_Ichor`. The patch adding it to the Heretic is single-sourced and not applied. |
+| **Call of a Thousand Storms** | The ability row exists and belongs to **Thane and Valkyrie at 40** -- not the Valkyrie alone. But **nothing in the core implements it**: no handler, no effect. Linking it would hand out a button that does nothing. Left alone. |
+
+What it actually does, for whenever it is built: a two minute self buff on a
+three minute timer that makes the caster count as several attackers against
+monsters of level 50 and up, scaled by the monster's level. That is a PvE
+mechanic, which makes it worth more here than it ever was on live.
 
 The Bainshee is the one worth understanding before testing her: a whole
 specialisation is named differently here, and the spell that moved between

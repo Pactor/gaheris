@@ -23,14 +23,17 @@
 UPDATE linexspell SET LineName = 'Spectral Force', Level = 26
  WHERE SpellID = (SELECT SpellID FROM spell WHERE Name = 'Alarming Screech' LIMIT 1);
 
--- 1.129: Summon Bone Deadeye moved to level 21.
+-- 1.129: Summon Bone Deadeye moved to level 21. NOT APPLIED.
 --
--- The patch names the Bone Legion line and we have no line by that name --
--- ours is Bone Warriors, under the Bone Army spec -- so the line is left as
--- it is and only the level is corrected. Ours had it at 45, which is a long
--- way from 21 whichever line it sits on.
-UPDATE linexspell SET Level = 21
- WHERE SpellID = (SELECT SpellID FROM spell WHERE Name = 'Summon Bone Deadeye' LIMIT 1);
+-- Tried, and reverted, because our Bonedancer is not laid out the way the
+-- patch assumes. It names a Bone Legion line; we have none. What we have is
+-- three ladders -- Bone Guardians, Bone Mystics, Bone Warriors -- each filling
+-- 15, 18, 21, 24, 27, 30, 33, 36, 39, 42, 45 and 48. Deadeye at 45 IS Bone
+-- Warriors' rung 45, the counterpart of Bone Guard and Bone Warmage.
+--
+-- Moving it to 21 put it alongside Summon Bone Arrow, which already holds that
+-- rung, and left 45 empty. A level from a patch note is only right against the
+-- line structure that patch note describes.
 
 -- 1.129: Purifying Rain cast time reduced from 5.0 to 3.0 seconds.
 UPDATE spell SET CastTime = 3 WHERE Name = 'Purifying Rain';

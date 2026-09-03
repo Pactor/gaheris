@@ -60,7 +60,38 @@ namespace DOL.GS.Scripts
                                          eDungeonType dungeonType = eDungeonType.Ranged)
             : base(owner, dungeonType)
         {
+            SealTheDungeon();
             NameTheBoss();
+        }
+
+        /// <summary>
+        /// Stop the dungeon refilling behind you.
+        ///
+        /// A task dungeon is cleared once. Its creatures are built by
+        /// Instance.LoadFromDatabase as plain GameNPCs, which leaves
+        /// m_respawnInterval at nought -- and nought is not "never", it is
+        /// "work one out":
+        ///
+        ///     if (m_respawnInterval > 0 || m_respawnInterval < 0)
+        ///         return m_respawnInterval;
+        ///     int minutes = Util.Random(NPC_MIN_RESPAWN_INTERVAL, ...);
+        ///
+        /// So every creature came back a few minutes after it died and the
+        /// count stuck: kill eleven more and eleven are still left, because
+        /// the ones killed first are standing up again behind you. Anything
+        /// at or below nought turns the respawn off outright.
+        /// </summary>
+        private void SealTheDungeon()
+        {
+            if (TaskRegion == null)
+                return;
+
+            foreach (GameObject obj in TaskRegion.Objects)
+            {
+                if (obj is GameNPC npc && npc is not GameMercenary &&
+                    npc.Brain is not IControlledBrain)
+                    npc.RespawnInterval = -1;
+            }
         }
 
         /// <summary>

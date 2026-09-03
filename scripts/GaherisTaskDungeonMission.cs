@@ -120,6 +120,20 @@ namespace DOL.GS.Scripts
         private const int NOT_ON_TOP_OF = 900;
 
         /// <summary>
+        /// Far enough away that moving it cannot be seen happening.
+        ///
+        /// This replaces IsVisibleToPlayers, which reads like the right test
+        /// and is not one: it is a DISTANCE flag with a radius of thousands of
+        /// units -- the same one that decides whether a brain keeps ticking --
+        /// and it does not care about walls. In a dungeon where everything is
+        /// within a few thousand units of the player through solid rock, every
+        /// creature counted as visible and nothing was ever eligible to move.
+        /// The rescue has therefore never once run, which is why the dungeon
+        /// kept looking exactly as it did before any of this was written.
+        /// </summary>
+        private const int OUT_OF_SIGHT = 1500;
+
+        /// <summary>
         /// Close enough to count as having been met.
         ///
         /// Straight-line distance from the trail was the wrong test and failed
@@ -249,7 +263,7 @@ namespace DOL.GS.Scripts
 
             Console.WriteLine("Dungeon: " + p.Name + " at " + p.X + "," + p.Y + "," + p.Z +
                               " | trail " + _trail.Count +
-                              " | alive " + Remaining() +
+                              " | alive " + Remaining() + " | moved " + _movedSoFar +
                               (nearest == null ? " | nothing alive"
                                   : " | nearest " + nearest.Name + " flat " + best +
                                     " height " + (nearest.Z - p.Z) +
@@ -310,6 +324,8 @@ namespace DOL.GS.Scripts
         /// first fight. They are still only moved while nobody can see them,
         /// which is what stops it looking like conjuring.
         /// </summary>
+        private int _movedSoFar;
+
         private void MoveTheStranded(List<GamePlayer> inside)
         {
             if (_trail.Count < TRAIL_BEFORE_MOVING)
@@ -325,7 +341,21 @@ namespace DOL.GS.Scripts
                 if (npc is GameMercenary || npc.Brain is IControlledBrain)
                     continue;
 
-                if (npc.InCombat || npc.IsVisibleToPlayers)
+                if (npc.InCombat)
+                    continue;
+
+                bool nearAnybody = false;
+
+                foreach (GamePlayer p in inside)
+                {
+                    if (npc.GetDistanceTo(p) < OUT_OF_SIGHT)
+                    {
+                        nearAnybody = true;
+                        break;
+                    }
+                }
+
+                if (nearAnybody)
                     continue;
 
                 // Met means the player had their chance at it. Anything else
@@ -352,9 +382,10 @@ namespace DOL.GS.Scripts
                            spot.X + Util.Random(-200, 200),
                            spot.Y + Util.Random(-200, 200),
                            spot.Z, (ushort) Util.Random(4095));
+                _movedSoFar++;
 
                 if (++moved >= PER_TICK)
-                    return;
+                    break;
             }
         }
 

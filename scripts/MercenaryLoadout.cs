@@ -88,6 +88,27 @@ namespace DOL.GS.Scripts
         /// </summary>
         public List<Spell> Turrets = new();
 
+        /// <summary>
+        /// Master Level fonts: Font of Power, Sphere of Rejuvenation and the
+        /// two wards. Planted on the ground where the fight is and left to
+        /// feed whoever stands in them, so they are dropped once per fight
+        /// rather than kept up like a buff.
+        /// </summary>
+        public List<Spell> MlFonts = new();
+
+        /// <summary>
+        /// Master Level summons -- Battlewarder, Brittle Guard, Crystal Titan.
+        /// Kept apart from PetSummon because a hire may have both a class pet
+        /// and one of these, and the class pet is the one it fights with.
+        /// </summary>
+        public List<Spell> MlPets = new();
+
+        /// <summary>
+        /// Master Level buffs worth keeping on the group: Warguard, Leadership,
+        /// Energizing Aura, Guided Strike, Chaotic Power.
+        /// </summary>
+        public List<Spell> MlBuffs = new();
+
         public bool Has(Spell spell) => spell != null;
     }
 
@@ -108,7 +129,12 @@ namespace DOL.GS.Scripts
 
         public static Loadout For(eCharacterClass characterClass, int level)
         {
-            return For(characterClass, level, Duty.None);
+            return For(characterClass, level, Duty.None, 0);
+        }
+
+        public static Loadout For(eCharacterClass characterClass, int level, Duty duties)
+        {
+            return For(characterClass, level, duties, 0);
         }
 
         /// <summary>
@@ -116,10 +142,13 @@ namespace DOL.GS.Scripts
         /// what the character does, not by what class it is, so the cache has
         /// to tell a healing Cleric from a smiting one.
         /// </summary>
-        public static Loadout For(eCharacterClass characterClass, int level, Duty duties)
+        public static Loadout For(eCharacterClass characterClass, int level, Duty duties,
+                                  int masterLevel)
         {
             level = Math.Clamp(level, 1, 50);
-            long key = ((long) characterClass * 100 + level) * 65536 + (long) duties;
+            masterLevel = Math.Clamp(masterLevel, 0, 10);
+            long key = (((long) characterClass * 100 + level) * 65536 + (long) duties) * 11
+                       + masterLevel;
 
             lock (_lock)
             {
@@ -127,7 +156,7 @@ namespace DOL.GS.Scripts
                     return cached;
             }
 
-            Loadout loadout = Build(characterClass, level, duties);
+            Loadout loadout = Build(characterClass, level, duties, masterLevel);
 
             lock (_lock)
                 _cache[key] = loadout;
@@ -135,7 +164,8 @@ namespace DOL.GS.Scripts
             return loadout;
         }
 
-        private static Loadout Build(eCharacterClass characterClass, int level, Duty duties)
+        private static Loadout Build(eCharacterClass characterClass, int level, Duty duties,
+                                     int masterLevel)
         {
             Loadout loadout = new();
             List<string> specs = SpecsOf(characterClass);
@@ -189,8 +219,13 @@ namespace DOL.GS.Scripts
                 // not character levels -- so measuring them against a spec
                 // level is meaningless. Atlantis is level 50 content, so that
                 // is the gate.
+                // A hire walks the Master Levels its employer has walked and
+                // no further. Handing a level 50 hire all ten the moment it was
+                // recruited made Atlantis something you were given rather than
+                // something you earned -- and made your own Master Levels the
+                // only ones in the group that meant anything.
                 int reach = IsMasterPath(line.Spec)
-                    ? (level >= 50 ? 10 : 0)
+                    ? (level >= 50 ? masterLevel : 0)
                     : (line.IsBaseLine ? level : specLevel);
 
                 foreach (Spell spell in SkillBase.GetSpellList(line.KeyName))
@@ -507,6 +542,32 @@ namespace DOL.GS.Scripts
 
                 switch (spell.SpellType)
                 {
+                    // ---- Atlantis ------------------------------------------
+                    //
+                    // These have to be named individually because nothing about
+                    // their spell type marks them as Master Level work, and
+                    // without a slot to sit in they stayed in Known and were
+                    // never cast. A hire could hold all ten levels of Perfecter
+                    // and never once drop a Font of Power.
+                    case eSpellType.FOP:            // Font of Power
+                    case eSpellType.FOH:            // Sphere of Rejuvenation
+                    case eSpellType.FOR:            // Determination Ward
+                    case eSpellType.FOD:            // Dissonating Ward
+                        loadout.MlFonts.Add(spell);
+                        break;
+
+                    case eSpellType.Battlewarder:
+                    case eSpellType.BrittleGuard:
+                    case eSpellType.SummonTitan:
+                        loadout.MlPets.Add(spell);
+                        break;
+
+                    case eSpellType.MLABSBuff:              // Warguard
+                    case eSpellType.EffectivenessBuff:      // Leadership
+                    case eSpellType.FatigueConsumptionBuff: // Energizing Aura
+                        loadout.MlBuffs.Add(spell);
+                        break;
+
                     // ---- pets ----------------------------------------------
                     //
                     // Fire-and-forget first: a turret is planted and left, and

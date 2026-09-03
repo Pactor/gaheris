@@ -81,11 +81,59 @@ namespace DOL.GS.Scripts
                 }
             }
 
-            if (enrolled == 0)
+            if (enrolled == 0 && !Promote(player))
                 SayTo(player, eChatLoc.CL_SystemWindow,
                       "You have already begun the trials.");
 
             OfferPaths(player);
+            return true;
+        }
+
+        /// <summary>
+        /// Give the player every Master Level their deeds have paid for.
+        ///
+        /// The experience handler used to promote as soon as the bar filled,
+        /// which meant the Master Levels arrived silently in the middle of a
+        /// fight and the Arbiter had nothing to do with them. He is who you
+        /// train with, so he is who hands them over -- and coming back to him
+        /// with a full bar is the reason to come back at all.
+        /// </summary>
+        private bool Promote(GamePlayer player)
+        {
+            if (!player.MLGranted || player.MLLevel >= GamePlayer.ML_MAX_LEVEL)
+                return false;
+
+            int gained = 0;
+
+            while (player.MLLevel < GamePlayer.ML_MAX_LEVEL)
+            {
+                long needed = player.GetMLExperienceForLevel(player.MLLevel + 1);
+
+                if (needed <= 0 || player.MLExperience < needed)
+                    break;
+
+                player.MLExperience -= needed;
+                player.MLLevel++;
+                gained++;
+            }
+
+            if (gained == 0)
+                return false;
+
+            if (player.MLLevel >= GamePlayer.ML_MAX_LEVEL)
+                player.MLExperience = 0;
+
+            player.SaveIntoDatabase();
+
+            SayTo(player, eChatLoc.CL_PopupWindow,
+                  gained == 1
+                      ? "You have earned it. You are Master Level " + player.MLLevel + "."
+                      : "You have earned several. You are Master Level " + player.MLLevel + ".");
+
+            player.Out.SendMessage("You have reached Master Level " + player.MLLevel + ".",
+                                   eChatType.CT_Important, eChatLoc.CL_SystemWindow);
+
+            Announce(player);
             return true;
         }
 
@@ -336,6 +384,13 @@ namespace DOL.GS.Scripts
             player.Out.SendUpdatePlayer();
             player.Out.SendUpdatePoints();
             player.Out.SendMasterLevelWindow((byte) player.MLLevel);
+
+            // The company walks the Master Levels with its employer. Learn()
+            // reads his MLLevel, so calling it here means a hire picks up the
+            // next path spell the moment he does -- on enrolment, on taking a
+            // discipline, on being granted a level, and on logging in.
+            foreach (GameMercenary merc in MercenaryManager.GetCompany(player))
+                merc.Learn();
         }
     }
 
@@ -464,39 +519,27 @@ namespace DOL.GS.Scripts
             if (!player.MLGranted || player.MLLevel >= GamePlayer.ML_MAX_LEVEL)
                 return;
 
+            long before = player.MLExperience;
+            long needed = player.GetMLExperienceForLevel(player.MLLevel + 1);
+
             player.MLExperience += earned;
 
-            bool advanced = false;
-
-            while (player.MLLevel < GamePlayer.ML_MAX_LEVEL)
+            // Deliberately does not promote. Experience is earned in the field
+            // and the rank is conferred by the Arbiter, so the bar fills here
+            // and fills no further until he hands the level over. It is also
+            // how the player finds out there is a reason to go back to him.
+            if (needed > 0 && before < needed && player.MLExperience >= needed)
             {
-                long needed = player.GetMLExperienceForLevel(player.MLLevel + 1);
+                player.MLExperience = needed;
+                player.SaveIntoDatabase();
 
-                if (needed <= 0 || player.MLExperience < needed)
-                    break;
+                player.Out.SendMessage(
+                    "You have learned all you can alone. Return to the Arbiter " +
+                    "to be raised to Master Level " + (player.MLLevel + 1) + ".",
+                    eChatType.CT_Important, eChatLoc.CL_SystemWindow);
 
-                player.MLExperience -= needed;
-                player.MLLevel++;
-                advanced = true;
+                player.Out.SendMasterLevelWindow((byte) player.MLLevel);
             }
-
-            if (!advanced)
-                return;
-
-            if (player.MLLevel >= GamePlayer.ML_MAX_LEVEL)
-                player.MLExperience = 0;
-
-            player.SaveIntoDatabase();
-
-            player.Out.SendMessage(
-                "You have reached Master Level " + player.MLLevel + ".",
-                eChatType.CT_Important, eChatLoc.CL_SystemWindow);
-
-            // The ML specialisation is gated on MLGranted and MLLevel >= 1, so
-            // the first level is the one that actually hands over the abilities.
-            player.RefreshSpecDependantSkills(true);
-            player.Out.SendUpdatePlayer();
-            player.Out.SendMasterLevelWindow((byte) player.MLLevel);
         }
     }
 }

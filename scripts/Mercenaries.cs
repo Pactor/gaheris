@@ -53,6 +53,17 @@ namespace DOL.GS.Scripts
         /// taunts -- pulling a single mob off your pet is how this one dies.
         /// </summary>
         Focus,
+
+        /// <summary>
+        /// You are set up somewhere and pulling to it for a while.
+        ///
+        /// This is what the Master Level fonts are for. A Font of Power is
+        /// planted where it is dropped and feeds whoever stands in it until it
+        /// expires -- worth a great deal at a camp and worth nothing at all
+        /// spent on a single wandering mob halfway to somewhere else. So the
+        /// company saves them until you say you are staying.
+        /// </summary>
+        Camp,
     }
 
     /// <summary>Where the group stands relative to their employer.</summary>
@@ -1045,7 +1056,12 @@ namespace DOL.GS.Scripts
             if (Profile == null)
                 return;
 
-            Kit = MercenaryLoadout.For(Profile.ClassId, Level, Profile.Duties);
+            // Master Levels belong to the employer, and the company walks them
+            // with him. A hire that arrived at level 50 already knowing all ten
+            // made your own progress through Atlantis the only progress in the
+            // group that meant nothing.
+            Kit = MercenaryLoadout.For(Profile.ClassId, Level, Profile.Duties,
+                                       Employer is { MLGranted: true } ? Employer.MLLevel : 0);
             Styles = Kit.Styles;
 
             // The class's real abilities, so armour and weapon proficiency
@@ -1294,6 +1310,9 @@ namespace DOL.GS.Scripts
                 return;
 
             if (Profile.Has(Duty.DoT) && Kit.Dot != null && CastAt(foe, Kit.Dot, 5000))
+                return;
+
+            if (UseAtlantis(tactic))
                 return;
 
             // Under PBAoE, a class that HAS a point-blank spell goes in and
@@ -2105,6 +2124,50 @@ namespace DOL.GS.Scripts
         // -------------------------------------------------------------------
 
         /// <summary>Casts with a per-spell cooldown, so they do not spam.</summary>
+        /// <summary>
+        /// The Master Level abilities, in a fight.
+        ///
+        /// These sat unused for a long time and not because of the AI: nothing
+        /// about a Font of Power's spell type marks it as anything, so it went
+        /// into Known with everything else and no part of the kit ever looked
+        /// at it. A hire could hold all ten levels of Perfecter and never drop
+        /// a font in its life.
+        ///
+        /// Order matters. A summon is worth most at the start of a fight, a
+        /// buff is worth having up before the damage starts, and a font is
+        /// worth nothing at all unless the group is going to stand in it --
+        /// which is what Camp means and why fonts wait for it.
+        /// </summary>
+        private bool UseAtlantis(Tactic tactic)
+        {
+            const int SUMMON_AGAIN = 120000;
+            const int BUFF_AGAIN   = 90000;
+            const int FONT_AGAIN   = 60000;
+
+            foreach (Spell summon in Kit.MlPets)
+            {
+                if (CastAt(this, summon, SUMMON_AGAIN))
+                    return true;
+            }
+
+            foreach (Spell buff in Kit.MlBuffs)
+            {
+                if (CastAt(this, buff, BUFF_AGAIN))
+                    return true;
+            }
+
+            if (tactic != Tactic.Camp)
+                return false;
+
+            foreach (Spell font in Kit.MlFonts)
+            {
+                if (CastAt(this, font, FONT_AGAIN))
+                    return true;
+            }
+
+            return false;
+        }
+
         protected bool CastAt(GameLiving target, Spell spell, int cooldownMillis, bool allowDead = false)
         {
             if (spell == null || target == null || !IsAlive || IsCasting)
@@ -2552,6 +2615,11 @@ namespace DOL.GS.Scripts
 
                 case "pbaoe":
                     Order(player, Tactic.PBAoE, "On top of you, then. We burn what comes.");
+                    return true;
+
+                case "camp":
+                    Order(player, Tactic.Camp,
+                          "We are staying, then. The fonts go down and we hold this ground.");
                     return true;
 
                 case "circle":
@@ -3572,6 +3640,7 @@ namespace DOL.GS.Scripts
                 case "balanced":
                 case "pbaoe":
                 case "focus":
+                case "camp":
                     SetTactic(player, keyword);
                     return true;
 
@@ -3665,6 +3734,7 @@ namespace DOL.GS.Scripts
             {
                 "pbaoe" => Tactic.PBAoE,
                 "focus" => Tactic.Focus,
+                "camp"  => Tactic.Camp,
                 _       => Tactic.Balanced,
             };
 

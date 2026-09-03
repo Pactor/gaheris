@@ -47,7 +47,7 @@ namespace DOL.GS.Scripts
         /// <summary>Menu order. Where you are most likely to want to go, first.</summary>
         private static readonly string[] Order =
         {
-            "Cities", "Albion", "Midgard", "Hibernia",
+            "Cities", "Albion", "Midgard", "Hibernia", "Frontiers",
             "Shrouded Isles", "Atlantis", "Battlegrounds", "Dungeons", "Elsewhere",
         };
 
@@ -216,6 +216,12 @@ namespace DOL.GS.Scripts
                 case 93:                     // Shar Labyrinth
                 case 130: case 145: case 146: case 147:
                     return "Atlantis";
+
+                // New Frontiers, which is one region holding all three
+                // realms' keeps. Without this it fell through to the numeric
+                // test below, and 163 is under 200, so every frontier keep --
+                // Albion's and Hibernia's included -- was filed under Midgard.
+                case 163: return "Frontiers";
 
                 case 165:                    // Cathal Valley
                 case 234: case 235: case 236: case 237: case 238: case 239:

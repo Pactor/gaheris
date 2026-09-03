@@ -42,9 +42,20 @@ namespace DOL.GS.Scripts
 
         public override bool Interact(GamePlayer player)
         {
-            // The base class says the welcome. It is good text, and it is the
-            // text the player remembers; there is no reason to replace it.
-            if (!base.Interact(player))
+            // The welcome is for people who have not heard it. Arbiter.Interact
+            // puts two popup windows on the screen every single time it runs,
+            // so calling it unconditionally means somebody already on the path
+            // has to sit through the introduction again before reaching the
+            // thing they came back for. Once enrolled, go straight to the
+            // disciplines.
+            bool newcomer = !(player.MLGranted && player.MLLevel >= 1);
+
+            if (newcomer)
+            {
+                if (!base.Interact(player))
+                    return false;
+            }
+            else if (!Greet(player))
                 return false;
 
             int enrolled = 0;
@@ -75,6 +86,34 @@ namespace DOL.GS.Scripts
                       "You have already begun the trials.");
 
             OfferPaths(player);
+            return true;
+        }
+
+        /// <summary>
+        /// Everything GameObject.Interact enforces, and none of the talking.
+        ///
+        /// C# has no way to reach a grandparent's implementation, so a subclass
+        /// that wants GameNPC's interact contract without Arbiter's two popup
+        /// windows has to keep the contract itself: the distance check that
+        /// stops you conversing from across the zone, and the notifications
+        /// quests and scripts listen for.
+        /// </summary>
+        private bool Greet(GamePlayer player)
+        {
+            if (player.Client.Account.PrivLevel == 1 &&
+                !IsWithinRadius(player, InteractDistance))
+            {
+                player.Out.SendMessage("You are too far away to speak to " +
+                                       GetName(0, true) + ".",
+                                       eChatType.CT_System, eChatLoc.CL_SystemWindow);
+                Notify(GameObjectEvent.InteractFailed, this, new InteractEventArgs(player));
+                return false;
+            }
+
+            Notify(GameObjectEvent.Interact, this, new InteractEventArgs(player));
+            player.Notify(GameObjectEvent.InteractWith, player, new InteractWithEventArgs(this));
+
+            TurnTo(player, 5000);
             return true;
         }
 

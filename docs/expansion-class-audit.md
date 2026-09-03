@@ -394,3 +394,40 @@ to what it should be than the label.
 | Spymaster | 8 |
 
 ---
+
+## Against the live patch notes
+
+Checked against the published notes for 1.129 and later. Everything below was
+verified against our own database, not assumed.
+
+### Already correct
+
+| | |
+|---|---|
+| Valkyrie: Odin's Emendation power cost 25 -> 99 | ours is 99 |
+| Warlock: every chamber and unique spell type | all 30 present and on reachable lines |
+| Heretic: Shields, and Slam at Shields 42 | present -- the stun slam is there |
+
+### Off, and checkable
+
+| | Live | Ours |
+|---|---|---|
+| Bainshee specialisation name | Spectral Force | **Spectral Guard** |
+| Bainshee: Alarming Screech | Spectral Force, level 26 | **Phantasmal Wail, level 18** |
+| Bonedancer: Summon Bone Spellbinder | Bone Legion, level 11 | **absent entirely** |
+| Bonedancer: Summon Bone Deadeye | Bone Legion, level 21 | **level 45** |
+| Animist: Purifying Rain cast time | 3.0s | **5.0s** |
+| Bainshee/Warlock/Animist pet scare cast | 3.5s | 5.0s (unverified per spell) |
+
+### Missing outright
+
+| | |
+|---|---|
+| Heretic: Ichor of the Deep | added to its trainable realm abilities; no such spell here |
+| Valkyrie: Call of a Thousand Storms | level 40 self buff; no such spell here |
+| Vampiir: Mark of Prey | group +20% melee and spell crit for 30s; no such spell here |
+
+The Bainshee is the one worth understanding before testing her: a whole
+specialisation is named differently here, and the spell that moved between
+lines in that patch is still sitting on the old line at the old level. If she
+feels wrong, that is where to look first rather than at her damage.

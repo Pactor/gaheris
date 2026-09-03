@@ -13,7 +13,7 @@ requires you to build it.
 ```
 OpenDAoC-Core         stock, pulled as a Docker image -- 0 files changed
 OpenDAoC-Database     stock -- 0 files changed
-this repo             8 scripts, 14 migrations, a small compose delta
+this repo             34 scripts, 91 migrations, a small compose delta
 ```
 
 ---
@@ -105,10 +105,11 @@ It expects the client at `C:\Program Files (x86)\OpenDAoC` -- edit the path in
 the file if yours differs. To connect by hand, point a 1.127 client at
 `127.0.0.1:10300`.
 
-Characters start at level 5, which is where the game lets you promote out of
-a base class. Promote first: the recruiters will not hire to anyone still
-holding an archetype. Then find a **Mercenary Recruiter** -- one in each
-capital, one at each border keep -- and hire a group.
+Characters start at level 5 **as the class you chose**. Live retired base
+classes years ago and so does this: pick Vampiir on the creation screen and
+you are a Vampiir, trainer and all, with no archetype step in between. Then
+find a **Mercenary Recruiter** -- one in each capital, one at each border keep
+-- and hire a group.
 
 ### Where the world data came from
 
@@ -280,6 +281,7 @@ is still found.
 | `/tactic cc` | toggle crowd control on or off |
 | `/mercgear` | what each of them is wearing |
 | `/mercwatch` | where they are and what they last did &mdash; the debugging view |
+| `/level` | promote a character to the level the server allows |
 
 Formations are set by talking to any of them: `[circle]`, `[line]`,
 `[column]`, `[wedge]`. The ring is deliberately 80 units across, inside
@@ -331,9 +333,9 @@ seven from scratch is not the same problem as gearing one character.
 - **RvR-zone experience also `10x`.** `GamePlayer.GainExperience` picks *one*
   of the two rates, and `rvr_zones_xp_rate` defaulted to `1.0` -- so Darkness
   Falls and the frontiers paid a tenth of what the open world paid.
-- New characters start at level 5, where the game lets you promote out of a
-  base class. The recruiters refuse anyone still holding an archetype, so this
-  means a new character picks a class and has a group the same minute.
+- New characters start at level 5, already the class they were created as.
+  See section 13 for why there is no promotion step. A new character picks a
+  class and has a group the same minute.
 
 ### 7. Server rules &mdash; `GaherisServerRules.cs`
 
@@ -344,6 +346,134 @@ attack anything. This widens the rule so a hire may attack a hostile NPC.
 It installs itself: `ScriptMgr.CreateServerRules` searches the scripts
 assembly *before* core, so a `[ServerRules(EGameServerType.GST_PvE)]` class in
 a script replaces the built-in PvE rules with no core change.
+
+### 8. New Frontiers &mdash; `sql/48`&ndash;`51`, `60`&ndash;`65`, `69`
+
+The frontier is the New Frontiers map (region 163), not the old three-region
+one. Upstream ships the region empty, so the conversion populates it: **8,353
+mob placements**, the objects that go with them, and monster garrisons on all
+105 keeps and towers under the same rules as section 1.
+
+The old frontier zones are kept rather than deleted. They hold the relic
+keeps, and the public database keeps them for exactly that reason -- inside
+regions 1/100/200, with no keeps of their own. A player who somehow reaches
+one is put back across into New Frontiers rather than left standing in an
+empty zone.
+
+Everything that could send you to the old frontier now sends you to the new
+one instead: the Gate Wardens, the regular teleporters, and all the world
+zonepoints. Travel destinations are the small player camps scattered over the
+map, since a keep in monster hands is not somewhere to arrive.
+
+### 9. The border keeps are the way across &mdash; `FrontierGateDoors.cs`, `FrontierReturn.cs`, `sql/70`&ndash;`72`
+
+Six doors, one at each border keep, are the crossing. Click the frontier-side
+door from inside the realm and you are put into New Frontiers; click it from
+the frontier side and you are put back inside the keep. The other door of each
+pair is an ordinary door and still opens on its switch, so you can always walk
+back out into your own realm.
+
+Which door of a pair faces the frontier is decided by geography rather than by
+the return zonepoint: every old frontier zone lies south of the realm
+interior, so the frontier-facing door is the one with the lower Y. Deriving it
+from the zonepoints instead got three of the six backwards.
+
+The door is crossed on both `Open()` and `Close()`. The client's idea of a
+door's state drifts out of step with the server's, so the first touch arrives
+as either one; a 2-second settle guard keeps a single click from firing twice.
+
+### 10. Task dungeons &mdash; `GaherisTaskMaster.cs`, `GaherisTaskDungeonMission.cs`, `sql/66`&ndash;`68`, `80`&ndash;`83`
+
+Taskmasters in the starter towns hand out instanced dungeon tasks, which
+upstream builds but refuses to give to anyone -- the check sits at the top of
+`Interact`, above everything else, so it cannot be subclassed around:
+
+```csharp
+//we need to disable them for players for now
+if (player.Client.Account.PrivLevel == 1)
+```
+
+**The taskmaster does the travelling.** A task dungeon entrance is a hole in
+the client's terrain; the server holds only a zonepoint, and there is no row
+for the cave mouth in any coordinate-bearing table of the reference database
+within 700 units of any of the fifteen known locations. A marker cannot be
+built either, because the models that look like a cave are static-item models
+and do not render on an NPC. So rather than send people hunting for a hole
+that may no longer be drawn, the taskmaster opens the way itself -- and can
+send you back in after you die or step out, or drop a task you do not want.
+
+The mission counts kills itself, because the core's cannot. It sizes an array
+by mob count and then indexes it by the world object id of whatever died:
+
+```csharp
+m_mobIsAlive = new bool[m_total];              // fourteen, say
+if (m_mobIsAlive[eargs.Target.ObjectID - 1])   // ...but this is a region id
+```
+
+Every kill reaches past the end of the array, and `GamePlayer.Notify` has no
+`try`/`catch` around `Mission.Notify`, so that exception escapes into the kill
+handler. Ours surveys what is still standing in the instance after each kill
+instead, skipping hired companions so a clear task can actually finish.
+
+### 11. Atlantis &mdash; Master Levels, artifacts, encounters
+
+`GaherisMasterLevels.cs`, `MasterLevelsMerchant.cs`, `GaherisEncounters.cs`,
+the six `Artifact*.cs` files, `Scholar.cs`, and `sql/12`&ndash;`16`, `28`, `29`,
+`35`&ndash;`37`, `39`, `42`&ndash;`44`.
+
+Trials of Atlantis ships in the database as empty geography. All eight Master
+Level lines existed with no spells between them; the zones existed with no
+population. Both are filled in here, along with the artifact chain end to end
+-- scrolls drop, scholars trade them, an artifact levels with use, and the
+encounters that gate the Master Levels can be run.
+
+### 12. Champion levels and realm ranks &mdash; `GaherisChampionLevels.cs`, `GaherisRealmRanks.cs`, `sql/45`, `52`&ndash;`55`, `84`
+
+Champion levels 1&ndash;10, with the champion spell lines and specs behind them.
+`ChampionCareer` is granted to the Champion and nobody else -- the imported
+data had it on all 47 classes, which quietly handed every one of them Hibernia
+armour, large weapons and a shield, and is why a Vampiir could not equip a
+piercing weapon.
+
+Realm ranks run to **RR15**. The core's table stops at 130 and its fallback
+past that is a cubic returning about 18 million where the table's own last
+entry is 187 million, so the extension continues the table's actual growth
+rate rather than falling off it.
+
+### 13. Every class, from the creation screen &mdash; `GaherisLostClasses.cs`, `GaherisRaces.cs`, `GaherisStartingLevel.cs`, `sql/75`&ndash;`79`, `85`&ndash;`92`
+
+Making a Vampiir failed silently -- the client dropped straight back to
+character select -- and it was five separate gates stacked on each other, four
+of which look like the answer on their own:
+
+1. six classes commented out of `STARTING_CLASSES_DICT`
+2. every class's `EligibleRaces` trimmed; Bainshee and Valkyrie had none at all
+3. six races commented out of `STARTING_STATS_DICT`, throwing a
+   `KeyNotFoundException` that validation swallowed
+4. no wildcard `startuplocation`, so the character arrived in region 0
+5. **`start_as_base_class`**, which rewrote the class back to its archetype
+   after validation had already passed
+
+All five are fixed, and base classes are retired with them: you are the class
+you chose, at level 5, from the first login. The races each class may take are
+restored from the core's own sources -- `GaherisRaces.cs` is generated, and the
+real list is usually sitting commented out directly above the trimmed one.
+
+Beyond creation, the classes needed their content. Trainers for the reopened
+six, 216 realm abilities, 128 career abilities, 546 combat styles, and then
+the spell side: 81 spell lines, 1,886 spells, 1,667 line entries and 431 style
+procs. The Vampiir having no styles at all is why it had no attack icon to put
+on the bar.
+
+### 14. Odds and ends
+
+| | |
+|---|---|
+| `sql/17`&ndash;`20` | battlegrounds, keeps and garrisons, Molvik included |
+| `sql/56` | 5,893 English language strings the database was missing |
+| `sql/57` | doppelgangers (the mobs; the invasion event itself is not built) |
+| `sql/58` | Hall of the Corrupt, 2,676 placements |
+| `sql/59` | the 1.129b class rebalance |
 
 ---
 

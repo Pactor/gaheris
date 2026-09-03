@@ -13,10 +13,18 @@ namespace DOL.GS.Scripts
     /// happened when both were locked. The one facing the frontier never opens
     /// again: touching it carries you to New Frontiers instead.
     ///
-    /// Which door faces which way is not guessed. The zonepoints that bring
-    /// players home from the frontier land on the realm side of each keep, so
-    /// the door nearer that landing point is the realm door and the far one
-    /// faces out.
+    /// Which door faces which way is decided by the map, not by a heuristic.
+    /// Every one of the twelve leftover frontier zones lies SOUTH of the realm
+    /// interior it borders -- Forest Sauvage below Camelot Hills, Cruachan
+    /// Gorge below Connacht, Yggdra Forest below West Svealand, and so on for
+    /// all three realms. So at every border keep the frontier-facing door is
+    /// simply the one with the lower Y, and the realm-facing one is its
+    /// partner.
+    ///
+    /// The first attempt at this measured which door was nearer the point
+    /// players land on when they come home, and that got three of the six
+    /// backwards -- Vindsaul, Druim Cain and Druim Ligen -- so walking out of
+    /// Druim Ligen towards Connacht threw you into the frontier instead.
     ///
     /// The crossing works by replacing the door OBJECT, not by locking it and
     /// not by intercepting packets. A locked door is worse than useless here:
@@ -63,12 +71,12 @@ namespace DOL.GS.Scripts
         /// </summary>
         private static readonly Dictionary<int, Camp> OuterDoors = new()
         {
-            { 11020502,  ForestSauvage },   // Castle Sauvage
-            { 12000102,  Snowdonia },       // Snowdonia Fortress
-            { 102093502, Yggdra },          // Vindsaul Faste
-            { 111161301, Uppland },         // Svasud Faste
-            { 206016801, Collory },         // Druim Cain
-            { 207156901, Cruachan },        // Druim Ligen
+            { 11020502,  ForestSauvage },   // Castle Sauvage      (partner 11020501)
+            { 12000102,  Snowdonia },       // Snowdonia Fortress  (partner 12000101)
+            { 102093501, Yggdra },          // Vindsaul Faste      (partner 102093502)
+            { 111161301, Uppland },         // Svasud Faste        (partner 111161302)
+            { 206016802, Collory },         // Druim Cain          (partner 206016801)
+            { 207156902, Cruachan },        // Druim Ligen         (partner 207156901)
         };
 
         /// <summary>

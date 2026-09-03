@@ -94,8 +94,15 @@ namespace DOL.GS.Scripts
             // old path's spells come away with the star.
             player.MLLine = GaherisArbiter.NO_PATH;
             player.SaveIntoDatabase();
-            player.RefreshSpecDependantSkills(true);
-            player.Out.SendUpdatePlayer();
+
+            // Announce, not a bare refresh. RefreshSpecDependantSkills changes
+            // server state and sends nothing, so a respec that only called it
+            // would take the old discipline away everywhere except the spell
+            // window, which would keep showing spells the player can no longer
+            // cast until they logged out. Announce sends
+            // SendUpdatePlayerSkills, which is the packet that actually
+            // rebuilds the list.
+            GaherisArbiter.Announce(player);
 
             SayTo(player, eChatLoc.CL_PopupWindow,
                   "The star is spent and your training with it. Go back to the " +

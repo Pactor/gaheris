@@ -25,7 +25,33 @@ of them. They only log; nothing was listening to these codes before, so
 nothing is taken away. Press a key that should do something and either a line
 appears naming the code, or nothing does and the key genuinely sends nothing.
 
-That file is a diagnostic and is meant to be deleted once it has answered.
+## Reading the log
+
+Written to the console, which docker keeps, and to
+`scripts/unknown-packets.log`, which does not go into the repository.
+
+Why a packet was sent is not in the packet -- nothing in it says which key was
+pressed. What is recorded instead is the circumstance, which is what makes one
+of these lines readable long after the session that produced it:
+
+```
+UnknownPacket: 14:22:07 0xA4 from Stampy, 12 bytes
+    doing: Stampy, Vampiir 12 | region 200 (Lough Derg) | target none |
+           weapon Standard | moving
+    bytes: A4 00 0C 00 01 00 00 00 00 00 00 00
+    text:  ............
+```
+
+A code that only ever arrives standing still with nothing targeted is
+something pressed on the interface. One that arrives mid-swing with a target
+is part of fighting. One whose text column is readable -- a name, a command, a
+line of chat -- explains itself outright.
+
+The first three of any code are recorded in full and after that only counted,
+so a packet the client sends on a timer cannot bury the one that matters.
+
+Both files are diagnostics and are meant to be deleted once they have
+answered.
 
 ## The unclaimed codes
 

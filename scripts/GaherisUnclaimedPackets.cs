@@ -39,9 +39,7 @@ namespace DOL.GS.PacketHandler.Client.v168
     {
         protected override void HandlePacketInternal(GameClient client, GSPacketIn packet)
         {
-            Console.WriteLine("Unclaimed packet 0x02 from " +
-                              (client?.Player == null ? "?" : client.Player.Name) +
-                              ", " + packet.PacketSize + " bytes");
+            UnknownPacketLog.Note(0x02, client, packet);
         }
     }
 
@@ -50,9 +48,7 @@ namespace DOL.GS.PacketHandler.Client.v168
     {
         protected override void HandlePacketInternal(GameClient client, GSPacketIn packet)
         {
-            Console.WriteLine("Unclaimed packet 0x04 from " +
-                              (client?.Player == null ? "?" : client.Player.Name) +
-                              ", " + packet.PacketSize + " bytes");
+            UnknownPacketLog.Note(0x04, client, packet);
         }
     }
 
@@ -61,9 +57,7 @@ namespace DOL.GS.PacketHandler.Client.v168
     {
         protected override void HandlePacketInternal(GameClient client, GSPacketIn packet)
         {
-            Console.WriteLine("Unclaimed packet 0x08 from " +
-                              (client?.Player == null ? "?" : client.Player.Name) +
-                              ", " + packet.PacketSize + " bytes");
+            UnknownPacketLog.Note(0x08, client, packet);
         }
     }
 
@@ -72,9 +66,7 @@ namespace DOL.GS.PacketHandler.Client.v168
     {
         protected override void HandlePacketInternal(GameClient client, GSPacketIn packet)
         {
-            Console.WriteLine("Unclaimed packet 0x09 from " +
-                              (client?.Player == null ? "?" : client.Player.Name) +
-                              ", " + packet.PacketSize + " bytes");
+            UnknownPacketLog.Note(0x09, client, packet);
         }
     }
 
@@ -83,9 +75,7 @@ namespace DOL.GS.PacketHandler.Client.v168
     {
         protected override void HandlePacketInternal(GameClient client, GSPacketIn packet)
         {
-            Console.WriteLine("Unclaimed packet 0x0A from " +
-                              (client?.Player == null ? "?" : client.Player.Name) +
-                              ", " + packet.PacketSize + " bytes");
+            UnknownPacketLog.Note(0x0A, client, packet);
         }
     }
 
@@ -94,9 +84,7 @@ namespace DOL.GS.PacketHandler.Client.v168
     {
         protected override void HandlePacketInternal(GameClient client, GSPacketIn packet)
         {
-            Console.WriteLine("Unclaimed packet 0x0F from " +
-                              (client?.Player == null ? "?" : client.Player.Name) +
-                              ", " + packet.PacketSize + " bytes");
+            UnknownPacketLog.Note(0x0F, client, packet);
         }
     }
 
@@ -105,9 +93,7 @@ namespace DOL.GS.PacketHandler.Client.v168
     {
         protected override void HandlePacketInternal(GameClient client, GSPacketIn packet)
         {
-            Console.WriteLine("Unclaimed packet 0x12 from " +
-                              (client?.Player == null ? "?" : client.Player.Name) +
-                              ", " + packet.PacketSize + " bytes");
+            UnknownPacketLog.Note(0x12, client, packet);
         }
     }
 
@@ -116,9 +102,7 @@ namespace DOL.GS.PacketHandler.Client.v168
     {
         protected override void HandlePacketInternal(GameClient client, GSPacketIn packet)
         {
-            Console.WriteLine("Unclaimed packet 0x13 from " +
-                              (client?.Player == null ? "?" : client.Player.Name) +
-                              ", " + packet.PacketSize + " bytes");
+            UnknownPacketLog.Note(0x13, client, packet);
         }
     }
 
@@ -127,9 +111,7 @@ namespace DOL.GS.PacketHandler.Client.v168
     {
         protected override void HandlePacketInternal(GameClient client, GSPacketIn packet)
         {
-            Console.WriteLine("Unclaimed packet 0x15 from " +
-                              (client?.Player == null ? "?" : client.Player.Name) +
-                              ", " + packet.PacketSize + " bytes");
+            UnknownPacketLog.Note(0x15, client, packet);
         }
     }
 
@@ -138,9 +120,7 @@ namespace DOL.GS.PacketHandler.Client.v168
     {
         protected override void HandlePacketInternal(GameClient client, GSPacketIn packet)
         {
-            Console.WriteLine("Unclaimed packet 0x16 from " +
-                              (client?.Player == null ? "?" : client.Player.Name) +
-                              ", " + packet.PacketSize + " bytes");
+            UnknownPacketLog.Note(0x16, client, packet);
         }
     }
 
@@ -149,9 +129,7 @@ namespace DOL.GS.PacketHandler.Client.v168
     {
         protected override void HandlePacketInternal(GameClient client, GSPacketIn packet)
         {
-            Console.WriteLine("Unclaimed packet 0x17 from " +
-                              (client?.Player == null ? "?" : client.Player.Name) +
-                              ", " + packet.PacketSize + " bytes");
+            UnknownPacketLog.Note(0x17, client, packet);
         }
     }
 
@@ -160,9 +138,7 @@ namespace DOL.GS.PacketHandler.Client.v168
     {
         protected override void HandlePacketInternal(GameClient client, GSPacketIn packet)
         {
-            Console.WriteLine("Unclaimed packet 0x19 from " +
-                              (client?.Player == null ? "?" : client.Player.Name) +
-                              ", " + packet.PacketSize + " bytes");
+            UnknownPacketLog.Note(0x19, client, packet);
         }
     }
 
@@ -171,9 +147,7 @@ namespace DOL.GS.PacketHandler.Client.v168
     {
         protected override void HandlePacketInternal(GameClient client, GSPacketIn packet)
         {
-            Console.WriteLine("Unclaimed packet 0x1B from " +
-                              (client?.Player == null ? "?" : client.Player.Name) +
-                              ", " + packet.PacketSize + " bytes");
+            UnknownPacketLog.Note(0x1B, client, packet);
         }
     }
 
@@ -182,9 +156,7 @@ namespace DOL.GS.PacketHandler.Client.v168
     {
         protected override void HandlePacketInternal(GameClient client, GSPacketIn packet)
         {
-            Console.WriteLine("Unclaimed packet 0x1D from " +
-                              (client?.Player == null ? "?" : client.Player.Name) +
-                              ", " + packet.PacketSize + " bytes");
+            UnknownPacketLog.Note(0x1D, client, packet);
         }
     }
 
@@ -193,9 +165,7 @@ namespace DOL.GS.PacketHandler.Client.v168
     {
         protected override void HandlePacketInternal(GameClient client, GSPacketIn packet)
         {
-            Console.WriteLine("Unclaimed packet 0x1E from " +
-                              (client?.Player == null ? "?" : client.Player.Name) +
-                              ", " + packet.PacketSize + " bytes");
+            UnknownPacketLog.Note(0x1E, client, packet);
         }
     }
 
@@ -204,9 +174,7 @@ namespace DOL.GS.PacketHandler.Client.v168
     {
         protected override void HandlePacketInternal(GameClient client, GSPacketIn packet)
         {
-            Console.WriteLine("Unclaimed packet 0x1F from " +
-                              (client?.Player == null ? "?" : client.Player.Name) +
-                              ", " + packet.PacketSize + " bytes");
+            UnknownPacketLog.Note(0x1F, client, packet);
         }
     }
 
@@ -215,9 +183,7 @@ namespace DOL.GS.PacketHandler.Client.v168
     {
         protected override void HandlePacketInternal(GameClient client, GSPacketIn packet)
         {
-            Console.WriteLine("Unclaimed packet 0x20 from " +
-                              (client?.Player == null ? "?" : client.Player.Name) +
-                              ", " + packet.PacketSize + " bytes");
+            UnknownPacketLog.Note(0x20, client, packet);
         }
     }
 
@@ -226,9 +192,7 @@ namespace DOL.GS.PacketHandler.Client.v168
     {
         protected override void HandlePacketInternal(GameClient client, GSPacketIn packet)
         {
-            Console.WriteLine("Unclaimed packet 0x21 from " +
-                              (client?.Player == null ? "?" : client.Player.Name) +
-                              ", " + packet.PacketSize + " bytes");
+            UnknownPacketLog.Note(0x21, client, packet);
         }
     }
 
@@ -237,9 +201,7 @@ namespace DOL.GS.PacketHandler.Client.v168
     {
         protected override void HandlePacketInternal(GameClient client, GSPacketIn packet)
         {
-            Console.WriteLine("Unclaimed packet 0x22 from " +
-                              (client?.Player == null ? "?" : client.Player.Name) +
-                              ", " + packet.PacketSize + " bytes");
+            UnknownPacketLog.Note(0x22, client, packet);
         }
     }
 
@@ -248,9 +210,7 @@ namespace DOL.GS.PacketHandler.Client.v168
     {
         protected override void HandlePacketInternal(GameClient client, GSPacketIn packet)
         {
-            Console.WriteLine("Unclaimed packet 0x23 from " +
-                              (client?.Player == null ? "?" : client.Player.Name) +
-                              ", " + packet.PacketSize + " bytes");
+            UnknownPacketLog.Note(0x23, client, packet);
         }
     }
 
@@ -259,9 +219,7 @@ namespace DOL.GS.PacketHandler.Client.v168
     {
         protected override void HandlePacketInternal(GameClient client, GSPacketIn packet)
         {
-            Console.WriteLine("Unclaimed packet 0x24 from " +
-                              (client?.Player == null ? "?" : client.Player.Name) +
-                              ", " + packet.PacketSize + " bytes");
+            UnknownPacketLog.Note(0x24, client, packet);
         }
     }
 
@@ -270,9 +228,7 @@ namespace DOL.GS.PacketHandler.Client.v168
     {
         protected override void HandlePacketInternal(GameClient client, GSPacketIn packet)
         {
-            Console.WriteLine("Unclaimed packet 0x25 from " +
-                              (client?.Player == null ? "?" : client.Player.Name) +
-                              ", " + packet.PacketSize + " bytes");
+            UnknownPacketLog.Note(0x25, client, packet);
         }
     }
 
@@ -281,9 +237,7 @@ namespace DOL.GS.PacketHandler.Client.v168
     {
         protected override void HandlePacketInternal(GameClient client, GSPacketIn packet)
         {
-            Console.WriteLine("Unclaimed packet 0x26 from " +
-                              (client?.Player == null ? "?" : client.Player.Name) +
-                              ", " + packet.PacketSize + " bytes");
+            UnknownPacketLog.Note(0x26, client, packet);
         }
     }
 
@@ -292,9 +246,7 @@ namespace DOL.GS.PacketHandler.Client.v168
     {
         protected override void HandlePacketInternal(GameClient client, GSPacketIn packet)
         {
-            Console.WriteLine("Unclaimed packet 0x27 from " +
-                              (client?.Player == null ? "?" : client.Player.Name) +
-                              ", " + packet.PacketSize + " bytes");
+            UnknownPacketLog.Note(0x27, client, packet);
         }
     }
 
@@ -303,9 +255,7 @@ namespace DOL.GS.PacketHandler.Client.v168
     {
         protected override void HandlePacketInternal(GameClient client, GSPacketIn packet)
         {
-            Console.WriteLine("Unclaimed packet 0x28 from " +
-                              (client?.Player == null ? "?" : client.Player.Name) +
-                              ", " + packet.PacketSize + " bytes");
+            UnknownPacketLog.Note(0x28, client, packet);
         }
     }
 
@@ -314,9 +264,7 @@ namespace DOL.GS.PacketHandler.Client.v168
     {
         protected override void HandlePacketInternal(GameClient client, GSPacketIn packet)
         {
-            Console.WriteLine("Unclaimed packet 0x29 from " +
-                              (client?.Player == null ? "?" : client.Player.Name) +
-                              ", " + packet.PacketSize + " bytes");
+            UnknownPacketLog.Note(0x29, client, packet);
         }
     }
 
@@ -325,9 +273,7 @@ namespace DOL.GS.PacketHandler.Client.v168
     {
         protected override void HandlePacketInternal(GameClient client, GSPacketIn packet)
         {
-            Console.WriteLine("Unclaimed packet 0x2A from " +
-                              (client?.Player == null ? "?" : client.Player.Name) +
-                              ", " + packet.PacketSize + " bytes");
+            UnknownPacketLog.Note(0x2A, client, packet);
         }
     }
 
@@ -336,9 +282,7 @@ namespace DOL.GS.PacketHandler.Client.v168
     {
         protected override void HandlePacketInternal(GameClient client, GSPacketIn packet)
         {
-            Console.WriteLine("Unclaimed packet 0x2B from " +
-                              (client?.Player == null ? "?" : client.Player.Name) +
-                              ", " + packet.PacketSize + " bytes");
+            UnknownPacketLog.Note(0x2B, client, packet);
         }
     }
 
@@ -347,9 +291,7 @@ namespace DOL.GS.PacketHandler.Client.v168
     {
         protected override void HandlePacketInternal(GameClient client, GSPacketIn packet)
         {
-            Console.WriteLine("Unclaimed packet 0x2C from " +
-                              (client?.Player == null ? "?" : client.Player.Name) +
-                              ", " + packet.PacketSize + " bytes");
+            UnknownPacketLog.Note(0x2C, client, packet);
         }
     }
 
@@ -358,9 +300,7 @@ namespace DOL.GS.PacketHandler.Client.v168
     {
         protected override void HandlePacketInternal(GameClient client, GSPacketIn packet)
         {
-            Console.WriteLine("Unclaimed packet 0x2D from " +
-                              (client?.Player == null ? "?" : client.Player.Name) +
-                              ", " + packet.PacketSize + " bytes");
+            UnknownPacketLog.Note(0x2D, client, packet);
         }
     }
 
@@ -369,9 +309,7 @@ namespace DOL.GS.PacketHandler.Client.v168
     {
         protected override void HandlePacketInternal(GameClient client, GSPacketIn packet)
         {
-            Console.WriteLine("Unclaimed packet 0x2E from " +
-                              (client?.Player == null ? "?" : client.Player.Name) +
-                              ", " + packet.PacketSize + " bytes");
+            UnknownPacketLog.Note(0x2E, client, packet);
         }
     }
 
@@ -380,9 +318,7 @@ namespace DOL.GS.PacketHandler.Client.v168
     {
         protected override void HandlePacketInternal(GameClient client, GSPacketIn packet)
         {
-            Console.WriteLine("Unclaimed packet 0x2F from " +
-                              (client?.Player == null ? "?" : client.Player.Name) +
-                              ", " + packet.PacketSize + " bytes");
+            UnknownPacketLog.Note(0x2F, client, packet);
         }
     }
 
@@ -391,9 +327,7 @@ namespace DOL.GS.PacketHandler.Client.v168
     {
         protected override void HandlePacketInternal(GameClient client, GSPacketIn packet)
         {
-            Console.WriteLine("Unclaimed packet 0x30 from " +
-                              (client?.Player == null ? "?" : client.Player.Name) +
-                              ", " + packet.PacketSize + " bytes");
+            UnknownPacketLog.Note(0x30, client, packet);
         }
     }
 
@@ -402,9 +336,7 @@ namespace DOL.GS.PacketHandler.Client.v168
     {
         protected override void HandlePacketInternal(GameClient client, GSPacketIn packet)
         {
-            Console.WriteLine("Unclaimed packet 0x31 from " +
-                              (client?.Player == null ? "?" : client.Player.Name) +
-                              ", " + packet.PacketSize + " bytes");
+            UnknownPacketLog.Note(0x31, client, packet);
         }
     }
 
@@ -413,9 +345,7 @@ namespace DOL.GS.PacketHandler.Client.v168
     {
         protected override void HandlePacketInternal(GameClient client, GSPacketIn packet)
         {
-            Console.WriteLine("Unclaimed packet 0x32 from " +
-                              (client?.Player == null ? "?" : client.Player.Name) +
-                              ", " + packet.PacketSize + " bytes");
+            UnknownPacketLog.Note(0x32, client, packet);
         }
     }
 
@@ -424,9 +354,7 @@ namespace DOL.GS.PacketHandler.Client.v168
     {
         protected override void HandlePacketInternal(GameClient client, GSPacketIn packet)
         {
-            Console.WriteLine("Unclaimed packet 0x33 from " +
-                              (client?.Player == null ? "?" : client.Player.Name) +
-                              ", " + packet.PacketSize + " bytes");
+            UnknownPacketLog.Note(0x33, client, packet);
         }
     }
 
@@ -435,9 +363,7 @@ namespace DOL.GS.PacketHandler.Client.v168
     {
         protected override void HandlePacketInternal(GameClient client, GSPacketIn packet)
         {
-            Console.WriteLine("Unclaimed packet 0x34 from " +
-                              (client?.Player == null ? "?" : client.Player.Name) +
-                              ", " + packet.PacketSize + " bytes");
+            UnknownPacketLog.Note(0x34, client, packet);
         }
     }
 
@@ -446,9 +372,7 @@ namespace DOL.GS.PacketHandler.Client.v168
     {
         protected override void HandlePacketInternal(GameClient client, GSPacketIn packet)
         {
-            Console.WriteLine("Unclaimed packet 0x35 from " +
-                              (client?.Player == null ? "?" : client.Player.Name) +
-                              ", " + packet.PacketSize + " bytes");
+            UnknownPacketLog.Note(0x35, client, packet);
         }
     }
 
@@ -457,9 +381,7 @@ namespace DOL.GS.PacketHandler.Client.v168
     {
         protected override void HandlePacketInternal(GameClient client, GSPacketIn packet)
         {
-            Console.WriteLine("Unclaimed packet 0x36 from " +
-                              (client?.Player == null ? "?" : client.Player.Name) +
-                              ", " + packet.PacketSize + " bytes");
+            UnknownPacketLog.Note(0x36, client, packet);
         }
     }
 
@@ -468,9 +390,7 @@ namespace DOL.GS.PacketHandler.Client.v168
     {
         protected override void HandlePacketInternal(GameClient client, GSPacketIn packet)
         {
-            Console.WriteLine("Unclaimed packet 0x38 from " +
-                              (client?.Player == null ? "?" : client.Player.Name) +
-                              ", " + packet.PacketSize + " bytes");
+            UnknownPacketLog.Note(0x38, client, packet);
         }
     }
 
@@ -479,9 +399,7 @@ namespace DOL.GS.PacketHandler.Client.v168
     {
         protected override void HandlePacketInternal(GameClient client, GSPacketIn packet)
         {
-            Console.WriteLine("Unclaimed packet 0x39 from " +
-                              (client?.Player == null ? "?" : client.Player.Name) +
-                              ", " + packet.PacketSize + " bytes");
+            UnknownPacketLog.Note(0x39, client, packet);
         }
     }
 
@@ -490,9 +408,7 @@ namespace DOL.GS.PacketHandler.Client.v168
     {
         protected override void HandlePacketInternal(GameClient client, GSPacketIn packet)
         {
-            Console.WriteLine("Unclaimed packet 0x3A from " +
-                              (client?.Player == null ? "?" : client.Player.Name) +
-                              ", " + packet.PacketSize + " bytes");
+            UnknownPacketLog.Note(0x3A, client, packet);
         }
     }
 
@@ -501,9 +417,7 @@ namespace DOL.GS.PacketHandler.Client.v168
     {
         protected override void HandlePacketInternal(GameClient client, GSPacketIn packet)
         {
-            Console.WriteLine("Unclaimed packet 0x3B from " +
-                              (client?.Player == null ? "?" : client.Player.Name) +
-                              ", " + packet.PacketSize + " bytes");
+            UnknownPacketLog.Note(0x3B, client, packet);
         }
     }
 
@@ -512,9 +426,7 @@ namespace DOL.GS.PacketHandler.Client.v168
     {
         protected override void HandlePacketInternal(GameClient client, GSPacketIn packet)
         {
-            Console.WriteLine("Unclaimed packet 0x3C from " +
-                              (client?.Player == null ? "?" : client.Player.Name) +
-                              ", " + packet.PacketSize + " bytes");
+            UnknownPacketLog.Note(0x3C, client, packet);
         }
     }
 
@@ -523,9 +435,7 @@ namespace DOL.GS.PacketHandler.Client.v168
     {
         protected override void HandlePacketInternal(GameClient client, GSPacketIn packet)
         {
-            Console.WriteLine("Unclaimed packet 0x3D from " +
-                              (client?.Player == null ? "?" : client.Player.Name) +
-                              ", " + packet.PacketSize + " bytes");
+            UnknownPacketLog.Note(0x3D, client, packet);
         }
     }
 
@@ -534,9 +444,7 @@ namespace DOL.GS.PacketHandler.Client.v168
     {
         protected override void HandlePacketInternal(GameClient client, GSPacketIn packet)
         {
-            Console.WriteLine("Unclaimed packet 0x3E from " +
-                              (client?.Player == null ? "?" : client.Player.Name) +
-                              ", " + packet.PacketSize + " bytes");
+            UnknownPacketLog.Note(0x3E, client, packet);
         }
     }
 
@@ -545,9 +453,7 @@ namespace DOL.GS.PacketHandler.Client.v168
     {
         protected override void HandlePacketInternal(GameClient client, GSPacketIn packet)
         {
-            Console.WriteLine("Unclaimed packet 0x3F from " +
-                              (client?.Player == null ? "?" : client.Player.Name) +
-                              ", " + packet.PacketSize + " bytes");
+            UnknownPacketLog.Note(0x3F, client, packet);
         }
     }
 
@@ -556,9 +462,7 @@ namespace DOL.GS.PacketHandler.Client.v168
     {
         protected override void HandlePacketInternal(GameClient client, GSPacketIn packet)
         {
-            Console.WriteLine("Unclaimed packet 0x41 from " +
-                              (client?.Player == null ? "?" : client.Player.Name) +
-                              ", " + packet.PacketSize + " bytes");
+            UnknownPacketLog.Note(0x41, client, packet);
         }
     }
 
@@ -567,9 +471,7 @@ namespace DOL.GS.PacketHandler.Client.v168
     {
         protected override void HandlePacketInternal(GameClient client, GSPacketIn packet)
         {
-            Console.WriteLine("Unclaimed packet 0x42 from " +
-                              (client?.Player == null ? "?" : client.Player.Name) +
-                              ", " + packet.PacketSize + " bytes");
+            UnknownPacketLog.Note(0x42, client, packet);
         }
     }
 
@@ -578,9 +480,7 @@ namespace DOL.GS.PacketHandler.Client.v168
     {
         protected override void HandlePacketInternal(GameClient client, GSPacketIn packet)
         {
-            Console.WriteLine("Unclaimed packet 0x43 from " +
-                              (client?.Player == null ? "?" : client.Player.Name) +
-                              ", " + packet.PacketSize + " bytes");
+            UnknownPacketLog.Note(0x43, client, packet);
         }
     }
 
@@ -589,9 +489,7 @@ namespace DOL.GS.PacketHandler.Client.v168
     {
         protected override void HandlePacketInternal(GameClient client, GSPacketIn packet)
         {
-            Console.WriteLine("Unclaimed packet 0x44 from " +
-                              (client?.Player == null ? "?" : client.Player.Name) +
-                              ", " + packet.PacketSize + " bytes");
+            UnknownPacketLog.Note(0x44, client, packet);
         }
     }
 
@@ -600,9 +498,7 @@ namespace DOL.GS.PacketHandler.Client.v168
     {
         protected override void HandlePacketInternal(GameClient client, GSPacketIn packet)
         {
-            Console.WriteLine("Unclaimed packet 0x45 from " +
-                              (client?.Player == null ? "?" : client.Player.Name) +
-                              ", " + packet.PacketSize + " bytes");
+            UnknownPacketLog.Note(0x45, client, packet);
         }
     }
 
@@ -611,9 +507,7 @@ namespace DOL.GS.PacketHandler.Client.v168
     {
         protected override void HandlePacketInternal(GameClient client, GSPacketIn packet)
         {
-            Console.WriteLine("Unclaimed packet 0x46 from " +
-                              (client?.Player == null ? "?" : client.Player.Name) +
-                              ", " + packet.PacketSize + " bytes");
+            UnknownPacketLog.Note(0x46, client, packet);
         }
     }
 
@@ -622,9 +516,7 @@ namespace DOL.GS.PacketHandler.Client.v168
     {
         protected override void HandlePacketInternal(GameClient client, GSPacketIn packet)
         {
-            Console.WriteLine("Unclaimed packet 0x47 from " +
-                              (client?.Player == null ? "?" : client.Player.Name) +
-                              ", " + packet.PacketSize + " bytes");
+            UnknownPacketLog.Note(0x47, client, packet);
         }
     }
 
@@ -633,9 +525,7 @@ namespace DOL.GS.PacketHandler.Client.v168
     {
         protected override void HandlePacketInternal(GameClient client, GSPacketIn packet)
         {
-            Console.WriteLine("Unclaimed packet 0x49 from " +
-                              (client?.Player == null ? "?" : client.Player.Name) +
-                              ", " + packet.PacketSize + " bytes");
+            UnknownPacketLog.Note(0x49, client, packet);
         }
     }
 
@@ -644,9 +534,7 @@ namespace DOL.GS.PacketHandler.Client.v168
     {
         protected override void HandlePacketInternal(GameClient client, GSPacketIn packet)
         {
-            Console.WriteLine("Unclaimed packet 0x4A from " +
-                              (client?.Player == null ? "?" : client.Player.Name) +
-                              ", " + packet.PacketSize + " bytes");
+            UnknownPacketLog.Note(0x4A, client, packet);
         }
     }
 
@@ -655,9 +543,7 @@ namespace DOL.GS.PacketHandler.Client.v168
     {
         protected override void HandlePacketInternal(GameClient client, GSPacketIn packet)
         {
-            Console.WriteLine("Unclaimed packet 0x4B from " +
-                              (client?.Player == null ? "?" : client.Player.Name) +
-                              ", " + packet.PacketSize + " bytes");
+            UnknownPacketLog.Note(0x4B, client, packet);
         }
     }
 
@@ -666,9 +552,7 @@ namespace DOL.GS.PacketHandler.Client.v168
     {
         protected override void HandlePacketInternal(GameClient client, GSPacketIn packet)
         {
-            Console.WriteLine("Unclaimed packet 0x4D from " +
-                              (client?.Player == null ? "?" : client.Player.Name) +
-                              ", " + packet.PacketSize + " bytes");
+            UnknownPacketLog.Note(0x4D, client, packet);
         }
     }
 
@@ -677,9 +561,7 @@ namespace DOL.GS.PacketHandler.Client.v168
     {
         protected override void HandlePacketInternal(GameClient client, GSPacketIn packet)
         {
-            Console.WriteLine("Unclaimed packet 0x4E from " +
-                              (client?.Player == null ? "?" : client.Player.Name) +
-                              ", " + packet.PacketSize + " bytes");
+            UnknownPacketLog.Note(0x4E, client, packet);
         }
     }
 
@@ -688,9 +570,7 @@ namespace DOL.GS.PacketHandler.Client.v168
     {
         protected override void HandlePacketInternal(GameClient client, GSPacketIn packet)
         {
-            Console.WriteLine("Unclaimed packet 0x50 from " +
-                              (client?.Player == null ? "?" : client.Player.Name) +
-                              ", " + packet.PacketSize + " bytes");
+            UnknownPacketLog.Note(0x50, client, packet);
         }
     }
 
@@ -699,9 +579,7 @@ namespace DOL.GS.PacketHandler.Client.v168
     {
         protected override void HandlePacketInternal(GameClient client, GSPacketIn packet)
         {
-            Console.WriteLine("Unclaimed packet 0x51 from " +
-                              (client?.Player == null ? "?" : client.Player.Name) +
-                              ", " + packet.PacketSize + " bytes");
+            UnknownPacketLog.Note(0x51, client, packet);
         }
     }
 
@@ -710,9 +588,7 @@ namespace DOL.GS.PacketHandler.Client.v168
     {
         protected override void HandlePacketInternal(GameClient client, GSPacketIn packet)
         {
-            Console.WriteLine("Unclaimed packet 0x52 from " +
-                              (client?.Player == null ? "?" : client.Player.Name) +
-                              ", " + packet.PacketSize + " bytes");
+            UnknownPacketLog.Note(0x52, client, packet);
         }
     }
 
@@ -721,9 +597,7 @@ namespace DOL.GS.PacketHandler.Client.v168
     {
         protected override void HandlePacketInternal(GameClient client, GSPacketIn packet)
         {
-            Console.WriteLine("Unclaimed packet 0x54 from " +
-                              (client?.Player == null ? "?" : client.Player.Name) +
-                              ", " + packet.PacketSize + " bytes");
+            UnknownPacketLog.Note(0x54, client, packet);
         }
     }
 
@@ -732,9 +606,7 @@ namespace DOL.GS.PacketHandler.Client.v168
     {
         protected override void HandlePacketInternal(GameClient client, GSPacketIn packet)
         {
-            Console.WriteLine("Unclaimed packet 0x55 from " +
-                              (client?.Player == null ? "?" : client.Player.Name) +
-                              ", " + packet.PacketSize + " bytes");
+            UnknownPacketLog.Note(0x55, client, packet);
         }
     }
 
@@ -743,9 +615,7 @@ namespace DOL.GS.PacketHandler.Client.v168
     {
         protected override void HandlePacketInternal(GameClient client, GSPacketIn packet)
         {
-            Console.WriteLine("Unclaimed packet 0x56 from " +
-                              (client?.Player == null ? "?" : client.Player.Name) +
-                              ", " + packet.PacketSize + " bytes");
+            UnknownPacketLog.Note(0x56, client, packet);
         }
     }
 
@@ -754,9 +624,7 @@ namespace DOL.GS.PacketHandler.Client.v168
     {
         protected override void HandlePacketInternal(GameClient client, GSPacketIn packet)
         {
-            Console.WriteLine("Unclaimed packet 0x57 from " +
-                              (client?.Player == null ? "?" : client.Player.Name) +
-                              ", " + packet.PacketSize + " bytes");
+            UnknownPacketLog.Note(0x57, client, packet);
         }
     }
 
@@ -765,9 +633,7 @@ namespace DOL.GS.PacketHandler.Client.v168
     {
         protected override void HandlePacketInternal(GameClient client, GSPacketIn packet)
         {
-            Console.WriteLine("Unclaimed packet 0x58 from " +
-                              (client?.Player == null ? "?" : client.Player.Name) +
-                              ", " + packet.PacketSize + " bytes");
+            UnknownPacketLog.Note(0x58, client, packet);
         }
     }
 
@@ -776,9 +642,7 @@ namespace DOL.GS.PacketHandler.Client.v168
     {
         protected override void HandlePacketInternal(GameClient client, GSPacketIn packet)
         {
-            Console.WriteLine("Unclaimed packet 0x59 from " +
-                              (client?.Player == null ? "?" : client.Player.Name) +
-                              ", " + packet.PacketSize + " bytes");
+            UnknownPacketLog.Note(0x59, client, packet);
         }
     }
 
@@ -787,9 +651,7 @@ namespace DOL.GS.PacketHandler.Client.v168
     {
         protected override void HandlePacketInternal(GameClient client, GSPacketIn packet)
         {
-            Console.WriteLine("Unclaimed packet 0x5A from " +
-                              (client?.Player == null ? "?" : client.Player.Name) +
-                              ", " + packet.PacketSize + " bytes");
+            UnknownPacketLog.Note(0x5A, client, packet);
         }
     }
 
@@ -798,9 +660,7 @@ namespace DOL.GS.PacketHandler.Client.v168
     {
         protected override void HandlePacketInternal(GameClient client, GSPacketIn packet)
         {
-            Console.WriteLine("Unclaimed packet 0x5B from " +
-                              (client?.Player == null ? "?" : client.Player.Name) +
-                              ", " + packet.PacketSize + " bytes");
+            UnknownPacketLog.Note(0x5B, client, packet);
         }
     }
 
@@ -809,9 +669,7 @@ namespace DOL.GS.PacketHandler.Client.v168
     {
         protected override void HandlePacketInternal(GameClient client, GSPacketIn packet)
         {
-            Console.WriteLine("Unclaimed packet 0x5C from " +
-                              (client?.Player == null ? "?" : client.Player.Name) +
-                              ", " + packet.PacketSize + " bytes");
+            UnknownPacketLog.Note(0x5C, client, packet);
         }
     }
 
@@ -820,9 +678,7 @@ namespace DOL.GS.PacketHandler.Client.v168
     {
         protected override void HandlePacketInternal(GameClient client, GSPacketIn packet)
         {
-            Console.WriteLine("Unclaimed packet 0x5D from " +
-                              (client?.Player == null ? "?" : client.Player.Name) +
-                              ", " + packet.PacketSize + " bytes");
+            UnknownPacketLog.Note(0x5D, client, packet);
         }
     }
 
@@ -831,9 +687,7 @@ namespace DOL.GS.PacketHandler.Client.v168
     {
         protected override void HandlePacketInternal(GameClient client, GSPacketIn packet)
         {
-            Console.WriteLine("Unclaimed packet 0x5E from " +
-                              (client?.Player == null ? "?" : client.Player.Name) +
-                              ", " + packet.PacketSize + " bytes");
+            UnknownPacketLog.Note(0x5E, client, packet);
         }
     }
 
@@ -842,9 +696,7 @@ namespace DOL.GS.PacketHandler.Client.v168
     {
         protected override void HandlePacketInternal(GameClient client, GSPacketIn packet)
         {
-            Console.WriteLine("Unclaimed packet 0x5F from " +
-                              (client?.Player == null ? "?" : client.Player.Name) +
-                              ", " + packet.PacketSize + " bytes");
+            UnknownPacketLog.Note(0x5F, client, packet);
         }
     }
 
@@ -853,9 +705,7 @@ namespace DOL.GS.PacketHandler.Client.v168
     {
         protected override void HandlePacketInternal(GameClient client, GSPacketIn packet)
         {
-            Console.WriteLine("Unclaimed packet 0x60 from " +
-                              (client?.Player == null ? "?" : client.Player.Name) +
-                              ", " + packet.PacketSize + " bytes");
+            UnknownPacketLog.Note(0x60, client, packet);
         }
     }
 
@@ -864,9 +714,7 @@ namespace DOL.GS.PacketHandler.Client.v168
     {
         protected override void HandlePacketInternal(GameClient client, GSPacketIn packet)
         {
-            Console.WriteLine("Unclaimed packet 0x61 from " +
-                              (client?.Player == null ? "?" : client.Player.Name) +
-                              ", " + packet.PacketSize + " bytes");
+            UnknownPacketLog.Note(0x61, client, packet);
         }
     }
 
@@ -875,9 +723,7 @@ namespace DOL.GS.PacketHandler.Client.v168
     {
         protected override void HandlePacketInternal(GameClient client, GSPacketIn packet)
         {
-            Console.WriteLine("Unclaimed packet 0x62 from " +
-                              (client?.Player == null ? "?" : client.Player.Name) +
-                              ", " + packet.PacketSize + " bytes");
+            UnknownPacketLog.Note(0x62, client, packet);
         }
     }
 
@@ -886,9 +732,7 @@ namespace DOL.GS.PacketHandler.Client.v168
     {
         protected override void HandlePacketInternal(GameClient client, GSPacketIn packet)
         {
-            Console.WriteLine("Unclaimed packet 0x63 from " +
-                              (client?.Player == null ? "?" : client.Player.Name) +
-                              ", " + packet.PacketSize + " bytes");
+            UnknownPacketLog.Note(0x63, client, packet);
         }
     }
 
@@ -897,9 +741,7 @@ namespace DOL.GS.PacketHandler.Client.v168
     {
         protected override void HandlePacketInternal(GameClient client, GSPacketIn packet)
         {
-            Console.WriteLine("Unclaimed packet 0x65 from " +
-                              (client?.Player == null ? "?" : client.Player.Name) +
-                              ", " + packet.PacketSize + " bytes");
+            UnknownPacketLog.Note(0x65, client, packet);
         }
     }
 
@@ -908,9 +750,7 @@ namespace DOL.GS.PacketHandler.Client.v168
     {
         protected override void HandlePacketInternal(GameClient client, GSPacketIn packet)
         {
-            Console.WriteLine("Unclaimed packet 0x67 from " +
-                              (client?.Player == null ? "?" : client.Player.Name) +
-                              ", " + packet.PacketSize + " bytes");
+            UnknownPacketLog.Note(0x67, client, packet);
         }
     }
 
@@ -919,9 +759,7 @@ namespace DOL.GS.PacketHandler.Client.v168
     {
         protected override void HandlePacketInternal(GameClient client, GSPacketIn packet)
         {
-            Console.WriteLine("Unclaimed packet 0x68 from " +
-                              (client?.Player == null ? "?" : client.Player.Name) +
-                              ", " + packet.PacketSize + " bytes");
+            UnknownPacketLog.Note(0x68, client, packet);
         }
     }
 
@@ -930,9 +768,7 @@ namespace DOL.GS.PacketHandler.Client.v168
     {
         protected override void HandlePacketInternal(GameClient client, GSPacketIn packet)
         {
-            Console.WriteLine("Unclaimed packet 0x69 from " +
-                              (client?.Player == null ? "?" : client.Player.Name) +
-                              ", " + packet.PacketSize + " bytes");
+            UnknownPacketLog.Note(0x69, client, packet);
         }
     }
 
@@ -941,9 +777,7 @@ namespace DOL.GS.PacketHandler.Client.v168
     {
         protected override void HandlePacketInternal(GameClient client, GSPacketIn packet)
         {
-            Console.WriteLine("Unclaimed packet 0x6A from " +
-                              (client?.Player == null ? "?" : client.Player.Name) +
-                              ", " + packet.PacketSize + " bytes");
+            UnknownPacketLog.Note(0x6A, client, packet);
         }
     }
 
@@ -952,9 +786,7 @@ namespace DOL.GS.PacketHandler.Client.v168
     {
         protected override void HandlePacketInternal(GameClient client, GSPacketIn packet)
         {
-            Console.WriteLine("Unclaimed packet 0x6B from " +
-                              (client?.Player == null ? "?" : client.Player.Name) +
-                              ", " + packet.PacketSize + " bytes");
+            UnknownPacketLog.Note(0x6B, client, packet);
         }
     }
 
@@ -963,9 +795,7 @@ namespace DOL.GS.PacketHandler.Client.v168
     {
         protected override void HandlePacketInternal(GameClient client, GSPacketIn packet)
         {
-            Console.WriteLine("Unclaimed packet 0x6C from " +
-                              (client?.Player == null ? "?" : client.Player.Name) +
-                              ", " + packet.PacketSize + " bytes");
+            UnknownPacketLog.Note(0x6C, client, packet);
         }
     }
 
@@ -974,9 +804,7 @@ namespace DOL.GS.PacketHandler.Client.v168
     {
         protected override void HandlePacketInternal(GameClient client, GSPacketIn packet)
         {
-            Console.WriteLine("Unclaimed packet 0x6D from " +
-                              (client?.Player == null ? "?" : client.Player.Name) +
-                              ", " + packet.PacketSize + " bytes");
+            UnknownPacketLog.Note(0x6D, client, packet);
         }
     }
 
@@ -985,9 +813,7 @@ namespace DOL.GS.PacketHandler.Client.v168
     {
         protected override void HandlePacketInternal(GameClient client, GSPacketIn packet)
         {
-            Console.WriteLine("Unclaimed packet 0x6E from " +
-                              (client?.Player == null ? "?" : client.Player.Name) +
-                              ", " + packet.PacketSize + " bytes");
+            UnknownPacketLog.Note(0x6E, client, packet);
         }
     }
 
@@ -996,9 +822,7 @@ namespace DOL.GS.PacketHandler.Client.v168
     {
         protected override void HandlePacketInternal(GameClient client, GSPacketIn packet)
         {
-            Console.WriteLine("Unclaimed packet 0x70 from " +
-                              (client?.Player == null ? "?" : client.Player.Name) +
-                              ", " + packet.PacketSize + " bytes");
+            UnknownPacketLog.Note(0x70, client, packet);
         }
     }
 
@@ -1007,9 +831,7 @@ namespace DOL.GS.PacketHandler.Client.v168
     {
         protected override void HandlePacketInternal(GameClient client, GSPacketIn packet)
         {
-            Console.WriteLine("Unclaimed packet 0x72 from " +
-                              (client?.Player == null ? "?" : client.Player.Name) +
-                              ", " + packet.PacketSize + " bytes");
+            UnknownPacketLog.Note(0x72, client, packet);
         }
     }
 
@@ -1018,9 +840,7 @@ namespace DOL.GS.PacketHandler.Client.v168
     {
         protected override void HandlePacketInternal(GameClient client, GSPacketIn packet)
         {
-            Console.WriteLine("Unclaimed packet 0x73 from " +
-                              (client?.Player == null ? "?" : client.Player.Name) +
-                              ", " + packet.PacketSize + " bytes");
+            UnknownPacketLog.Note(0x73, client, packet);
         }
     }
 
@@ -1029,9 +849,7 @@ namespace DOL.GS.PacketHandler.Client.v168
     {
         protected override void HandlePacketInternal(GameClient client, GSPacketIn packet)
         {
-            Console.WriteLine("Unclaimed packet 0x75 from " +
-                              (client?.Player == null ? "?" : client.Player.Name) +
-                              ", " + packet.PacketSize + " bytes");
+            UnknownPacketLog.Note(0x75, client, packet);
         }
     }
 
@@ -1040,9 +858,7 @@ namespace DOL.GS.PacketHandler.Client.v168
     {
         protected override void HandlePacketInternal(GameClient client, GSPacketIn packet)
         {
-            Console.WriteLine("Unclaimed packet 0x77 from " +
-                              (client?.Player == null ? "?" : client.Player.Name) +
-                              ", " + packet.PacketSize + " bytes");
+            UnknownPacketLog.Note(0x77, client, packet);
         }
     }
 
@@ -1051,9 +867,7 @@ namespace DOL.GS.PacketHandler.Client.v168
     {
         protected override void HandlePacketInternal(GameClient client, GSPacketIn packet)
         {
-            Console.WriteLine("Unclaimed packet 0x7E from " +
-                              (client?.Player == null ? "?" : client.Player.Name) +
-                              ", " + packet.PacketSize + " bytes");
+            UnknownPacketLog.Note(0x7E, client, packet);
         }
     }
 
@@ -1062,9 +876,7 @@ namespace DOL.GS.PacketHandler.Client.v168
     {
         protected override void HandlePacketInternal(GameClient client, GSPacketIn packet)
         {
-            Console.WriteLine("Unclaimed packet 0x7F from " +
-                              (client?.Player == null ? "?" : client.Player.Name) +
-                              ", " + packet.PacketSize + " bytes");
+            UnknownPacketLog.Note(0x7F, client, packet);
         }
     }
 
@@ -1073,9 +885,7 @@ namespace DOL.GS.PacketHandler.Client.v168
     {
         protected override void HandlePacketInternal(GameClient client, GSPacketIn packet)
         {
-            Console.WriteLine("Unclaimed packet 0x81 from " +
-                              (client?.Player == null ? "?" : client.Player.Name) +
-                              ", " + packet.PacketSize + " bytes");
+            UnknownPacketLog.Note(0x81, client, packet);
         }
     }
 
@@ -1084,9 +894,7 @@ namespace DOL.GS.PacketHandler.Client.v168
     {
         protected override void HandlePacketInternal(GameClient client, GSPacketIn packet)
         {
-            Console.WriteLine("Unclaimed packet 0x83 from " +
-                              (client?.Player == null ? "?" : client.Player.Name) +
-                              ", " + packet.PacketSize + " bytes");
+            UnknownPacketLog.Note(0x83, client, packet);
         }
     }
 
@@ -1095,9 +903,7 @@ namespace DOL.GS.PacketHandler.Client.v168
     {
         protected override void HandlePacketInternal(GameClient client, GSPacketIn packet)
         {
-            Console.WriteLine("Unclaimed packet 0x86 from " +
-                              (client?.Player == null ? "?" : client.Player.Name) +
-                              ", " + packet.PacketSize + " bytes");
+            UnknownPacketLog.Note(0x86, client, packet);
         }
     }
 
@@ -1106,9 +912,7 @@ namespace DOL.GS.PacketHandler.Client.v168
     {
         protected override void HandlePacketInternal(GameClient client, GSPacketIn packet)
         {
-            Console.WriteLine("Unclaimed packet 0x88 from " +
-                              (client?.Player == null ? "?" : client.Player.Name) +
-                              ", " + packet.PacketSize + " bytes");
+            UnknownPacketLog.Note(0x88, client, packet);
         }
     }
 
@@ -1117,9 +921,7 @@ namespace DOL.GS.PacketHandler.Client.v168
     {
         protected override void HandlePacketInternal(GameClient client, GSPacketIn packet)
         {
-            Console.WriteLine("Unclaimed packet 0x89 from " +
-                              (client?.Player == null ? "?" : client.Player.Name) +
-                              ", " + packet.PacketSize + " bytes");
+            UnknownPacketLog.Note(0x89, client, packet);
         }
     }
 
@@ -1128,9 +930,7 @@ namespace DOL.GS.PacketHandler.Client.v168
     {
         protected override void HandlePacketInternal(GameClient client, GSPacketIn packet)
         {
-            Console.WriteLine("Unclaimed packet 0x8B from " +
-                              (client?.Player == null ? "?" : client.Player.Name) +
-                              ", " + packet.PacketSize + " bytes");
+            UnknownPacketLog.Note(0x8B, client, packet);
         }
     }
 
@@ -1139,9 +939,7 @@ namespace DOL.GS.PacketHandler.Client.v168
     {
         protected override void HandlePacketInternal(GameClient client, GSPacketIn packet)
         {
-            Console.WriteLine("Unclaimed packet 0x8C from " +
-                              (client?.Player == null ? "?" : client.Player.Name) +
-                              ", " + packet.PacketSize + " bytes");
+            UnknownPacketLog.Note(0x8C, client, packet);
         }
     }
 
@@ -1150,9 +948,7 @@ namespace DOL.GS.PacketHandler.Client.v168
     {
         protected override void HandlePacketInternal(GameClient client, GSPacketIn packet)
         {
-            Console.WriteLine("Unclaimed packet 0x8D from " +
-                              (client?.Player == null ? "?" : client.Player.Name) +
-                              ", " + packet.PacketSize + " bytes");
+            UnknownPacketLog.Note(0x8D, client, packet);
         }
     }
 
@@ -1161,9 +957,7 @@ namespace DOL.GS.PacketHandler.Client.v168
     {
         protected override void HandlePacketInternal(GameClient client, GSPacketIn packet)
         {
-            Console.WriteLine("Unclaimed packet 0x8E from " +
-                              (client?.Player == null ? "?" : client.Player.Name) +
-                              ", " + packet.PacketSize + " bytes");
+            UnknownPacketLog.Note(0x8E, client, packet);
         }
     }
 
@@ -1172,9 +966,7 @@ namespace DOL.GS.PacketHandler.Client.v168
     {
         protected override void HandlePacketInternal(GameClient client, GSPacketIn packet)
         {
-            Console.WriteLine("Unclaimed packet 0x8F from " +
-                              (client?.Player == null ? "?" : client.Player.Name) +
-                              ", " + packet.PacketSize + " bytes");
+            UnknownPacketLog.Note(0x8F, client, packet);
         }
     }
 
@@ -1183,9 +975,7 @@ namespace DOL.GS.PacketHandler.Client.v168
     {
         protected override void HandlePacketInternal(GameClient client, GSPacketIn packet)
         {
-            Console.WriteLine("Unclaimed packet 0x91 from " +
-                              (client?.Player == null ? "?" : client.Player.Name) +
-                              ", " + packet.PacketSize + " bytes");
+            UnknownPacketLog.Note(0x91, client, packet);
         }
     }
 
@@ -1194,9 +984,7 @@ namespace DOL.GS.PacketHandler.Client.v168
     {
         protected override void HandlePacketInternal(GameClient client, GSPacketIn packet)
         {
-            Console.WriteLine("Unclaimed packet 0x92 from " +
-                              (client?.Player == null ? "?" : client.Player.Name) +
-                              ", " + packet.PacketSize + " bytes");
+            UnknownPacketLog.Note(0x92, client, packet);
         }
     }
 
@@ -1205,9 +993,7 @@ namespace DOL.GS.PacketHandler.Client.v168
     {
         protected override void HandlePacketInternal(GameClient client, GSPacketIn packet)
         {
-            Console.WriteLine("Unclaimed packet 0x93 from " +
-                              (client?.Player == null ? "?" : client.Player.Name) +
-                              ", " + packet.PacketSize + " bytes");
+            UnknownPacketLog.Note(0x93, client, packet);
         }
     }
 
@@ -1216,9 +1002,7 @@ namespace DOL.GS.PacketHandler.Client.v168
     {
         protected override void HandlePacketInternal(GameClient client, GSPacketIn packet)
         {
-            Console.WriteLine("Unclaimed packet 0x94 from " +
-                              (client?.Player == null ? "?" : client.Player.Name) +
-                              ", " + packet.PacketSize + " bytes");
+            UnknownPacketLog.Note(0x94, client, packet);
         }
     }
 
@@ -1227,9 +1011,7 @@ namespace DOL.GS.PacketHandler.Client.v168
     {
         protected override void HandlePacketInternal(GameClient client, GSPacketIn packet)
         {
-            Console.WriteLine("Unclaimed packet 0x95 from " +
-                              (client?.Player == null ? "?" : client.Player.Name) +
-                              ", " + packet.PacketSize + " bytes");
+            UnknownPacketLog.Note(0x95, client, packet);
         }
     }
 
@@ -1238,9 +1020,7 @@ namespace DOL.GS.PacketHandler.Client.v168
     {
         protected override void HandlePacketInternal(GameClient client, GSPacketIn packet)
         {
-            Console.WriteLine("Unclaimed packet 0x96 from " +
-                              (client?.Player == null ? "?" : client.Player.Name) +
-                              ", " + packet.PacketSize + " bytes");
+            UnknownPacketLog.Note(0x96, client, packet);
         }
     }
 
@@ -1249,9 +1029,7 @@ namespace DOL.GS.PacketHandler.Client.v168
     {
         protected override void HandlePacketInternal(GameClient client, GSPacketIn packet)
         {
-            Console.WriteLine("Unclaimed packet 0x97 from " +
-                              (client?.Player == null ? "?" : client.Player.Name) +
-                              ", " + packet.PacketSize + " bytes");
+            UnknownPacketLog.Note(0x97, client, packet);
         }
     }
 
@@ -1260,9 +1038,7 @@ namespace DOL.GS.PacketHandler.Client.v168
     {
         protected override void HandlePacketInternal(GameClient client, GSPacketIn packet)
         {
-            Console.WriteLine("Unclaimed packet 0x98 from " +
-                              (client?.Player == null ? "?" : client.Player.Name) +
-                              ", " + packet.PacketSize + " bytes");
+            UnknownPacketLog.Note(0x98, client, packet);
         }
     }
 
@@ -1271,9 +1047,7 @@ namespace DOL.GS.PacketHandler.Client.v168
     {
         protected override void HandlePacketInternal(GameClient client, GSPacketIn packet)
         {
-            Console.WriteLine("Unclaimed packet 0x9A from " +
-                              (client?.Player == null ? "?" : client.Player.Name) +
-                              ", " + packet.PacketSize + " bytes");
+            UnknownPacketLog.Note(0x9A, client, packet);
         }
     }
 
@@ -1282,9 +1056,7 @@ namespace DOL.GS.PacketHandler.Client.v168
     {
         protected override void HandlePacketInternal(GameClient client, GSPacketIn packet)
         {
-            Console.WriteLine("Unclaimed packet 0x9B from " +
-                              (client?.Player == null ? "?" : client.Player.Name) +
-                              ", " + packet.PacketSize + " bytes");
+            UnknownPacketLog.Note(0x9B, client, packet);
         }
     }
 
@@ -1293,9 +1065,7 @@ namespace DOL.GS.PacketHandler.Client.v168
     {
         protected override void HandlePacketInternal(GameClient client, GSPacketIn packet)
         {
-            Console.WriteLine("Unclaimed packet 0x9C from " +
-                              (client?.Player == null ? "?" : client.Player.Name) +
-                              ", " + packet.PacketSize + " bytes");
+            UnknownPacketLog.Note(0x9C, client, packet);
         }
     }
 
@@ -1304,9 +1074,7 @@ namespace DOL.GS.PacketHandler.Client.v168
     {
         protected override void HandlePacketInternal(GameClient client, GSPacketIn packet)
         {
-            Console.WriteLine("Unclaimed packet 0x9E from " +
-                              (client?.Player == null ? "?" : client.Player.Name) +
-                              ", " + packet.PacketSize + " bytes");
+            UnknownPacketLog.Note(0x9E, client, packet);
         }
     }
 
@@ -1315,9 +1083,7 @@ namespace DOL.GS.PacketHandler.Client.v168
     {
         protected override void HandlePacketInternal(GameClient client, GSPacketIn packet)
         {
-            Console.WriteLine("Unclaimed packet 0xA0 from " +
-                              (client?.Player == null ? "?" : client.Player.Name) +
-                              ", " + packet.PacketSize + " bytes");
+            UnknownPacketLog.Note(0xA0, client, packet);
         }
     }
 
@@ -1326,9 +1092,7 @@ namespace DOL.GS.PacketHandler.Client.v168
     {
         protected override void HandlePacketInternal(GameClient client, GSPacketIn packet)
         {
-            Console.WriteLine("Unclaimed packet 0xA1 from " +
-                              (client?.Player == null ? "?" : client.Player.Name) +
-                              ", " + packet.PacketSize + " bytes");
+            UnknownPacketLog.Note(0xA1, client, packet);
         }
     }
 
@@ -1337,9 +1101,7 @@ namespace DOL.GS.PacketHandler.Client.v168
     {
         protected override void HandlePacketInternal(GameClient client, GSPacketIn packet)
         {
-            Console.WriteLine("Unclaimed packet 0xA2 from " +
-                              (client?.Player == null ? "?" : client.Player.Name) +
-                              ", " + packet.PacketSize + " bytes");
+            UnknownPacketLog.Note(0xA2, client, packet);
         }
     }
 
@@ -1348,9 +1110,7 @@ namespace DOL.GS.PacketHandler.Client.v168
     {
         protected override void HandlePacketInternal(GameClient client, GSPacketIn packet)
         {
-            Console.WriteLine("Unclaimed packet 0xA4 from " +
-                              (client?.Player == null ? "?" : client.Player.Name) +
-                              ", " + packet.PacketSize + " bytes");
+            UnknownPacketLog.Note(0xA4, client, packet);
         }
     }
 
@@ -1359,9 +1119,7 @@ namespace DOL.GS.PacketHandler.Client.v168
     {
         protected override void HandlePacketInternal(GameClient client, GSPacketIn packet)
         {
-            Console.WriteLine("Unclaimed packet 0xA6 from " +
-                              (client?.Player == null ? "?" : client.Player.Name) +
-                              ", " + packet.PacketSize + " bytes");
+            UnknownPacketLog.Note(0xA6, client, packet);
         }
     }
 
@@ -1370,9 +1128,7 @@ namespace DOL.GS.PacketHandler.Client.v168
     {
         protected override void HandlePacketInternal(GameClient client, GSPacketIn packet)
         {
-            Console.WriteLine("Unclaimed packet 0xA8 from " +
-                              (client?.Player == null ? "?" : client.Player.Name) +
-                              ", " + packet.PacketSize + " bytes");
+            UnknownPacketLog.Note(0xA8, client, packet);
         }
     }
 
@@ -1381,9 +1137,7 @@ namespace DOL.GS.PacketHandler.Client.v168
     {
         protected override void HandlePacketInternal(GameClient client, GSPacketIn packet)
         {
-            Console.WriteLine("Unclaimed packet 0xAA from " +
-                              (client?.Player == null ? "?" : client.Player.Name) +
-                              ", " + packet.PacketSize + " bytes");
+            UnknownPacketLog.Note(0xAA, client, packet);
         }
     }
 
@@ -1392,9 +1146,7 @@ namespace DOL.GS.PacketHandler.Client.v168
     {
         protected override void HandlePacketInternal(GameClient client, GSPacketIn packet)
         {
-            Console.WriteLine("Unclaimed packet 0xAB from " +
-                              (client?.Player == null ? "?" : client.Player.Name) +
-                              ", " + packet.PacketSize + " bytes");
+            UnknownPacketLog.Note(0xAB, client, packet);
         }
     }
 
@@ -1403,9 +1155,7 @@ namespace DOL.GS.PacketHandler.Client.v168
     {
         protected override void HandlePacketInternal(GameClient client, GSPacketIn packet)
         {
-            Console.WriteLine("Unclaimed packet 0xAC from " +
-                              (client?.Player == null ? "?" : client.Player.Name) +
-                              ", " + packet.PacketSize + " bytes");
+            UnknownPacketLog.Note(0xAC, client, packet);
         }
     }
 
@@ -1414,9 +1164,7 @@ namespace DOL.GS.PacketHandler.Client.v168
     {
         protected override void HandlePacketInternal(GameClient client, GSPacketIn packet)
         {
-            Console.WriteLine("Unclaimed packet 0xAD from " +
-                              (client?.Player == null ? "?" : client.Player.Name) +
-                              ", " + packet.PacketSize + " bytes");
+            UnknownPacketLog.Note(0xAD, client, packet);
         }
     }
 
@@ -1425,9 +1173,7 @@ namespace DOL.GS.PacketHandler.Client.v168
     {
         protected override void HandlePacketInternal(GameClient client, GSPacketIn packet)
         {
-            Console.WriteLine("Unclaimed packet 0xAE from " +
-                              (client?.Player == null ? "?" : client.Player.Name) +
-                              ", " + packet.PacketSize + " bytes");
+            UnknownPacketLog.Note(0xAE, client, packet);
         }
     }
 
@@ -1436,9 +1182,7 @@ namespace DOL.GS.PacketHandler.Client.v168
     {
         protected override void HandlePacketInternal(GameClient client, GSPacketIn packet)
         {
-            Console.WriteLine("Unclaimed packet 0xB1 from " +
-                              (client?.Player == null ? "?" : client.Player.Name) +
-                              ", " + packet.PacketSize + " bytes");
+            UnknownPacketLog.Note(0xB1, client, packet);
         }
     }
 
@@ -1447,9 +1191,7 @@ namespace DOL.GS.PacketHandler.Client.v168
     {
         protected override void HandlePacketInternal(GameClient client, GSPacketIn packet)
         {
-            Console.WriteLine("Unclaimed packet 0xB2 from " +
-                              (client?.Player == null ? "?" : client.Player.Name) +
-                              ", " + packet.PacketSize + " bytes");
+            UnknownPacketLog.Note(0xB2, client, packet);
         }
     }
 
@@ -1458,9 +1200,7 @@ namespace DOL.GS.PacketHandler.Client.v168
     {
         protected override void HandlePacketInternal(GameClient client, GSPacketIn packet)
         {
-            Console.WriteLine("Unclaimed packet 0xB3 from " +
-                              (client?.Player == null ? "?" : client.Player.Name) +
-                              ", " + packet.PacketSize + " bytes");
+            UnknownPacketLog.Note(0xB3, client, packet);
         }
     }
 
@@ -1469,9 +1209,7 @@ namespace DOL.GS.PacketHandler.Client.v168
     {
         protected override void HandlePacketInternal(GameClient client, GSPacketIn packet)
         {
-            Console.WriteLine("Unclaimed packet 0xB4 from " +
-                              (client?.Player == null ? "?" : client.Player.Name) +
-                              ", " + packet.PacketSize + " bytes");
+            UnknownPacketLog.Note(0xB4, client, packet);
         }
     }
 
@@ -1480,9 +1218,7 @@ namespace DOL.GS.PacketHandler.Client.v168
     {
         protected override void HandlePacketInternal(GameClient client, GSPacketIn packet)
         {
-            Console.WriteLine("Unclaimed packet 0xB6 from " +
-                              (client?.Player == null ? "?" : client.Player.Name) +
-                              ", " + packet.PacketSize + " bytes");
+            UnknownPacketLog.Note(0xB6, client, packet);
         }
     }
 
@@ -1491,9 +1227,7 @@ namespace DOL.GS.PacketHandler.Client.v168
     {
         protected override void HandlePacketInternal(GameClient client, GSPacketIn packet)
         {
-            Console.WriteLine("Unclaimed packet 0xB7 from " +
-                              (client?.Player == null ? "?" : client.Player.Name) +
-                              ", " + packet.PacketSize + " bytes");
+            UnknownPacketLog.Note(0xB7, client, packet);
         }
     }
 
@@ -1502,9 +1236,7 @@ namespace DOL.GS.PacketHandler.Client.v168
     {
         protected override void HandlePacketInternal(GameClient client, GSPacketIn packet)
         {
-            Console.WriteLine("Unclaimed packet 0xB8 from " +
-                              (client?.Player == null ? "?" : client.Player.Name) +
-                              ", " + packet.PacketSize + " bytes");
+            UnknownPacketLog.Note(0xB8, client, packet);
         }
     }
 
@@ -1513,9 +1245,7 @@ namespace DOL.GS.PacketHandler.Client.v168
     {
         protected override void HandlePacketInternal(GameClient client, GSPacketIn packet)
         {
-            Console.WriteLine("Unclaimed packet 0xB9 from " +
-                              (client?.Player == null ? "?" : client.Player.Name) +
-                              ", " + packet.PacketSize + " bytes");
+            UnknownPacketLog.Note(0xB9, client, packet);
         }
     }
 
@@ -1524,9 +1254,7 @@ namespace DOL.GS.PacketHandler.Client.v168
     {
         protected override void HandlePacketInternal(GameClient client, GSPacketIn packet)
         {
-            Console.WriteLine("Unclaimed packet 0xBC from " +
-                              (client?.Player == null ? "?" : client.Player.Name) +
-                              ", " + packet.PacketSize + " bytes");
+            UnknownPacketLog.Note(0xBC, client, packet);
         }
     }
 
@@ -1535,9 +1263,7 @@ namespace DOL.GS.PacketHandler.Client.v168
     {
         protected override void HandlePacketInternal(GameClient client, GSPacketIn packet)
         {
-            Console.WriteLine("Unclaimed packet 0xBD from " +
-                              (client?.Player == null ? "?" : client.Player.Name) +
-                              ", " + packet.PacketSize + " bytes");
+            UnknownPacketLog.Note(0xBD, client, packet);
         }
     }
 
@@ -1546,9 +1272,7 @@ namespace DOL.GS.PacketHandler.Client.v168
     {
         protected override void HandlePacketInternal(GameClient client, GSPacketIn packet)
         {
-            Console.WriteLine("Unclaimed packet 0xC1 from " +
-                              (client?.Player == null ? "?" : client.Player.Name) +
-                              ", " + packet.PacketSize + " bytes");
+            UnknownPacketLog.Note(0xC1, client, packet);
         }
     }
 
@@ -1557,9 +1281,7 @@ namespace DOL.GS.PacketHandler.Client.v168
     {
         protected override void HandlePacketInternal(GameClient client, GSPacketIn packet)
         {
-            Console.WriteLine("Unclaimed packet 0xC3 from " +
-                              (client?.Player == null ? "?" : client.Player.Name) +
-                              ", " + packet.PacketSize + " bytes");
+            UnknownPacketLog.Note(0xC3, client, packet);
         }
     }
 
@@ -1568,9 +1290,7 @@ namespace DOL.GS.PacketHandler.Client.v168
     {
         protected override void HandlePacketInternal(GameClient client, GSPacketIn packet)
         {
-            Console.WriteLine("Unclaimed packet 0xC4 from " +
-                              (client?.Player == null ? "?" : client.Player.Name) +
-                              ", " + packet.PacketSize + " bytes");
+            UnknownPacketLog.Note(0xC4, client, packet);
         }
     }
 
@@ -1579,9 +1299,7 @@ namespace DOL.GS.PacketHandler.Client.v168
     {
         protected override void HandlePacketInternal(GameClient client, GSPacketIn packet)
         {
-            Console.WriteLine("Unclaimed packet 0xC5 from " +
-                              (client?.Player == null ? "?" : client.Player.Name) +
-                              ", " + packet.PacketSize + " bytes");
+            UnknownPacketLog.Note(0xC5, client, packet);
         }
     }
 
@@ -1590,9 +1308,7 @@ namespace DOL.GS.PacketHandler.Client.v168
     {
         protected override void HandlePacketInternal(GameClient client, GSPacketIn packet)
         {
-            Console.WriteLine("Unclaimed packet 0xC6 from " +
-                              (client?.Player == null ? "?" : client.Player.Name) +
-                              ", " + packet.PacketSize + " bytes");
+            UnknownPacketLog.Note(0xC6, client, packet);
         }
     }
 
@@ -1601,9 +1317,7 @@ namespace DOL.GS.PacketHandler.Client.v168
     {
         protected override void HandlePacketInternal(GameClient client, GSPacketIn packet)
         {
-            Console.WriteLine("Unclaimed packet 0xC9 from " +
-                              (client?.Player == null ? "?" : client.Player.Name) +
-                              ", " + packet.PacketSize + " bytes");
+            UnknownPacketLog.Note(0xC9, client, packet);
         }
     }
 
@@ -1612,9 +1326,7 @@ namespace DOL.GS.PacketHandler.Client.v168
     {
         protected override void HandlePacketInternal(GameClient client, GSPacketIn packet)
         {
-            Console.WriteLine("Unclaimed packet 0xCC from " +
-                              (client?.Player == null ? "?" : client.Player.Name) +
-                              ", " + packet.PacketSize + " bytes");
+            UnknownPacketLog.Note(0xCC, client, packet);
         }
     }
 
@@ -1623,9 +1335,7 @@ namespace DOL.GS.PacketHandler.Client.v168
     {
         protected override void HandlePacketInternal(GameClient client, GSPacketIn packet)
         {
-            Console.WriteLine("Unclaimed packet 0xCD from " +
-                              (client?.Player == null ? "?" : client.Player.Name) +
-                              ", " + packet.PacketSize + " bytes");
+            UnknownPacketLog.Note(0xCD, client, packet);
         }
     }
 
@@ -1634,9 +1344,7 @@ namespace DOL.GS.PacketHandler.Client.v168
     {
         protected override void HandlePacketInternal(GameClient client, GSPacketIn packet)
         {
-            Console.WriteLine("Unclaimed packet 0xCE from " +
-                              (client?.Player == null ? "?" : client.Player.Name) +
-                              ", " + packet.PacketSize + " bytes");
+            UnknownPacketLog.Note(0xCE, client, packet);
         }
     }
 
@@ -1645,9 +1353,7 @@ namespace DOL.GS.PacketHandler.Client.v168
     {
         protected override void HandlePacketInternal(GameClient client, GSPacketIn packet)
         {
-            Console.WriteLine("Unclaimed packet 0xCF from " +
-                              (client?.Player == null ? "?" : client.Player.Name) +
-                              ", " + packet.PacketSize + " bytes");
+            UnknownPacketLog.Note(0xCF, client, packet);
         }
     }
 
@@ -1656,9 +1362,7 @@ namespace DOL.GS.PacketHandler.Client.v168
     {
         protected override void HandlePacketInternal(GameClient client, GSPacketIn packet)
         {
-            Console.WriteLine("Unclaimed packet 0xD1 from " +
-                              (client?.Player == null ? "?" : client.Player.Name) +
-                              ", " + packet.PacketSize + " bytes");
+            UnknownPacketLog.Note(0xD1, client, packet);
         }
     }
 
@@ -1667,9 +1371,7 @@ namespace DOL.GS.PacketHandler.Client.v168
     {
         protected override void HandlePacketInternal(GameClient client, GSPacketIn packet)
         {
-            Console.WriteLine("Unclaimed packet 0xD2 from " +
-                              (client?.Player == null ? "?" : client.Player.Name) +
-                              ", " + packet.PacketSize + " bytes");
+            UnknownPacketLog.Note(0xD2, client, packet);
         }
     }
 
@@ -1678,9 +1380,7 @@ namespace DOL.GS.PacketHandler.Client.v168
     {
         protected override void HandlePacketInternal(GameClient client, GSPacketIn packet)
         {
-            Console.WriteLine("Unclaimed packet 0xD3 from " +
-                              (client?.Player == null ? "?" : client.Player.Name) +
-                              ", " + packet.PacketSize + " bytes");
+            UnknownPacketLog.Note(0xD3, client, packet);
         }
     }
 
@@ -1689,9 +1389,7 @@ namespace DOL.GS.PacketHandler.Client.v168
     {
         protected override void HandlePacketInternal(GameClient client, GSPacketIn packet)
         {
-            Console.WriteLine("Unclaimed packet 0xD6 from " +
-                              (client?.Player == null ? "?" : client.Player.Name) +
-                              ", " + packet.PacketSize + " bytes");
+            UnknownPacketLog.Note(0xD6, client, packet);
         }
     }
 
@@ -1700,9 +1398,7 @@ namespace DOL.GS.PacketHandler.Client.v168
     {
         protected override void HandlePacketInternal(GameClient client, GSPacketIn packet)
         {
-            Console.WriteLine("Unclaimed packet 0xD7 from " +
-                              (client?.Player == null ? "?" : client.Player.Name) +
-                              ", " + packet.PacketSize + " bytes");
+            UnknownPacketLog.Note(0xD7, client, packet);
         }
     }
 
@@ -1711,9 +1407,7 @@ namespace DOL.GS.PacketHandler.Client.v168
     {
         protected override void HandlePacketInternal(GameClient client, GSPacketIn packet)
         {
-            Console.WriteLine("Unclaimed packet 0xD9 from " +
-                              (client?.Player == null ? "?" : client.Player.Name) +
-                              ", " + packet.PacketSize + " bytes");
+            UnknownPacketLog.Note(0xD9, client, packet);
         }
     }
 
@@ -1722,9 +1416,7 @@ namespace DOL.GS.PacketHandler.Client.v168
     {
         protected override void HandlePacketInternal(GameClient client, GSPacketIn packet)
         {
-            Console.WriteLine("Unclaimed packet 0xDA from " +
-                              (client?.Player == null ? "?" : client.Player.Name) +
-                              ", " + packet.PacketSize + " bytes");
+            UnknownPacketLog.Note(0xDA, client, packet);
         }
     }
 
@@ -1733,9 +1425,7 @@ namespace DOL.GS.PacketHandler.Client.v168
     {
         protected override void HandlePacketInternal(GameClient client, GSPacketIn packet)
         {
-            Console.WriteLine("Unclaimed packet 0xDB from " +
-                              (client?.Player == null ? "?" : client.Player.Name) +
-                              ", " + packet.PacketSize + " bytes");
+            UnknownPacketLog.Note(0xDB, client, packet);
         }
     }
 
@@ -1744,9 +1434,7 @@ namespace DOL.GS.PacketHandler.Client.v168
     {
         protected override void HandlePacketInternal(GameClient client, GSPacketIn packet)
         {
-            Console.WriteLine("Unclaimed packet 0xDE from " +
-                              (client?.Player == null ? "?" : client.Player.Name) +
-                              ", " + packet.PacketSize + " bytes");
+            UnknownPacketLog.Note(0xDE, client, packet);
         }
     }
 
@@ -1755,9 +1443,7 @@ namespace DOL.GS.PacketHandler.Client.v168
     {
         protected override void HandlePacketInternal(GameClient client, GSPacketIn packet)
         {
-            Console.WriteLine("Unclaimed packet 0xDF from " +
-                              (client?.Player == null ? "?" : client.Player.Name) +
-                              ", " + packet.PacketSize + " bytes");
+            UnknownPacketLog.Note(0xDF, client, packet);
         }
     }
 
@@ -1766,9 +1452,7 @@ namespace DOL.GS.PacketHandler.Client.v168
     {
         protected override void HandlePacketInternal(GameClient client, GSPacketIn packet)
         {
-            Console.WriteLine("Unclaimed packet 0xE1 from " +
-                              (client?.Player == null ? "?" : client.Player.Name) +
-                              ", " + packet.PacketSize + " bytes");
+            UnknownPacketLog.Note(0xE1, client, packet);
         }
     }
 
@@ -1777,9 +1461,7 @@ namespace DOL.GS.PacketHandler.Client.v168
     {
         protected override void HandlePacketInternal(GameClient client, GSPacketIn packet)
         {
-            Console.WriteLine("Unclaimed packet 0xE3 from " +
-                              (client?.Player == null ? "?" : client.Player.Name) +
-                              ", " + packet.PacketSize + " bytes");
+            UnknownPacketLog.Note(0xE3, client, packet);
         }
     }
 
@@ -1788,9 +1470,7 @@ namespace DOL.GS.PacketHandler.Client.v168
     {
         protected override void HandlePacketInternal(GameClient client, GSPacketIn packet)
         {
-            Console.WriteLine("Unclaimed packet 0xE5 from " +
-                              (client?.Player == null ? "?" : client.Player.Name) +
-                              ", " + packet.PacketSize + " bytes");
+            UnknownPacketLog.Note(0xE5, client, packet);
         }
     }
 
@@ -1799,9 +1479,7 @@ namespace DOL.GS.PacketHandler.Client.v168
     {
         protected override void HandlePacketInternal(GameClient client, GSPacketIn packet)
         {
-            Console.WriteLine("Unclaimed packet 0xE6 from " +
-                              (client?.Player == null ? "?" : client.Player.Name) +
-                              ", " + packet.PacketSize + " bytes");
+            UnknownPacketLog.Note(0xE6, client, packet);
         }
     }
 
@@ -1810,9 +1488,7 @@ namespace DOL.GS.PacketHandler.Client.v168
     {
         protected override void HandlePacketInternal(GameClient client, GSPacketIn packet)
         {
-            Console.WriteLine("Unclaimed packet 0xE7 from " +
-                              (client?.Player == null ? "?" : client.Player.Name) +
-                              ", " + packet.PacketSize + " bytes");
+            UnknownPacketLog.Note(0xE7, client, packet);
         }
     }
 
@@ -1821,9 +1497,7 @@ namespace DOL.GS.PacketHandler.Client.v168
     {
         protected override void HandlePacketInternal(GameClient client, GSPacketIn packet)
         {
-            Console.WriteLine("Unclaimed packet 0xE9 from " +
-                              (client?.Player == null ? "?" : client.Player.Name) +
-                              ", " + packet.PacketSize + " bytes");
+            UnknownPacketLog.Note(0xE9, client, packet);
         }
     }
 
@@ -1832,9 +1506,7 @@ namespace DOL.GS.PacketHandler.Client.v168
     {
         protected override void HandlePacketInternal(GameClient client, GSPacketIn packet)
         {
-            Console.WriteLine("Unclaimed packet 0xEA from " +
-                              (client?.Player == null ? "?" : client.Player.Name) +
-                              ", " + packet.PacketSize + " bytes");
+            UnknownPacketLog.Note(0xEA, client, packet);
         }
     }
 
@@ -1843,9 +1515,7 @@ namespace DOL.GS.PacketHandler.Client.v168
     {
         protected override void HandlePacketInternal(GameClient client, GSPacketIn packet)
         {
-            Console.WriteLine("Unclaimed packet 0xEE from " +
-                              (client?.Player == null ? "?" : client.Player.Name) +
-                              ", " + packet.PacketSize + " bytes");
+            UnknownPacketLog.Note(0xEE, client, packet);
         }
     }
 
@@ -1854,9 +1524,7 @@ namespace DOL.GS.PacketHandler.Client.v168
     {
         protected override void HandlePacketInternal(GameClient client, GSPacketIn packet)
         {
-            Console.WriteLine("Unclaimed packet 0xEF from " +
-                              (client?.Player == null ? "?" : client.Player.Name) +
-                              ", " + packet.PacketSize + " bytes");
+            UnknownPacketLog.Note(0xEF, client, packet);
         }
     }
 
@@ -1865,9 +1533,7 @@ namespace DOL.GS.PacketHandler.Client.v168
     {
         protected override void HandlePacketInternal(GameClient client, GSPacketIn packet)
         {
-            Console.WriteLine("Unclaimed packet 0xF0 from " +
-                              (client?.Player == null ? "?" : client.Player.Name) +
-                              ", " + packet.PacketSize + " bytes");
+            UnknownPacketLog.Note(0xF0, client, packet);
         }
     }
 
@@ -1876,9 +1542,7 @@ namespace DOL.GS.PacketHandler.Client.v168
     {
         protected override void HandlePacketInternal(GameClient client, GSPacketIn packet)
         {
-            Console.WriteLine("Unclaimed packet 0xF1 from " +
-                              (client?.Player == null ? "?" : client.Player.Name) +
-                              ", " + packet.PacketSize + " bytes");
+            UnknownPacketLog.Note(0xF1, client, packet);
         }
     }
 
@@ -1887,9 +1551,7 @@ namespace DOL.GS.PacketHandler.Client.v168
     {
         protected override void HandlePacketInternal(GameClient client, GSPacketIn packet)
         {
-            Console.WriteLine("Unclaimed packet 0xF3 from " +
-                              (client?.Player == null ? "?" : client.Player.Name) +
-                              ", " + packet.PacketSize + " bytes");
+            UnknownPacketLog.Note(0xF3, client, packet);
         }
     }
 
@@ -1898,9 +1560,7 @@ namespace DOL.GS.PacketHandler.Client.v168
     {
         protected override void HandlePacketInternal(GameClient client, GSPacketIn packet)
         {
-            Console.WriteLine("Unclaimed packet 0xF6 from " +
-                              (client?.Player == null ? "?" : client.Player.Name) +
-                              ", " + packet.PacketSize + " bytes");
+            UnknownPacketLog.Note(0xF6, client, packet);
         }
     }
 
@@ -1909,9 +1569,7 @@ namespace DOL.GS.PacketHandler.Client.v168
     {
         protected override void HandlePacketInternal(GameClient client, GSPacketIn packet)
         {
-            Console.WriteLine("Unclaimed packet 0xF7 from " +
-                              (client?.Player == null ? "?" : client.Player.Name) +
-                              ", " + packet.PacketSize + " bytes");
+            UnknownPacketLog.Note(0xF7, client, packet);
         }
     }
 
@@ -1920,9 +1578,7 @@ namespace DOL.GS.PacketHandler.Client.v168
     {
         protected override void HandlePacketInternal(GameClient client, GSPacketIn packet)
         {
-            Console.WriteLine("Unclaimed packet 0xF9 from " +
-                              (client?.Player == null ? "?" : client.Player.Name) +
-                              ", " + packet.PacketSize + " bytes");
+            UnknownPacketLog.Note(0xF9, client, packet);
         }
     }
 
@@ -1931,9 +1587,7 @@ namespace DOL.GS.PacketHandler.Client.v168
     {
         protected override void HandlePacketInternal(GameClient client, GSPacketIn packet)
         {
-            Console.WriteLine("Unclaimed packet 0xFA from " +
-                              (client?.Player == null ? "?" : client.Player.Name) +
-                              ", " + packet.PacketSize + " bytes");
+            UnknownPacketLog.Note(0xFA, client, packet);
         }
     }
 
@@ -1942,9 +1596,7 @@ namespace DOL.GS.PacketHandler.Client.v168
     {
         protected override void HandlePacketInternal(GameClient client, GSPacketIn packet)
         {
-            Console.WriteLine("Unclaimed packet 0xFB from " +
-                              (client?.Player == null ? "?" : client.Player.Name) +
-                              ", " + packet.PacketSize + " bytes");
+            UnknownPacketLog.Note(0xFB, client, packet);
         }
     }
 
@@ -1953,9 +1605,7 @@ namespace DOL.GS.PacketHandler.Client.v168
     {
         protected override void HandlePacketInternal(GameClient client, GSPacketIn packet)
         {
-            Console.WriteLine("Unclaimed packet 0xFD from " +
-                              (client?.Player == null ? "?" : client.Player.Name) +
-                              ", " + packet.PacketSize + " bytes");
+            UnknownPacketLog.Note(0xFD, client, packet);
         }
     }
 
@@ -1964,9 +1614,7 @@ namespace DOL.GS.PacketHandler.Client.v168
     {
         protected override void HandlePacketInternal(GameClient client, GSPacketIn packet)
         {
-            Console.WriteLine("Unclaimed packet 0xFE from " +
-                              (client?.Player == null ? "?" : client.Player.Name) +
-                              ", " + packet.PacketSize + " bytes");
+            UnknownPacketLog.Note(0xFE, client, packet);
         }
     }
 

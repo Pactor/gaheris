@@ -41,3 +41,4 @@ tools/
 # Database snapshots taken by tools/frontier.sh. Local safety nets, not
 # repository content.
 backups/
+scripts/unknown-packets.log

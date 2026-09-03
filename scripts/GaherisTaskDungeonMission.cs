@@ -35,10 +35,76 @@ namespace DOL.GS.Scripts
     /// </summary>
     public class GaherisTaskDungeonMission : TaskDungeonMission
     {
+        private static readonly string[] FIRST_NAMES =
+        {
+            "Aggrash", "Balgar", "Corvus", "Drenn", "Ergoth", "Fangred",
+            "Grimwold", "Hagreth", "Ilvarn", "Jorund", "Kaggath", "Lorgan",
+            "Malreth", "Nurgal", "Orvath", "Pyrran", "Rhugard", "Skarn",
+            "Torvald", "Ulgrim", "Vorgath", "Wregan", "Xanthos", "Zorath",
+        };
+
+        private static readonly string[] TITLES =
+        {
+            "the Ravener", "the Gorged", "the Unhallowed", "the Deep Warden",
+            "the Blighted", "the Hollow", "the Toothed", "the Sunless",
+            "the Cairnbreaker", "the Slow Death", "the Marrowlord", "the Rotcrown",
+        };
+
+        /// <summary>The boss himself, remembered rather than looked up by name.</summary>
+        private GameNPC m_boss;
+
+        /// <summary>What he is called this time.</summary>
+        private string m_bossTitle;
+
         public GaherisTaskDungeonMission(object owner,
                                          eDungeonType dungeonType = eDungeonType.Ranged)
             : base(owner, dungeonType)
         {
+            NameTheBoss();
+        }
+
+        /// <summary>
+        /// Give the dungeon's boss a fresh name for this task.
+        ///
+        /// The template carries a name so that the core will recognise it as a
+        /// boss at all -- it decides that by looking for a capital letter --
+        /// but a template is fixed, and the same dungeon would then hand out
+        /// the same boss every time. On live the named creature differed from
+        /// task to task, so it is renamed here, once, as the mission is built.
+        ///
+        /// Because the name now moves, the kill is matched on the creature
+        /// itself rather than on what it is called.
+        /// </summary>
+        private void NameTheBoss()
+        {
+            if (TaskRegion == null || TDMissionType != eTDMissionType.Boss)
+                return;
+
+            foreach (GameObject obj in TaskRegion.Objects)
+            {
+                if (obj is not GameNPC npc || npc.Name != BossName)
+                    continue;
+
+                m_boss = npc;
+                m_bossTitle = FIRST_NAMES[Util.Random(FIRST_NAMES.Length - 1)] + " " +
+                              TITLES[Util.Random(TITLES.Length - 1)];
+                npc.Name = m_bossTitle;
+                npc.GuildName = BossName;
+                break;
+            }
+        }
+
+        /// <summary>What the player should be told to go and kill.</summary>
+        public string BossTitle => m_bossTitle ?? BossName;
+
+        /// <summary>
+        /// What is left to kill, as the player should be told it: the margin
+        /// is taken off, so the count reaches nought exactly when the mission
+        /// completes rather than stopping short of it.
+        /// </summary>
+        private int Reported()
+        {
+            return (int) Math.Max(0L, Remaining() - Total / 10);
         }
 
         /// <summary>
@@ -73,6 +139,36 @@ namespace DOL.GS.Scripts
             return alive;
         }
 
+        /// <summary>
+        /// Set only when the task is deliberately given up.
+        ///
+        /// TaskDungeonInstance.OnPlayerLeaveInstance ends the mission the
+        /// instant you step outside --
+        ///
+        ///     if (player.Mission == m_mission) player.Mission.ExpireMission();
+        ///
+        /// -- which makes going back in after dying impossible, and is why the
+        /// taskmaster could not find a task to send anybody back to. Expiry is
+        /// therefore ignored unless it was asked for, or unless the dungeon
+        /// itself has gone, at which point there is nothing to go back to.
+        /// </summary>
+        private bool m_abandoned;
+
+        /// <summary>Give the task up for good. The taskmaster's [abandon].</summary>
+        public void Abandon()
+        {
+            m_abandoned = true;
+            ExpireMission();
+        }
+
+        public override void ExpireMission()
+        {
+            if (!m_abandoned && TaskRegion != null && TaskRegion.IsInstance)
+                return;
+
+            base.ExpireMission();
+        }
+
         public override void Notify(DOLEvent e, object sender, EventArgs args)
         {
             // Deliberately never calls base: that is the throw.
@@ -87,7 +183,11 @@ namespace DOL.GS.Scripts
 
             if (TDMissionType == eTDMissionType.Boss)
             {
-                if (killed.Target.Name == BossName)
+                // By the creature, not by the name: the name was changed for
+                // this task. Falling back to the name covers a boss that was
+                // never found at construction.
+                if (m_boss != null ? killed.Target == m_boss
+                                   : killed.Target.Name == BossName)
                     FinishMission();
 
                 return;
@@ -95,7 +195,17 @@ namespace DOL.GS.Scripts
 
             // The one that just died is already dead by the time this runs, so
             // it is not in the count.
-            if (Remaining() == 0)
+            //
+            // A margin rather than the very last kill. These dungeons are
+            // populated without any geometry to place against -- we have the
+            // entrance and the way it faces and nothing else -- so a few
+            // creatures always end up standing inside rock. Demanding every
+            // one of them means a clear task that cannot be finished. A tenth
+            // is enough to absorb that and still small enough that the
+            // dungeon has to be worked through; on a task of under ten it is
+            // zero, and those are the named-target tasks where the count is
+            // small enough to check by walking.
+            if (Remaining() <= Total / 10)
                 FinishMission();
             else
                 UpdateMission();
@@ -111,18 +221,18 @@ namespace DOL.GS.Scripts
                 switch (TDMissionType)
                 {
                     case eTDMissionType.Boss:
-                        return "Kill " + BossName + " in " + TaskRegion.Description + ".";
+                        return "Kill " + BossTitle + " in " + TaskRegion.Description + ".";
 
                     case eTDMissionType.Specific:
                     {
-                        int left = Remaining();
+                        int left = Reported();
                         return "Kill the " + TargetName + " in " + TaskRegion.Description +
                                ". " + left + (left == 1 ? " left." : " left.");
                     }
 
                     case eTDMissionType.Clear:
                     {
-                        int left = Remaining();
+                        int left = Reported();
                         return "Clear " + TaskRegion.Description + ". " + left +
                                (left == 1 ? " creature left." : " creatures left.");
                     }

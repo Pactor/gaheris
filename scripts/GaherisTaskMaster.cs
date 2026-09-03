@@ -123,6 +123,15 @@ namespace DOL.GS.Scripts
             return true;
         }
 
+        /// <summary>
+        /// What this task's boss is called. The name is drawn fresh per task,
+        /// so it comes off the mission rather than off the template.
+        /// </summary>
+        private static string Named(TaskDungeonMission mission)
+        {
+            return mission is GaherisTaskDungeonMission ours ? ours.BossTitle : mission.BossName;
+        }
+
         /// <summary>The task in force for this player, their group's first.</summary>
         private static TaskDungeonMission Task(GamePlayer player)
         {
@@ -166,6 +175,14 @@ namespace DOL.GS.Scripts
                 return;
             }
 
+            // Hold the dungeon open. An instance is destroyed the moment its
+            // last player leaves -- DestroyWhenEmpty -- and everything still
+            // inside goes with it, which is what was killing the hired company
+            // on the way out. A delayed close keeps the region standing for
+            // half an hour, so stepping out and coming back is possible and
+            // the companions survive the trip.
+            mission.TaskRegion.BeginDelayCloseCountdown(30);
+
             string msg = "Very well " + player.Name +
                          ", it's good to see adventurers willing to help out the realm in such times.";
 
@@ -175,7 +192,7 @@ namespace DOL.GS.Scripts
                     msg += " Clear " + mission.TaskRegion.Description + " of creatures.";
                     break;
                 case TaskDungeonMission.eTDMissionType.Boss:
-                    msg += " " + mission.BossName + " has taken over " +
+                    msg += " " + Named(mission) + " has taken over " +
                            mission.TaskRegion.Description + " and needs to be disposed of.";
                     break;
                 case TaskDungeonMission.eTDMissionType.Specific:
@@ -255,7 +272,11 @@ namespace DOL.GS.Scripts
                 return;
             }
 
-            task.ExpireMission();
+            if (task is GaherisTaskDungeonMission ours)
+                ours.Abandon();
+            else
+                task.ExpireMission();
+
             SayTo(player, "Consider it forgotten. Ask me for an [assignment] when you want another.");
         }
     }

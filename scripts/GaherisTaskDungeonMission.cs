@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using DOL.AI.Brain;
 using DOL.Events;
 using DOL.GS.Quests;
@@ -62,6 +63,7 @@ namespace DOL.GS.Scripts
         {
             SealTheDungeon();
             NameTheBoss();
+            WatchTheTrail();
         }
 
         /// <summary>
@@ -81,6 +83,160 @@ namespace DOL.GS.Scripts
         /// the ones killed first are standing up again behind you. Anything
         /// at or below nought turns the respawn off outright.
         /// </summary>
+        // ------------------------------------------------------------------
+        // Where the dungeon actually is
+        // ------------------------------------------------------------------
+
+        /// <summary>
+        /// Ground a player has stood on inside this instance.
+        ///
+        /// The creatures in these dungeons are placed around the entrance
+        /// recorded in instancexelement, because that coordinate is the only
+        /// one anybody has. Walking one shows that it is not where a player
+        /// ends up: standing in a task dungeon, the nearest entrance in the
+        /// whole table was ten thousand units away. Every creature is laid out
+        /// within four thousand of it, so most of the dungeon is populated in
+        /// places nobody can reach, and a clear task strands on the last
+        /// twenty-odd that were never standing anywhere real.
+        ///
+        /// No amount of refining that guess fixes it, because the coordinate
+        /// it is built on does not describe the playable space. What does
+        /// describe the playable space is a player walking through it: every
+        /// position anybody occupies inside the instance is, by definition,
+        /// ground that can be stood on and reached.
+        ///
+        /// So the dungeon is laid out from the trail rather than from the
+        /// door. Creatures nobody can get to are moved, quietly and out of
+        /// sight, onto ground somebody has already covered. The dungeon fills
+        /// in behind the player as it is explored, and a clear can always be
+        /// finished because everything left is somewhere a player has been.
+        /// </summary>
+        private readonly List<Point3D> _trail = new();
+
+        /// <summary>Far enough apart to be worth remembering separately.</summary>
+        private const int TRAIL_SPACING = 400;
+
+        /// <summary>Never move something onto a player's lap.</summary>
+        private const int NOT_ON_TOP_OF = 900;
+
+        /// <summary>Beyond this from every trail point, a creature is unreachable.</summary>
+        private const int STRANDED = 2500;
+
+        private ECSGameTimer _tidy;
+
+        private void WatchTheTrail()
+        {
+            if (TaskRegion == null || m_owner is not GamePlayer owner)
+                return;
+
+            _tidy = new ECSGameTimer(owner, Tidy, 5000);
+            _tidy.Start(5000);
+        }
+
+        private int Tidy(ECSGameTimer timer)
+        {
+            try
+            {
+                if (TaskRegion == null)
+                    return 0;
+
+                List<GamePlayer> inside = new();
+
+                foreach (GameObject obj in TaskRegion.Objects)
+                {
+                    if (obj is GamePlayer p && p.IsAlive &&
+                        p.ObjectState == GameObject.eObjectState.Active)
+                        inside.Add(p);
+                }
+
+                if (inside.Count == 0)
+                    return 5000;
+
+                Remember(inside);
+                MoveTheStranded(inside);
+            }
+            catch (Exception)
+            {
+                // A dungeon that will not tidy itself is still playable.
+            }
+
+            return 5000;
+        }
+
+        /// <summary>Add where everybody is standing to the trail.</summary>
+        private void Remember(List<GamePlayer> inside)
+        {
+            foreach (GamePlayer p in inside)
+            {
+                bool known = false;
+
+                foreach (Point3D seen in _trail)
+                {
+                    if (seen.GetDistanceTo(p) < TRAIL_SPACING)
+                    {
+                        known = true;
+                        break;
+                    }
+                }
+
+                if (!known)
+                    _trail.Add(new Point3D(p.X, p.Y, p.Z));
+            }
+        }
+
+        /// <summary>
+        /// Bring one stranded creature at a time onto ground somebody has
+        /// walked, out of sight and not on top of anybody. One at a time
+        /// because a dungeon that rearranges itself wholesale in front of you
+        /// is worse than one with a few creatures missing.
+        /// </summary>
+        private void MoveTheStranded(List<GamePlayer> inside)
+        {
+            if (_trail.Count < 3)
+                return;
+
+            foreach (GameObject obj in TaskRegion.Objects)
+            {
+                if (obj is not GameNPC npc || !npc.IsAlive)
+                    continue;
+
+                if (npc is GameMercenary || npc.Brain is IControlledBrain)
+                    continue;
+
+                if (npc.InCombat || npc.IsVisibleToPlayers)
+                    continue;
+
+                int nearest = int.MaxValue;
+
+                foreach (Point3D seen in _trail)
+                    nearest = Math.Min(nearest, seen.GetDistanceTo(npc));
+
+                if (nearest <= STRANDED)
+                    continue;
+
+                Point3D spot = _trail[Util.Random(_trail.Count - 1)];
+                bool crowded = false;
+
+                foreach (GamePlayer p in inside)
+                {
+                    if (spot.GetDistanceTo(p) < NOT_ON_TOP_OF)
+                    {
+                        crowded = true;
+                        break;
+                    }
+                }
+
+                if (crowded)
+                    continue;
+
+                npc.MoveTo(TaskRegion.ID,
+                           spot.X + Util.Random(-200, 200),
+                           spot.Y + Util.Random(-200, 200),
+                           spot.Z, (ushort) Util.Random(4095));
+                return;
+            }
+        }
+
         private void SealTheDungeon()
         {
             if (TaskRegion == null)

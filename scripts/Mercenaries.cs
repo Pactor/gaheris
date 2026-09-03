@@ -1756,6 +1756,8 @@ namespace DOL.GS.Scripts
 
                 if (needs != null && CastAt(needs, buff, RETRY))
                 {
+                    Attempted(needs, effect);
+
                     // Temporary, and here because the buff war outlived the
                     // fix for it. Guessing at which pair of spells is fighting
                     // has been wrong once already, so this says plainly who
@@ -1881,6 +1883,73 @@ namespace DOL.GS.Scripts
         /// Whether this one already has something standing in that slot --
         /// its own buff, or anybody else's that would displace it.
         /// </summary>
+        /// <summary>
+        /// Buffs a particular target has proved it will not take.
+        ///
+        /// Some targets simply cannot receive some buffs, and the game does not
+        /// say so in any way a caster can read. It completes the cast and then
+        /// declines to apply it:
+        ///
+        ///     if (target.HasAbility(Abilities.VampiirConstitution))
+        ///     {
+        ///         MessageToCaster("Your target already has an effect of that type!");
+        ///         return;
+        ///     }
+        ///
+        /// A Vampiir refuses every stat buff that way -- it takes its stats
+        /// from its own level instead -- and refuses regeneration buffs
+        /// alongside the Maulers. So a Cleric buffing a Vampiir casts, sees no
+        /// effect, and casts again, for as long as both are stood there. Three
+        /// hires doing that at once looked exactly like them fighting over the
+        /// same buff, and it was not; nothing was landing on anybody.
+        ///
+        /// Rather than encode which class refuses what -- a list that would go
+        /// stale the moment the core changed -- a hire is allowed to find out.
+        /// Three casts at the same target for the same slot with nothing to
+        /// show for it, and it stops offering that one there for a quarter of
+        /// an hour. Everything else it knows is unaffected, and the moment the
+        /// buff does land the count is forgotten.
+        /// </summary>
+        private readonly Dictionary<string, int> _buffTries = new();
+        private readonly Dictionary<string, long> _buffRefused = new();
+
+        private const int BUFF_STRIKES = 3;
+        private const int BUFF_FORGET = 900000;
+
+        private static string BuffKey(GameLiving target, eEffect effect)
+        {
+            return target.ObjectID + ":" + (int) effect;
+        }
+
+        /// <summary>Whether this one has given up offering that buff here.</summary>
+        private bool Refused(GameLiving target, eEffect effect)
+        {
+            return _buffRefused.TryGetValue(BuffKey(target, effect), out long until) &&
+                   until > GameLoop.GameLoopTime;
+        }
+
+        /// <summary>
+        /// Another cast gone in with nothing to show for it. The count is only
+        /// ever reached when the effect was missing beforehand, so each one is
+        /// evidence the last attempt did not take.
+        /// </summary>
+        private void Attempted(GameLiving target, eEffect effect)
+        {
+            string key = BuffKey(target, effect);
+
+            _buffTries.TryGetValue(key, out int tries);
+            tries++;
+
+            if (tries < BUFF_STRIKES)
+            {
+                _buffTries[key] = tries;
+                return;
+            }
+
+            _buffTries.Remove(key);
+            _buffRefused[key] = GameLoop.GameLoopTime + BUFF_FORGET;
+        }
+
         private static bool AlreadyCovered(GameLiving target, eEffect effect)
         {
             if (target == null)
@@ -1914,15 +1983,26 @@ namespace DOL.GS.Scripts
             // an Eldritch, looked like: casting without pause and apparently
             // buffing itself over and over. It was.
             if (buff.Target is eSpellTarget.SELF)
-                return AlreadyCovered(this, effect) ? null : this;
+                return AlreadyCovered(this, effect) || Refused(this, effect) ? null : this;
 
-            if (!AlreadyCovered(owner, effect))
+            // A pet-only buff has exactly one legitimate target, and it is not
+            // a person. The Animist spent every three seconds aiming Spirit of
+            // Remedy, which is Target=Pet, at the player.
+            if (buff.Target is eSpellTarget.PET)
+            {
+                GameLiving mine = ControlledBrain?.Body;
+
+                return mine != null && mine.IsAlive &&
+                       !AlreadyCovered(mine, effect) && !Refused(mine, effect) ? mine : null;
+            }
+
+            if (!AlreadyCovered(owner, effect) && !Refused(owner, effect))
                 return owner;
 
             foreach (GameMercenary mate in MercenaryManager.GetCompany(owner))
             {
                 if (mate.IsAlive && IsWithinRadius(mate, 1500) &&
-                    !AlreadyCovered(mate, effect))
+                    !AlreadyCovered(mate, effect) && !Refused(mate, effect))
                     return mate;
             }
 
@@ -1931,7 +2011,7 @@ namespace DOL.GS.Scripts
             GameLiving pet = owner.ControlledBrain?.Body;
 
             if (pet != null && pet.IsAlive && IsWithinRadius(pet, 1500) &&
-                !AlreadyCovered(pet, effect))
+                !AlreadyCovered(pet, effect) && !Refused(pet, effect))
                 return pet;
 
             return null;

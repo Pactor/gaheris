@@ -87,14 +87,25 @@ namespace DOL.GS.Commands
                 return;
             }
 
-            if (player.Experience >= player.GetExperienceNeededForLevel(target - 1))
+            // target, not target - 1.
+            //
+            // GetExperienceNeededForLevel already steps back a level itself:
+            //
+            //     return GetExperienceAmountForLevel(level - 1);
+            //
+            // so the core's GetExperienceNeededForLevel(target - 1) subtracts
+            // one twice and hands over the experience for level 19 while its
+            // own message promises 20. Asking for the target gives the target.
+            long enough = player.GetExperienceNeededForLevel(target);
+
+            if (player.Experience >= enough)
             {
                 player.Out.SendMessage("/level only carries you to " + target + ".",
                                        eChatType.CT_System, eChatLoc.CL_SystemWindow);
                 return;
             }
 
-            long owed = player.GetExperienceNeededForLevel(target - 1) - player.Experience;
+            long owed = enough - player.Experience;
 
             if (owed < 0)
                 owed = 0;

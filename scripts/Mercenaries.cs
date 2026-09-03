@@ -1427,7 +1427,12 @@ namespace DOL.GS.Scripts
             if (Shaded)
                 return;
 
-            if (Profile.Has(Duty.Debuff) && Kit.Debuff != null && CastAt(foe, Kit.Debuff, 12000))
+            // Not onto a foe that already carries it, from anybody. Two
+            // debuffers with overlapping families were each landing their own
+            // over the other's for the whole fight.
+            if (Profile.Has(Duty.Debuff) && Kit.Debuff != null &&
+                !AlreadyCovered(foe, EffectHelper.GetEffectFromSpell(Kit.Debuff)) &&
+                CastAt(foe, Kit.Debuff, 12000))
                 return;
 
             if (Profile.Has(Duty.DoT) && Kit.Dot != null && CastAt(foe, Kit.Dot, 5000))
@@ -1841,6 +1846,24 @@ namespace DOL.GS.Scripts
                     eEffect.HeatColdMatterBuff,   eEffect.AllMagicResistsBuff, eEffect.AllResistsBuff },
             new[] { eEffect.SlashResistBuff,  eEffect.CrushResistBuff,  eEffect.ThrustResistBuff,
                     eEffect.AllMeleeResistsBuff,  eEffect.AllResistsBuff },
+
+            // The same overlap runs through the debuffs, and an audit of what
+            // every class can actually cast says it is not theoretical: eight
+            // classes carry both StrengthDebuff and StrengthConstitutionDebuff,
+            // and eleven carry both DexterityDebuff and its dual version.
+            // These never spun the way the buffs did, only because a debuff is
+            // on a twelve second cooldown rather than an effect check -- so
+            // two debuffers simply threw away every other cast on a foe that
+            // already had it.
+            new[] { eEffect.StrengthDebuff,     eEffect.StrConDebuff },
+            new[] { eEffect.ConstitutionDebuff, eEffect.StrConDebuff, eEffect.WsConDebuff },
+            new[] { eEffect.DexterityDebuff,    eEffect.DexQuiDebuff },
+            new[] { eEffect.QuicknessDebuff,    eEffect.DexQuiDebuff },
+
+            new[] { eEffect.BodyResistDebuff,   eEffect.SpiritResistDebuff, eEffect.EnergyResistDebuff },
+            new[] { eEffect.HeatResistDebuff,   eEffect.ColdResistDebuff,   eEffect.MatterResistDebuff },
+            new[] { eEffect.SlashResistDebuff,  eEffect.CrushResistDebuff,  eEffect.ThrustResistDebuff,
+                    eEffect.AllMeleeResistsDebuff },
         };
 
         /// <summary>

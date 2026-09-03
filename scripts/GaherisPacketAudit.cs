@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Reflection;
 using DOL.Events;
 using DOL.GS.PacketHandler;
+using DOL.GS.Scripts;
 
 namespace DOL.GS.Scripts
 {
@@ -34,12 +35,48 @@ namespace DOL.GS.Scripts
         public static void OnScriptLoaded(DOLEvent e, object sender, EventArgs args)
         {
             GameEventMgr.AddHandler(GamePlayerEvent.GameEntered, new DOLEventHandler(Report));
+            GameEventMgr.AddHandler(GameLivingEvent.CastFailed, new DOLEventHandler(CastOutcome));
+            GameEventMgr.AddHandler(GameLivingEvent.CastSucceeded, new DOLEventHandler(CastOutcome));
+            GameEventMgr.AddHandler(GameLivingEvent.CastFinished, new DOLEventHandler(CastOutcome));
+        }
+
+        /// <summary>
+        /// What became of a hire's cast.
+        ///
+        /// Three explanations for the endless rebuffing have now been wrong --
+        /// a slot clash between two classes, a suppressed effect the lookup
+        /// could not see, and a realm mismatch (a hire takes its employer's
+        /// realm, so there is none). Each was plausible and each was reasoning
+        /// rather than evidence.
+        ///
+        /// The one thing not yet observed is what actually happens when the
+        /// spell goes off, so that is what this reports: started, succeeded,
+        /// finished, or failed and for which of the four reasons the core
+        /// admits to. A buff that never lands has to leave a trace in one of
+        /// them.
+        /// </summary>
+        private static void CastOutcome(DOLEvent e, object sender, EventArgs args)
+        {
+            if (!GaherisSettings.LOG_BUFFS || sender is not GameMercenary hire)
+                return;
+
+            string what = args is CastFailedEventArgs failed
+                ? "FAILED " + failed.Reason
+                : e.Name;
+
+            string spell = (args as CastingEventArgs)?.SpellHandler?.Spell?.Name ?? "?";
+
+            Console.WriteLine("Cast: " + hire.Name + " " + what + " : " + spell +
+                              " -> " + (hire.TargetObject == null ? "none" : hire.TargetObject.Name));
         }
 
         [ScriptUnloadedEvent]
         public static void OnScriptUnloaded(DOLEvent e, object sender, EventArgs args)
         {
             GameEventMgr.RemoveHandler(GamePlayerEvent.GameEntered, new DOLEventHandler(Report));
+            GameEventMgr.RemoveHandler(GameLivingEvent.CastFailed, new DOLEventHandler(CastOutcome));
+            GameEventMgr.RemoveHandler(GameLivingEvent.CastSucceeded, new DOLEventHandler(CastOutcome));
+            GameEventMgr.RemoveHandler(GameLivingEvent.CastFinished, new DOLEventHandler(CastOutcome));
         }
 
         private static void Report(DOLEvent e, object sender, EventArgs args)
@@ -68,6 +105,26 @@ namespace DOL.GS.Scripts
                     Console.WriteLine("PacketAudit: version " + pair.Key + ", opcode 0x" +
                                       ((int) eClientPackets.PlayerAttackRequest).ToString("X2") +
                                       " -> " + (handler == null ? "NOTHING" : handler.GetType().FullName));
+
+                    // Every code nobody claims. ProcessInboundPacket drops
+                    // those without a word --
+                    //
+                    //     if (packetHandler == null)
+                    //         return;
+                    //
+                    // -- so if this client sends combat mode on a code the
+                    // server was never told about, it disappears exactly the
+                    // way a key that sends nothing does. These are the places
+                    // it could be hiding.
+                    System.Text.StringBuilder free = new();
+
+                    for (int code = 0; code < pair.Value.Length; code++)
+                    {
+                        if (pair.Value[code] == null)
+                            free.Append(" 0x").Append(code.ToString("X2"));
+                    }
+
+                    Console.WriteLine("PacketAudit: unclaimed codes:" + free);
                 }
             }
             catch (Exception ex)

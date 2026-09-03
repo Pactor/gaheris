@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using DOL.Events;
 using DOL.GS.PlayerClass;
 using DOL.GS.Realm;
+using DOL.GS.ServerProperties;
 
 namespace DOL.GS.Scripts
 {
@@ -63,8 +64,55 @@ namespace DOL.GS.Scripts
             opened += Allow(eRealm.Hibernia, eCharacterClass.Vampiir);
             opened += Allow(eRealm.Hibernia, eCharacterClass.MaulerHib);
 
+            int retired = RetireBaseClasses();
+
             Console.WriteLine("Lost classes: " + opened + " reopened, " + races +
-                              " races given their starting stats back");
+                              " races restored, " + retired + " base classes retired");
+        }
+
+        [ServerProperty("gaheris", "gaheris_no_base_classes",
+            "Take the base classes off the creation screen, so a character is " +
+            "the class it was made as. Live retired archetypes years ago -- you " +
+            "pick a Vampiir and you are one, rather than a Stalker who visits a " +
+            "trainer at level five. False restores them.", true)]
+        public static bool NO_BASE_CLASSES;
+
+        /// <summary>
+        /// Take Stalker, Fighter, Mage and the rest off the creation screen.
+        ///
+        /// Picking Stalker made a Stalker -- correctly, and the character
+        /// select screen said so -- but there is no reason to offer the choice
+        /// when the archetype step no longer exists. A character should be the
+        /// class it was created as.
+        ///
+        /// Which ones are base classes is not a list kept here. Every one of
+        /// them answers HasAdvancedFromBaseClass with false and every advanced
+        /// class answers true, so the core is asked rather than second-guessed
+        /// -- and a class added to a later core is handled without this needing
+        /// to know about it.
+        /// </summary>
+        private static int RetireBaseClasses()
+        {
+            if (!NO_BASE_CLASSES)
+                return 0;
+
+            int removed = 0;
+
+            foreach (List<eCharacterClass> classes in GlobalConstants.STARTING_CLASSES_DICT.Values)
+            {
+                for (int i = classes.Count - 1; i >= 0; i--)
+                {
+                    ICharacterClass found = ScriptMgr.FindCharacterClass((int) classes[i]);
+
+                    if (found == null || found.HasAdvancedFromBaseClass())
+                        continue;
+
+                    classes.RemoveAt(i);
+                    removed++;
+                }
+            }
+
+            return removed;
         }
 
         /// <summary>

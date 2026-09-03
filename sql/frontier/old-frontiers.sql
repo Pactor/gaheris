@@ -43,3 +43,12 @@ INSERT INTO keep (Keep_ID, KeepID, Name, Region, X, Y, Z, Heading, Realm, Level,
 INSERT INTO keep (Keep_ID, KeepID, Name, Region, X, Y, Z, Heading, Realm, Level, ClaimedGuildName, AlbionDifficultyLevel, MidgardDifficultyLevel, HiberniaDifficultyLevel, OriginalRealm, KeepType, BaseLevel, SkinType, CreateInfo, LastTimeRowUpdated) VALUES (UUID(), 198, 'Mjollner Faste', 100, 771929, 626751, 7184, 470, 0, 10, NULL, 1, 1, 1, 0, 0, 60, 99, 'Clait;/keep create 198 10 0 Mjolner Faste', '2000-01-01 00:00:00');
 
 UPDATE regions SET IsFrontier = 0 WHERE RegionID = 163;
+
+-- And give the realms their frontier flag back.
+--
+-- new-frontiers.sql clears this on the way out, because under New Frontiers
+-- the fighting happens in 163 and the realm regions are just home. Coming
+-- back it has to be restored, or the old frontier zones stay un-flagged and
+-- the switch is quietly one-way: you can return the keeps but not the thing
+-- that makes them frontier keeps.
+UPDATE regions SET IsFrontier = 1 WHERE RegionID IN (1, 100, 200);

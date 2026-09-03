@@ -935,7 +935,7 @@ namespace DOL.GS.Scripts
                 Body.StopAttack();
                 ClearAggroList();
                 Body.TargetObject = null;
-                Body.Follow(owner, FORMATION_SLACK, FOLLOW_GIVE_UP);
+                GoHome(owner);
                 return;
             }
 
@@ -961,7 +961,7 @@ namespace DOL.GS.Scripts
             {
                 Note(merc0, "walking back from " + Body.GetDistanceTo(owner) + "u");
                 Body.StopAttack();
-                Body.Follow(owner, FORMATION_SLACK, FOLLOW_GIVE_UP);
+                GoHome(owner);
                 return;
             }
 
@@ -1054,8 +1054,55 @@ namespace DOL.GS.Scripts
             if (Body.attackComponent.AttackState)
                 Body.StopAttack();
 
-            Body.Follow(owner, FORMATION_SLACK, FOLLOW_GIVE_UP);
+            GoHome(owner);
         }
+
+        /// <summary>
+        /// Go where home is, which at a camp is not the employer.
+        ///
+        /// Every "come back" in this brain used to be Body.Follow(owner), and
+        /// that is what kept the company at the player's heels through a camp
+        /// no matter what the leash timer decided. Follow sets a moving target
+        /// and re-aims every tick; there is no distance at which it stops. So
+        /// holding ground has to be a different call, not a further condition
+        /// on the same one.
+        ///
+        /// A healer whose employer is dead is the exception, and it belongs
+        /// here rather than at the call sites: a camp you cannot be
+        /// resurrected at ends at the first bad pull.
+        /// </summary>
+        private void GoHome(GamePlayer owner)
+        {
+            GameLocation camp = MercenaryManager.CampSpot(owner);
+
+            bool rescuing = camp != null && !owner.IsAlive &&
+                            Body is GameMercenary healer &&
+                            healer.Profile != null && healer.Profile.Has(Duty.Heal) &&
+                            healer.Kit?.Rez != null;
+
+            if (camp == null || rescuing)
+            {
+                Body.Follow(owner, FORMATION_SLACK, FOLLOW_GIVE_UP);
+                return;
+            }
+
+            Body.StopFollowing();
+
+            if (Body.CurrentRegionID != camp.RegionID)
+            {
+                Body.MoveTo(camp.RegionID, camp.X, camp.Y, camp.Z, Body.Heading);
+                return;
+            }
+
+            int dx = camp.X - Body.X;
+            int dy = camp.Y - Body.Y;
+
+            if (dx * dx + dy * dy > CAMP_SPREAD * CAMP_SPREAD)
+                Body.WalkTo(new Point3D(camp.X, camp.Y, camp.Z), Body.MaxSpeed);
+        }
+
+        /// <summary>How far from the camp marker a hire may stand.</summary>
+        private const int CAMP_SPREAD = 250;
 
         private static void Note(GameMercenary merc, string what)
         {

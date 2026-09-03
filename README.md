@@ -588,7 +588,7 @@ sql/                   numbered, applied in order
   optional/            testing kit and power sustain -- not part of the conversion
   maintenance/         one-off repairs, safe to skip on a fresh install
 windows/               client launcher, and the WSL keepalive
-docs/                  reference notes
+docs/                  reference notes -- start with handoff.md
 ```
 
 ### The compose delta

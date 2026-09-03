@@ -2874,7 +2874,7 @@ namespace DOL.GS.Scripts
             // young Bonedancer walking around with only a commander is correct
             // and not a fault.
             if (Kit.PetSummon != null && Kit.Turrets.Count > 0)
-                return 1 + Math.Min(MINION_LIMIT, Kit.Turrets.Count);
+                return 1 + MinionsAllowed();
 
             if (Kit.Turrets.Count > 0)
                 return Employer != null && MercenaryManager.IsCamped(Employer)
@@ -3292,6 +3292,9 @@ namespace DOL.GS.Scripts
             servant.Shape(label, model, size);
             servant.Stationary = turret;
 
+            // Slot zero of a commander class is the commander itself.
+            servant.Commands = index == 0 && Kit.PetSummon != null && Kit.Turrets.Count > 0;
+
             // A turret is a bomb on a stick. It cannot chase, so what it has is
             // reach and a blast -- the caster's own area spell, which is what
             // makes a field of them level whatever walks in.
@@ -3331,6 +3334,38 @@ namespace DOL.GS.Scripts
         /// </summary>
         private const int MINION_LIMIT = 3;
 
+        /// <summary>
+        /// The commander's total level budget for minions.
+        ///
+        /// Live caps the summed levels of everything under a commander at 75,
+        /// which is why three minions at their own maximum is not a thing
+        /// anyone has ever fielded: at 75 per cent of a level 50 master they
+        /// come out at 37 apiece, and two of those is already 74.
+        /// </summary>
+        private const int MINION_LEVEL_BUDGET = 75;
+
+        /// <summary>
+        /// How many minions this commander can answer for, by the budget.
+        /// </summary>
+        private int MinionsAllowed()
+        {
+            if (Kit == null || Kit.Turrets.Count == 0)
+                return 0;
+
+            // What one will come out at: the summon's own level, or three
+            // quarters of the master's, whichever the game would actually give.
+            int each = 0;
+
+            foreach (Spell minion in Kit.Turrets)
+                each = Math.Max(each, Math.Min(minion.Level, Level * 3 / 4));
+
+            if (each <= 0)
+                return Math.Min(MINION_LIMIT, Kit.Turrets.Count);
+
+            return Math.Clamp(MINION_LEVEL_BUDGET / each, 0,
+                              Math.Min(MINION_LIMIT, Kit.Turrets.Count));
+        }
+
         /// <summary>Pacing between summons, so a field goes up like a field.</summary>
         private const int SERVANT_INTERVAL = 2500;
 
@@ -3343,6 +3378,32 @@ namespace DOL.GS.Scripts
     /// <summary>A servant belonging to a hire rather than to the player.</summary>
     public class MercenaryServant : GameMercenary
     {
+        public override void Die(GameObject killer)
+        {
+            // The commander falling releases everything under it. Done before
+            // the base call, while this servant is still the one the others can
+            // be matched against.
+            if (Commands && Master != null)
+            {
+                foreach (GameMercenary other in
+                         new List<GameMercenary>(MercenaryManager.GetCompany(Employer)))
+                {
+                    if (other is MercenaryServant minion &&
+                        minion.Master == Master &&
+                        !ReferenceEquals(minion, this))
+                    {
+                        minion.Retire();
+                    }
+                }
+
+                Employer?.Out.SendMessage(
+                    Master.RoleName + "'s commander falls, and its minions crumble with it.",
+                    eChatType.CT_System, eChatLoc.CL_SystemWindow);
+            }
+
+            base.Die(killer);
+        }
+
         /// <summary>Who summoned it, so it can be dismissed and resummoned.</summary>
         public GameMercenary Master;
 
@@ -3351,6 +3412,16 @@ namespace DOL.GS.Scripts
 
         /// <summary>Planted where it was summoned. A turret does not follow.</summary>
         public bool Stationary;
+
+        /// <summary>
+        /// The one the rest answer to.
+        ///
+        /// A Bonedancer controls exactly one pet directly and every minion is
+        /// the commander's, not his -- so killing the commander releases the
+        /// whole crowd at once. That is how a bone army is taken apart, and
+        /// without it the commander is just the first of four things to kill.
+        /// </summary>
+        public bool Commands;
 
         /// <summary>What it throws when something comes into reach.</summary>
         public Spell Bombs;

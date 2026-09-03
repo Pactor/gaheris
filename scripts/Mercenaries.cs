@@ -3047,6 +3047,30 @@ namespace DOL.GS.Scripts
             if (Kit == null)
                 return null;
 
+            // At camp, a class that can summon menders summons menders.
+            //
+            // A Bonedancer standing at a pull camp wants the crowd behind it
+            // keeping the group up, not six more skeletons swinging. Away from
+            // camp it goes back to whatever it fights best with, because a
+            // mender that cannot keep up with a moving group is a wasted
+            // summon.
+            if (Employer != null && MercenaryManager.IsCamped(Employer))
+            {
+                Spell mender = null;
+
+                foreach (Spell summon in Kit.Turrets)
+                {
+                    if (!MercenaryLoadout.IsHealingMinion(summon))
+                        continue;
+
+                    if (mender == null || summon.Level > mender.Level)
+                        mender = summon;
+                }
+
+                if (mender != null)
+                    return mender;
+            }
+
             // The best turret is not simply the last one learned.
             //
             // An Animist knows four families of them and only two are for

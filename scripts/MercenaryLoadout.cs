@@ -584,8 +584,15 @@ namespace DOL.GS.Scripts
                     case eSpellType.SummonUnderhill:
                     case eSpellType.SummonSimulacrum:
                     case eSpellType.SummonNecroPet:
-                    case eSpellType.SummonCommander:
                     case eSpellType.SummonMinion:
+                        // Minions are a field, not a pet. A Bonedancer's whole
+                        // shape is a commander with a crowd behind it, and
+                        // treating the highest minion summon as "the pet" gave
+                        // it one skeleton.
+                        KeepTurret(loadout, spell);
+                        break;
+
+                    case eSpellType.SummonCommander:
                     case eSpellType.SummonSpiritFighter:
                     case eSpellType.SummonHunterPet:
                     case eSpellType.SummonTheurgistPet:
@@ -738,6 +745,41 @@ namespace DOL.GS.Scripts
         /// fighting turret's npctemplate carries a spell pointed at an enemy;
         /// a ward's carries none at all.
         /// </summary>
+        /// <summary>
+        /// Whether a summon brings something that mends.
+        ///
+        /// A Bonedancer's Bone Guardians line interleaves two families at
+        /// alternating levels: guards at 15, 21, 27, 33, 39 and 45, menders at
+        /// 18, 24, 30, 36, 42 and 48. Both are SummonMinion and both climb to
+        /// the same place, so nothing about the summon itself separates them.
+        ///
+        /// The templates do. A mender carries Heal and HealthRegenBuff; a
+        /// guard carries Bladeturn, CombatSpeedBuff and DamageShield. Reading
+        /// what the pet actually knows is how the right one gets picked
+        /// without a list of names to keep up to date.
+        /// </summary>
+        public static bool IsHealingMinion(Spell summon)
+        {
+            DbNpcTemplate template = PetTemplate(summon);
+
+            if (template == null || string.IsNullOrWhiteSpace(template.Spells))
+                return false;
+
+            foreach (string part in template.Spells.Split(';'))
+            {
+                if (!int.TryParse(part.Trim(), out int id))
+                    continue;
+
+                Spell carried = SkillBase.GetSpellByID(id);
+
+                if (carried != null &&
+                    carried.SpellType is eSpellType.Heal or eSpellType.SpreadHeal)
+                    return true;
+            }
+
+            return false;
+        }
+
         public static bool IsFightingTurret(Spell summon)
         {
             DbNpcTemplate template = PetTemplate(summon);

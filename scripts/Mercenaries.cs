@@ -53,17 +53,6 @@ namespace DOL.GS.Scripts
         /// taunts -- pulling a single mob off your pet is how this one dies.
         /// </summary>
         Focus,
-
-        /// <summary>
-        /// You are set up somewhere and pulling to it for a while.
-        ///
-        /// This is what the Master Level fonts are for. A Font of Power is
-        /// planted where it is dropped and feeds whoever stands in it until it
-        /// expires -- worth a great deal at a camp and worth nothing at all
-        /// spent on a single wandering mob halfway to somewhere else. So the
-        /// company saves them until you say you are staying.
-        /// </summary>
-        Camp,
     }
 
     /// <summary>Where the group stands relative to their employer.</summary>
@@ -149,6 +138,9 @@ namespace DOL.GS.Scripts
         public const string RP_KEY = "GaherisMercRealmPoints";
         public const string ROSTER_KEY = "GaherisMercRoster";
         public const string TACTIC_KEY = "GaherisMercTactic";
+
+        /// <summary>Whether the company is dug in where it stands.</summary>
+        public const string CAMP_KEY = "GaherisMercCamp";
         public const string CC_KEY = "GaherisMercCrowdControl";
         public const string FORMATION_KEY = "GaherisMercFormation";
         public const int MAX_TIER = 10;
@@ -359,6 +351,25 @@ namespace DOL.GS.Scripts
         public static void SetTactic(GamePlayer player, Tactic tactic)
         {
             SetParam(player, TACTIC_KEY, tactic.ToString());
+        }
+
+        /// <summary>
+        /// Whether the company is set up somewhere and pulling to it.
+        ///
+        /// Deliberately not a Tactic. A camp can be a point-blank camp, a pet
+        /// camp or a single-pull camp -- it says nothing about how the fight is
+        /// fought, only that you are staying put and the ground is worth
+        /// investing in. Making it a fourth tactic would have forced a choice
+        /// between the two that nobody should have to make.
+        /// </summary>
+        public static bool IsCamped(GamePlayer player)
+        {
+            return GetParam(player, CAMP_KEY) == "1";
+        }
+
+        public static void SetCamped(GamePlayer player, bool camped)
+        {
+            SetParam(player, CAMP_KEY, camped ? "1" : "0");
         }
 
         public static long GetRealmPoints(GamePlayer player)
@@ -1312,7 +1323,7 @@ namespace DOL.GS.Scripts
             if (Profile.Has(Duty.DoT) && Kit.Dot != null && CastAt(foe, Kit.Dot, 5000))
                 return;
 
-            if (UseAtlantis(tactic))
+            if (UseAtlantis())
                 return;
 
             // Under PBAoE, a class that HAS a point-blank spell goes in and
@@ -2136,9 +2147,9 @@ namespace DOL.GS.Scripts
         /// Order matters. A summon is worth most at the start of a fight, a
         /// buff is worth having up before the damage starts, and a font is
         /// worth nothing at all unless the group is going to stand in it --
-        /// which is what Camp means and why fonts wait for it.
+        /// which is what camp means and why fonts wait for it.
         /// </summary>
-        private bool UseAtlantis(Tactic tactic)
+        private bool UseAtlantis()
         {
             const int SUMMON_AGAIN = 120000;
             const int BUFF_AGAIN   = 90000;
@@ -2156,7 +2167,10 @@ namespace DOL.GS.Scripts
                     return true;
             }
 
-            if (tactic != Tactic.Camp)
+            // A camp is not a way of fighting -- it can be a point-blank
+            // camp, a pet camp or a single-pull camp -- so this asks whether
+            // you are staying, not how you are killing.
+            if (Employer == null || !MercenaryManager.IsCamped(Employer))
                 return false;
 
             foreach (Spell font in Kit.MlFonts)
@@ -2177,6 +2191,22 @@ namespace DOL.GS.Scripts
             // target. Without this the healer would refuse to cast it and
             // nothing would say why.
             if (!target.IsAlive && !allowDead)
+                return false;
+
+            // Out of range is not a cast, it is a reason to walk.
+            //
+            // This was missing, and it was the reason a caster would stand off
+            // and appear to do nothing. The combat routine is a chain of "try
+            // this, and if it worked, stop" -- so a debuff or a dot attempted
+            // from a mile away consumed the decision, put itself on cooldown,
+            // and returned before the code below that would have closed the
+            // gap. The hire looked like it was casting; it was failing at
+            // range, every tick, and never moving.
+            //
+            // Range 0 means the spell has no reach requirement -- a point-blank
+            // area spell is centred on the caster and governed by its radius
+            // instead -- so only a real range is enforced here.
+            if (spell.Range > 0 && target != this && !IsWithinRadius(target, spell.Range))
                 return false;
 
             long now = GameLoop.GameLoopTime;
@@ -2618,9 +2648,15 @@ namespace DOL.GS.Scripts
                     return true;
 
                 case "camp":
-                    Order(player, Tactic.Camp,
-                          "We are staying, then. The fonts go down and we hold this ground.");
+                {
+                    bool camped = !MercenaryManager.IsCamped(player);
+                    MercenaryManager.SetCamped(player, camped);
+                    player.Out.SendMessage(camped
+                        ? "We are staying, then. The fonts go down and we hold this ground."
+                        : "Breaking camp. No sense spending a font on ground we are leaving.",
+                        eChatType.CT_Say, eChatLoc.CL_ChatWindow);
                     return true;
+                }
 
                 case "circle":
                 case "line":
@@ -2705,8 +2741,16 @@ namespace DOL.GS.Scripts
 
             // A turret class plants a field and keeps planting. One wandering
             // mushroom is not an Animist.
+            //
+            // The field is bigger at a camp, and deliberately. A turret is
+            // planted where it stands and does not follow, so a full field is
+            // an investment in ground you are going to keep pulling to -- and
+            // so much wasted power on ground you are walking through. Camp is
+            // where that investment pays, the same as the Master Level fonts.
             if (Kit.Turrets.Count > 0)
-                return TURRET_FIELD;
+                return Employer != null && MercenaryManager.IsCamped(Employer)
+                    ? TURRET_FIELD
+                    : TURRET_ROAMING;
 
             return Math.Max(1, Profile.Pets.Length);
         }
@@ -2903,6 +2947,13 @@ namespace DOL.GS.Scripts
 
         /// <summary>How many turrets a turret class keeps planted.</summary>
         private const int TURRET_FIELD = 5;
+
+        /// <summary>
+        /// What a turret class plants when the group is on the move. Enough to
+        /// still be an Animist, few enough that the field is worth making camp
+        /// for.
+        /// </summary>
+        private const int TURRET_ROAMING = 2;
 
         /// <summary>Pacing between summons, so a field goes up like a field.</summary>
         private const int SERVANT_INTERVAL = 2500;
@@ -3640,9 +3691,19 @@ namespace DOL.GS.Scripts
                 case "balanced":
                 case "pbaoe":
                 case "focus":
-                case "camp":
                     SetTactic(player, keyword);
                     return true;
+
+                case "camp":
+                {
+                    bool camped = !MercenaryManager.IsCamped(player);
+                    MercenaryManager.SetCamped(player, camped);
+                    player.Out.SendMessage(camped
+                        ? "Your company is making camp. The Master Level fonts go down here."
+                        : "Your company is breaking camp. No more fonts until you settle again.",
+                        eChatType.CT_System, eChatLoc.CL_SystemWindow);
+                    return true;
+                }
 
                 case "albion":
                     ListRealm(player, eRealm.Albion);
@@ -3734,7 +3795,6 @@ namespace DOL.GS.Scripts
             {
                 "pbaoe" => Tactic.PBAoE,
                 "focus" => Tactic.Focus,
-                "camp"  => Tactic.Camp,
                 _       => Tactic.Balanced,
             };
 

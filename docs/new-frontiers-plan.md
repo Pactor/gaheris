@@ -2,6 +2,35 @@
 
 A plan, not a change. Nothing here is implemented.
 
+## Verified, second pass
+
+Three things checked against the live database rather than assumed, and one of
+them changes the shape of the job.
+
+**It is a relocation, not a replacement.** The twenty-one contested `KeepID`s
+are the *same keeps by name* in both sets:
+
+| KeepID | ours, today | the dump |
+|---|---|---|
+| 50-56 | Caer Benowyc, Berkstead, Erasleigh, Boldiam, Sursbrooke, Hurbury, Renaris — region 1 | identical names, region 163 |
+| 75-81 | Bledmeer, Nottmoor, Hlidskialf, Blendrake, Glenlock, Fensalir, Arvakr Faste — region 100 | identical names, region 163 |
+| 100-106 | Dun Crauchon, Crimthain, Bolg, nGed, Da Behnn, Scathaig, Ailinne — region 200 | identical names, region 163 |
+
+So converting does not mean losing Caer Benowyc. It means Caer Benowyc moves out
+of Albion and into New Frontiers, at New Frontiers coordinates, alongside 84
+more keeps and towers that have nowhere to stand today. That is a far smaller
+thing to agree to than "retire your frontier keeps", which is how the first pass
+of this document read.
+
+**The geometry is already there.** Region 163 has **15 zones** defined —
+Agramon, Irish Sea, Odin's Gate, Jamtland Mountains, Yggdra Forest and the rest.
+Nothing needs importing for the world itself to exist; it is empty, not absent.
+
+**One flag is wrong.** `regions.IsFrontier` is **0** for region 163, while
+`KeepManager` adds `DEFAULT_FRONTIERS_REGION = 163` to its frontier list by
+constant. Those disagree, and the database is the half that is wrong. Setting it
+is one line and belongs in step 1, not somewhere near the end.
+
 ## What this actually is
 
 Not an import. A **swap**.

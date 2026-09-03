@@ -647,6 +647,23 @@ namespace DOL.GS.Scripts
                         Keep(ref loadout.Mez, spell, s => s.Duration);
                         break;
 
+                    // A Necromancer's damage is all PetSpell: the shade
+                    // commands and the servant casts. Vortex of Agony, Infinite
+                    // Death and Shroud of Torture are radius 350, which is what
+                    // makes him a point-blank class -- through the pet, and only
+                    // through the pet.
+                    //
+                    // Unclassified, they fell through the switch entirely and
+                    // the hire never used one. It had his single-target spells
+                    // and cast them itself, which is the one thing a
+                    // Necromancer never does.
+                    case eSpellType.PetSpell:
+                        if (spell.Radius > 0)
+                            Keep(ref loadout.Pbaoe, spell, s => s.Damage);
+                        else
+                            Keep(ref loadout.Nuke, spell, s => s.Damage);
+                        break;
+
                     case eSpellType.Taunt:
                         Keep(ref loadout.Taunt, spell, s => s.Value);
                         break;

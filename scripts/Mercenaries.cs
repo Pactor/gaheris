@@ -196,7 +196,7 @@ namespace DOL.GS.Scripts
               "A spirit servant, and rot for everything else.", "spirit servant"),
             C("Sorcerer",    eRealm.Albion,  5, Duty.CC | Duty.Nuke,
               "Mesmerises the room, then burns what is left."),
-            C("Necromancer", eRealm.Albion,  6, Duty.Pet | Duty.DoT,
+            C("Necromancer", eRealm.Albion,  6, Duty.Pet | Duty.DoT | Duty.PBAoE,
               "A shade behind a bone pet.", "bone commander"),
             C("Mauler",      eRealm.Albion, 63, Duty.Melee,
               "Fist and staff, and no armour worth the name."),
@@ -1407,6 +1407,13 @@ namespace DOL.GS.Scripts
                 if (Kit.Taunt != null && CastAt(foe, Kit.Taunt, 6000))
                     return;
             }
+
+            // A shaded Necromancer does not cast. Everything it has goes
+            // through the servant, which is the whole shape of the class --
+            // and casting directly is what had it throwing several of its own
+            // spells a fight while the pet stood there.
+            if (Shaded)
+                return;
 
             if (Profile.Has(Duty.Debuff) && Kit.Debuff != null && CastAt(foe, Kit.Debuff, 12000))
                 return;
@@ -3042,7 +3049,28 @@ namespace DOL.GS.Scripts
             if (Profile == null || Profile.ClassId is not eCharacterClass.Necromancer)
                 return;
 
-            ushort wanted = crop > 0 ? SHADE_MODEL : Profile.Model;
+            // The shade is not a costume. While the servant lives the
+            // Necromancer cannot be targeted or damaged at all -- to kill one
+            // you kill the pet first, and only then does the shade become
+            // something you can hit. Wearing the model without the flags gave
+            // us the look of it and none of the rule.
+            bool shaded = crop > 0;
+            eFlags want = shaded
+                ? Flags | eFlags.GHOST | eFlags.CANTTARGET
+                : Flags & ~(eFlags.GHOST | eFlags.CANTTARGET);
+
+            if (Flags != want)
+            {
+                Flags = want;
+
+                // Flags ride along with the create packet rather than an
+                // update, so the shade has to be redrawn before it is
+                // untargetable on anybody's screen.
+                foreach (GamePlayer nearby in GetPlayersInRadius(WorldMgr.VISIBILITY_DISTANCE))
+                    nearby.Out.SendNPCCreate(this);
+            }
+
+            ushort wanted = shaded ? SHADE_MODEL : Profile.Model;
 
             if (Model == wanted)
                 return;
@@ -3055,6 +3083,15 @@ namespace DOL.GS.Scripts
 
         /// <summary>Briton shade -- what GamePlayer.ShadeModel picks by race.</summary>
         private const ushort SHADE_MODEL = 1353;
+
+        /// <summary>
+        /// A Necromancer with its servant up: a shade, which commands rather
+        /// than casts and cannot be touched until the servant falls.
+        /// </summary>
+        protected bool Shaded =>
+            Profile != null &&
+            Profile.ClassId is eCharacterClass.Necromancer &&
+            (Flags & eFlags.CANTTARGET) != 0;
 
         /// <summary>The summon this class would actually cast.</summary>
         protected virtual Spell ServantSpell()

@@ -114,8 +114,19 @@ namespace DOL.GS.Commands
             player.Out.SendMessage(
                 "Crowd control is " + (MercenaryManager.GetCrowdControl(player) ? "on" : "off") + ".",
                 eChatType.CT_System, eChatLoc.CL_SystemWindow);
+
+            // Camp belongs in the readout as much as in the switches. It
+            // changes more about what they do than the tactic does -- whether
+            // they follow you at all -- and leaving it out meant the only way
+            // to find out was to walk away and watch.
             player.Out.SendMessage(
-                "/tactic balanced | pbaoe | focus | cc",
+                MercenaryManager.IsCamped(player)
+                    ? "They are camped: holding their ground while you pull to it."
+                    : "They are not camped: they follow you.",
+                eChatType.CT_System, eChatLoc.CL_SystemWindow);
+
+            player.Out.SendMessage(
+                "/tactic balanced | pbaoe | focus | camp | cc",
                 eChatType.CT_System, eChatLoc.CL_SystemWindow);
         }
     }

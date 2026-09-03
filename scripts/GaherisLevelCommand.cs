@@ -111,12 +111,28 @@ namespace DOL.GS.Commands
                 owed = 0;
 
             player.GainExperience(eXPSource.Other, owed);
+
+            // Then take the levels, rather than telling the player to go and
+            // collect them one at a time.
+            //
+            // GainExperience advances a single level per call however much
+            // experience it is handed, so the core's version left a level 5
+            // character sitting at 6 with the experience for 19 banked and a
+            // message claiming they were 20. /level is meant to put a new
+            // character at the server's starting level, so it does.
+            //
+            // Setting Level is how the GM command does it too, and it is what
+            // fires OnLevelUp for every step -- hit points, spec points and
+            // the rest.
+            if (player.Level < target)
+                player.Level = (byte) target;
+
             player.UsedLevelCommand = true;
             player.SaveIntoDatabase();
+            player.Out.SendUpdatePlayer();
 
             player.Out.SendMessage(
-                "You have been granted the experience to reach level " + target +
-                ". Right click your trainer to take the levels.",
+                "You begin at level " + target + ". Speak to your trainer to spend what you have earned.",
                 eChatType.CT_System, eChatLoc.CL_SystemWindow);
         }
 

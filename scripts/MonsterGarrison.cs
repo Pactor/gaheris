@@ -63,9 +63,36 @@ namespace DOL.GS.Scripts
             }
         }
 
+        /// <summary>
+        /// The frontier region. Everything standing in it is evil's, whatever
+        /// banner the keep flies.
+        /// </summary>
+        public const ushort NEW_FRONTIERS = 163;
+
+        /// <summary>
+        /// Does an evil force hold this ground?
+        ///
+        /// Realm None is the original answer and still the usual one: an Old
+        /// Frontiers guard is a mob row taking its realm from its zone, and
+        /// every Old Frontiers zone is Realm 0.
+        ///
+        /// New Frontiers cannot be decided that way. Its keeps raise their
+        /// garrison from keepposition and inherit the keep's realm, and a keep
+        /// MUST carry a realm or it does not render -- SendKeepInfo writes
+        /// keep.Realm to the client and the client picks the texture set from
+        /// it, so a keep set to None comes out untextured, pure white. The
+        /// keeps therefore fly banners they do not mean, and where the ground
+        /// is decides who holds it instead.
+        /// </summary>
         public static bool HeldByEvil(GameKeepGuard guard)
         {
-            return guard != null && guard.Realm == eRealm.None;
+            if (guard == null)
+                return false;
+
+            if (guard.Realm == eRealm.None)
+                return true;
+
+            return guard.CurrentRegionID == NEW_FRONTIERS;
         }
 
         public static ushort Pick(ushort[] models)

@@ -56,6 +56,13 @@ namespace DOL.GS.Scripts
                     brought++;
                 }
 
+                // Said out loud on purpose while this is being trusted: if
+                // companions are being left behind, the count is the evidence.
+                Console.WriteLine("MercenaryTravel: " + player.Name + " -> region " +
+                                  player.CurrentRegionID + ", company " +
+                                  MercenaryManager.GetCompany(player).Count +
+                                  ", brought " + brought);
+
                 if (brought > 0)
                     player.Out.SendMessage(
                         brought == 1 ? "Your companion follows you through."

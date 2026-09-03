@@ -45,8 +45,8 @@ namespace DOL.GS.Scripts
             if (Task(player) != null)
             {
                 SayTo(player,
-                    "You already have a task underway. I can [send] you back to it when you are " +
-                    "ready, or if it does not suit you I will [abandon] it and find you another.");
+                    "You already have a task underway. I can remind you what the [task] is, " +
+                    "[send] you back to it when you are ready, or [abandon] it and find you another.");
                 return true;
             }
 
@@ -101,6 +101,19 @@ namespace DOL.GS.Scripts
                 case "enter":
                     Send(player);
                     break;
+
+                case "task":
+                case "remind":
+                {
+                    TaskDungeonMission have = Task(player);
+
+                    if (have == null)
+                        SayTo(player, "You have no task. Ask me for an [assignment].");
+                    else
+                        player.Out.SendMessage(have.Description, eChatType.CT_System,
+                                               eChatLoc.CL_PopupWindow);
+                    break;
+                }
 
                 case "abandon":
                     Abandon(player);
@@ -172,6 +185,13 @@ namespace DOL.GS.Scripts
             }
 
             SayTo(player, msg + " I will open the way now.");
+
+            // Also as a popup, because the chat line scrolls past before it can
+            // be read -- the send that follows fills the window immediately.
+            // [task] repeats it for anyone who missed it anyway.
+            player.Out.SendMessage(mission.Description, eChatType.CT_System,
+                                   eChatLoc.CL_PopupWindow);
+
             Send(player);
         }
 

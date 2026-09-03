@@ -466,6 +466,18 @@ namespace DOL.GS.Scripts
                 return;
 
             player.RefreshSpecDependantSkills(false);
+
+            // Push the skill list, not just the player.
+            //
+            // RefreshSpecDependantSkills changes what the server thinks you
+            // know; SendUpdatePlayer does not carry any of it. Without this the
+            // new Master Level spells were genuinely granted and genuinely
+            // invisible -- the Arbiter would name them and the spell window
+            // would not show them until the next login, which is how the
+            // trainer does it too:
+            //
+            //     player.Out.SendUpdatePlayerSkills(true);   GameTrainer.cs:195
+            player.Out.SendUpdatePlayerSkills(true);
             player.Out.SendUpdatePlayer();
             player.Out.SendUpdatePoints();
             player.Out.SendMasterLevelWindow((byte) player.MLLevel);

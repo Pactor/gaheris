@@ -1,0 +1,19 @@
+-- Give Resistance of the Ancients its real client tooltip.
+--
+-- Migration 42 wrote it with TooltipId 7328 -- the spell's own id, which is
+-- not a client tooltip at all and leaves the delve empty. The Sojourner line's
+-- real ones are sequential and the gaps say which is which:
+--
+--     5035  Mass Gateway          ML10
+--     5036  Unending Breath       ML2
+--     5037  (Reveal Crystalseed)  ML3, which we do not have
+--     5038  Unmake Crystalseed    ML4
+--     5039  Ancient Transmuter    ML5
+--     5040  Gateway               ML6
+--     5041  (missing)             ML7
+--     5042  Forceful Zephyr       ML8
+--     5043  Phaseshift            ML9
+--
+-- 5041 is the only unclaimed number between the rank either side of it, and
+-- Resistance of the Ancients is the only ability that sits there.
+UPDATE `spell` SET `TooltipId` = 5041 WHERE `SpellID` = 7328 AND `TooltipId` = 7328;

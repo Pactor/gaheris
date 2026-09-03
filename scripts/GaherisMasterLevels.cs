@@ -74,7 +74,163 @@ namespace DOL.GS.Scripts
                 SayTo(player, eChatLoc.CL_SystemWindow,
                       "You have already begun the trials.");
 
+            OfferPaths(player);
             return true;
+        }
+
+        /// <summary>
+        /// The eight Master Level paths, and what each one is for.
+        ///
+        /// Not class restricted, which is how it worked -- any class may walk
+        /// any of them, some merely suit better.
+        /// </summary>
+        private static readonly (string Key, string What)[] Paths =
+        {
+            ("Banelord",     "curses, snares and the unmaking of a foe's defences"),
+            ("Battlemaster", "the close fight: footwork, guard and the killing blow"),
+            ("Convoker",     "summoning -- wards, weapons and servants called from nothing"),
+            ("Perfecter",    "mending: healing, cures and calling the fallen back"),
+            ("Sojourner",    "movement, reach and passage others cannot take"),
+            ("Spymaster",    "stealth, poison and the knife nobody sees"),
+            ("Stormlord",    "the sky turned against them -- storms, roots and ruin"),
+            ("Warlord",      "holding a line, and keeping those behind it alive"),
+        };
+
+        private void OfferPaths(GamePlayer player)
+        {
+            if (!player.MLGranted)
+                return;
+
+            string chosen = PathOf(player);
+            string text = chosen == null
+                ? "You have yet to choose your discipline. Name one, and its " +
+                  "arts open to you as you rise:\n\n"
+                : "You walk the path of the " + chosen + ". Name another and " +
+                  "you take up its arts instead:\n\n";
+
+            foreach ((string key, string what) in Paths)
+                text += "  [" + key + "] -- " + what + "\n";
+
+            // Eight lines of roughly seventy characters: nowhere near the
+            // client's 2048 byte packet ceiling, unlike the travel catalogue.
+            SayTo(player, eChatLoc.CL_PopupWindow, text);
+        }
+
+        public override bool WhisperReceive(GameLiving source, string text)
+        {
+            // Ours first, then the base class. Arbiter.WhisperReceive returns
+            // false on every branch it handles, so calling it first would eat
+            // the answer before we ever saw it.
+            if (source is GamePlayer player &&
+                player.IsWithinRadius(this, WorldMgr.INTERACT_DISTANCE) &&
+                Choose(player, (text ?? string.Empty).Trim()))
+                return true;
+
+            return base.WhisperReceive(source, text);
+        }
+
+        /// <summary>
+        /// Take up a path. True if the whisper was a path name.
+        ///
+        /// MLLine is a position, not a name: RefreshSpecDependantSkills counts
+        /// Master Level entries as it walks the career and keeps the one whose
+        /// count matches. The career is a dictionary, so the order is whatever
+        /// it yields -- which means the only safe way to set MLLine is to walk
+        /// it exactly as that loop does and take the index we land on. Working
+        /// the number out from the order of the eight names above would sooner
+        /// or later hand somebody the wrong discipline.
+        /// </summary>
+        private bool Choose(GamePlayer player, string said)
+        {
+            string wanted = null;
+
+            foreach ((string key, string _) in Paths)
+            {
+                if (key.Equals(said, StringComparison.OrdinalIgnoreCase))
+                {
+                    wanted = key;
+                    break;
+                }
+            }
+
+            if (wanted == null)
+                return false;
+
+            if (!player.MLGranted)
+            {
+                SayTo(player, eChatLoc.CL_PopupWindow,
+                      "Begin the trials first. A discipline is no use to " +
+                      "somebody with no standing to practise it.");
+                return true;
+            }
+
+            byte index = 0;
+            bool found = false;
+
+            foreach (KeyValuePair<Specialization, int> entry in
+                     SkillBase.GetSpecializationCareer(player.CharacterClass.ID))
+            {
+                if (entry.Key is not IMasterLevelsSpecialization)
+                    continue;
+
+                if (entry.Key.KeyName == wanted)
+                {
+                    found = true;
+                    break;
+                }
+
+                index++;
+            }
+
+            if (!found)
+            {
+                SayTo(player, eChatLoc.CL_PopupWindow,
+                      "That discipline is closed to you.");
+                return true;
+            }
+
+            if (player.MLLine == index && PathOf(player) == wanted)
+            {
+                SayTo(player, eChatLoc.CL_PopupWindow,
+                      "You already walk that path.");
+                return true;
+            }
+
+            player.MLLine = index;
+            player.SaveIntoDatabase();
+
+            SayTo(player, eChatLoc.CL_PopupWindow,
+                  "So be it. You are of the " + wanted + " now, and its arts " +
+                  "come to you as you rise through the Master Levels.");
+
+            player.Out.SendMessage("You have taken up the path of the " + wanted + ".",
+                                   eChatType.CT_Important, eChatLoc.CL_SystemWindow);
+
+            Announce(player);
+            return true;
+        }
+
+        /// <summary>Which path a player currently walks, or null.</summary>
+        public static string PathOf(GamePlayer player)
+        {
+            if (player == null || !player.MLGranted)
+                return null;
+
+            byte index = 0;
+
+            foreach (KeyValuePair<Specialization, int> entry in
+                     SkillBase.GetSpecializationCareer(player.CharacterClass.ID))
+            {
+                if (entry.Key is not IMasterLevelsSpecialization)
+                    continue;
+
+                if (index == player.MLLine)
+                    return entry.Key.KeyName;
+
+                index++;
+            }
+
+            return null;
         }
 
         /// <summary>Puts one person on the path. True if this changed anything.</summary>

@@ -243,55 +243,144 @@ namespace DOL.GS.Scripts
         /// </summary>
         private static string MasterPath(eCharacterClass characterClass, Duty duties)
         {
+            string first, second;
+
+            if (!PathPair(characterClass, out first, out second))
+                return MasterPathByDuty(duties);
+
+            // Two real options, so pick the one this hire will actually use.
+            return Suits(second, duties) > Suits(first, duties) ? second : first;
+        }
+
+        /// <summary>
+        /// The two Master Level paths a class may walk.
+        ///
+        /// This is the live table, from the official class options list, and it
+        /// is a pair rather than a free choice: every class has exactly two of
+        /// the eight open to it. The earlier version of this method named one
+        /// path per class and, as it happens, never named one outside the
+        /// class's real pair -- but it also never chose between them, so a
+        /// Cleric and a Warden both went Battlemaster or Warlord whether they
+        /// were hired to heal or to hold a line.
+        ///
+        /// Players on this server are not held to the pair -- migration 39
+        /// opens all eight to every class deliberately. Hires are, because a
+        /// hire has no opinion to express and the authentic pair is the better
+        /// default.
+        /// </summary>
+        private static bool PathPair(eCharacterClass characterClass,
+                                     out string first, out string second)
+        {
             switch (characterClass)
             {
                 // ---- Albion --------------------------------------------
-                case eCharacterClass.Armsman:     return "Warlord";
-                case eCharacterClass.Cabalist:    return "Convoker";
-                case eCharacterClass.Cleric:      return "Warlord";
-                case eCharacterClass.Friar:       return "Battlemaster";
-                case eCharacterClass.Infiltrator: return "Spymaster";
-                case eCharacterClass.Mercenary:   return "Battlemaster";
-                case eCharacterClass.Minstrel:    return "Warlord";
-                case eCharacterClass.Necromancer: return "Convoker";
-                case eCharacterClass.Paladin:     return "Warlord";
-                case eCharacterClass.Reaver:      return "Battlemaster";
-                case eCharacterClass.Scout:       return "Battlemaster";
-                case eCharacterClass.Sorcerer:    return "Convoker";
-                case eCharacterClass.Theurgist:   return "Convoker";
-                case eCharacterClass.Wizard:      return "Convoker";
+                case eCharacterClass.Armsman:      first = "Warlord";      second = "Battlemaster"; return true;
+                case eCharacterClass.Cabalist:     first = "Convoker";     second = "Stormlord";    return true;
+                case eCharacterClass.Cleric:       first = "Warlord";      second = "Perfecter";    return true;
+                case eCharacterClass.Friar:        first = "Battlemaster"; second = "Perfecter";    return true;
+                case eCharacterClass.Heretic:      first = "Banelord";     second = "Perfecter";    return true;
+                case eCharacterClass.Infiltrator:  first = "Spymaster";    second = "Battlemaster"; return true;
+                case eCharacterClass.Mercenary:    first = "Battlemaster"; second = "Banelord";     return true;
+                case eCharacterClass.Minstrel:     first = "Warlord";      second = "Sojourner";    return true;
+                case eCharacterClass.Necromancer:  first = "Convoker";     second = "Warlord";      return true;
+                case eCharacterClass.Paladin:      first = "Warlord";      second = "Battlemaster"; return true;
+                case eCharacterClass.Reaver:       first = "Battlemaster"; second = "Banelord";     return true;
+                case eCharacterClass.Scout:        first = "Battlemaster"; second = "Sojourner";    return true;
+                case eCharacterClass.Sorcerer:     first = "Convoker";     second = "Stormlord";    return true;
+                case eCharacterClass.Theurgist:    first = "Convoker";     second = "Stormlord";    return true;
+                case eCharacterClass.Wizard:       first = "Convoker";     second = "Stormlord";    return true;
 
                 // ---- Midgard -------------------------------------------
-                case eCharacterClass.Thane:        return "Battlemaster";
-                case eCharacterClass.Warrior:      return "Warlord";
-                case eCharacterClass.Shadowblade:  return "Spymaster";
-                case eCharacterClass.Skald:        return "Warlord";
-                case eCharacterClass.Hunter:       return "Sojourner";
-                case eCharacterClass.Healer:       return "Sojourner";
-                case eCharacterClass.Spiritmaster: return "Convoker";
-                case eCharacterClass.Shaman:       return "Convoker";
-                case eCharacterClass.Runemaster:   return "Convoker";
-                case eCharacterClass.Bonedancer:   return "Convoker";
-                case eCharacterClass.Berserker:    return "Battlemaster";
-                case eCharacterClass.Savage:       return "Warlord";
+                case eCharacterClass.Berserker:    first = "Battlemaster"; second = "Banelord";     return true;
+                case eCharacterClass.Bonedancer:   first = "Convoker";     second = "Banelord";     return true;
+                case eCharacterClass.Healer:       first = "Sojourner";    second = "Perfecter";    return true;
+                case eCharacterClass.Hunter:       first = "Sojourner";    second = "Battlemaster"; return true;
+                case eCharacterClass.Runemaster:   first = "Convoker";     second = "Stormlord";    return true;
+                case eCharacterClass.Savage:       first = "Warlord";      second = "Battlemaster"; return true;
+                case eCharacterClass.Shadowblade:  first = "Spymaster";    second = "Battlemaster"; return true;
+                case eCharacterClass.Shaman:       first = "Convoker";     second = "Perfecter";    return true;
+                case eCharacterClass.Skald:        first = "Warlord";      second = "Sojourner";    return true;
+                case eCharacterClass.Spiritmaster: first = "Convoker";     second = "Stormlord";    return true;
+                case eCharacterClass.Thane:        first = "Battlemaster"; second = "Stormlord";    return true;
+                case eCharacterClass.Valkyrie:     first = "Stormlord";    second = "Warlord";      return true;
+                case eCharacterClass.Warlock:      first = "Banelord";     second = "Convoker";     return true;
+                case eCharacterClass.Warrior:      first = "Warlord";      second = "Battlemaster"; return true;
 
                 // ---- Hibernia ------------------------------------------
-                case eCharacterClass.Animist:     return "Convoker";
-                case eCharacterClass.Bard:        return "Sojourner";
-                case eCharacterClass.Blademaster: return "Battlemaster";
-                case eCharacterClass.Champion:    return "Battlemaster";
-                case eCharacterClass.Druid:       return "Convoker";
-                case eCharacterClass.Eldritch:    return "Convoker";
-                case eCharacterClass.Enchanter:   return "Convoker";
-                case eCharacterClass.Hero:        return "Battlemaster";
-                case eCharacterClass.Mentalist:   return "Stormlord";
-                case eCharacterClass.Nightshade:  return "Spymaster";
-                case eCharacterClass.Ranger:      return "Battlemaster";
-                case eCharacterClass.Valewalker:  return "Battlemaster";
-                case eCharacterClass.Warden:      return "Battlemaster";
+                case eCharacterClass.Animist:      first = "Convoker";     second = "Stormlord";    return true;
+                case eCharacterClass.Bainshee:     first = "Convoker";     second = "Stormlord";    return true;
+                case eCharacterClass.Bard:         first = "Sojourner";    second = "Perfecter";    return true;
+                case eCharacterClass.Blademaster:  first = "Battlemaster"; second = "Banelord";     return true;
+                case eCharacterClass.Champion:     first = "Battlemaster"; second = "Banelord";     return true;
+                case eCharacterClass.Druid:        first = "Convoker";     second = "Perfecter";    return true;
+                case eCharacterClass.Eldritch:     first = "Convoker";     second = "Stormlord";    return true;
+                case eCharacterClass.Enchanter:    first = "Convoker";     second = "Stormlord";    return true;
+                case eCharacterClass.Hero:         first = "Battlemaster"; second = "Warlord";      return true;
+                case eCharacterClass.Mentalist:    first = "Stormlord";    second = "Warlord";      return true;
+                case eCharacterClass.Nightshade:   first = "Spymaster";    second = "Stormlord";    return true;
+                case eCharacterClass.Ranger:       first = "Battlemaster"; second = "Sojourner";    return true;
+                case eCharacterClass.Valewalker:   first = "Battlemaster"; second = "Stormlord";    return true;
+                case eCharacterClass.Vampiir:      first = "Banelord";     second = "Warlord";      return true;
+                case eCharacterClass.Warden:       first = "Battlemaster"; second = "Perfecter";    return true;
             }
 
-            return MasterPathByDuty(duties);
+            first = null;
+            second = null;
+            return false;
+        }
+
+        /// <summary>
+        /// How well a path serves what this hire was brought along to do.
+        ///
+        /// Only ever used to choose between the two a class actually has, so
+        /// the numbers are a ranking and not a measurement.
+        /// </summary>
+        private static int Suits(string path, Duty duties)
+        {
+            switch (path)
+            {
+                case "Perfecter":
+                    if (duties.HasFlag(Duty.Heal)) return 100;
+                    if (duties.HasFlag(Duty.Buffs) || duties.HasFlag(Duty.Chants)) return 60;
+                    return 10;
+
+                case "Convoker":
+                    if (duties.HasFlag(Duty.Pet)) return 100;
+                    if (duties.HasFlag(Duty.Heal)) return 20;
+                    return 40;
+
+                case "Stormlord":
+                    if (duties.HasFlag(Duty.PBAoE)) return 100;
+                    if (duties.HasFlag(Duty.Nuke) || duties.HasFlag(Duty.DoT)) return 85;
+                    return 15;
+
+                case "Banelord":
+                    if (duties.HasFlag(Duty.Debuff) || duties.HasFlag(Duty.CC)) return 90;
+                    if (duties.HasFlag(Duty.Melee)) return 55;
+                    return 25;
+
+                case "Spymaster":
+                    if (duties.HasFlag(Duty.Archer)) return 90;
+                    return 45;
+
+                case "Sojourner":
+                    if (duties.HasFlag(Duty.Speed)) return 90;
+                    if (duties.HasFlag(Duty.Archer)) return 70;
+                    if (duties.HasFlag(Duty.Heal)) return 30;
+                    return 35;
+
+                case "Warlord":
+                    if (duties.HasFlag(Duty.Tank)) return 95;
+                    if (duties.HasFlag(Duty.Buffs) || duties.HasFlag(Duty.Bubble)) return 55;
+                    return 30;
+
+                case "Battlemaster":
+                    if (duties.HasFlag(Duty.Tank)) return 70;
+                    if (duties.HasFlag(Duty.Melee)) return 80;
+                    return 35;
+            }
+
+            return 0;
         }
 
         /// <summary>

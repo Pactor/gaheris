@@ -56,20 +56,48 @@ namespace DOL.GS.Scripts
                 return Redeem(player, item);
 
             if (item.Id_nb.Equals(RESPEC, StringComparison.OrdinalIgnoreCase))
+                return Respec(player, item);
+
+            return base.ReceiveItem(source, item);
+        }
+
+        /// <summary>
+        /// The Star of Destiny: put the choice of discipline back.
+        ///
+        /// This used to be handed straight back with an apology, because there
+        /// was nothing for it to undo -- no Master Level path was attached to
+        /// any class, so nobody had a discipline to change. Migration 39 gave
+        /// every class all eight, so the token has work to do again. It resets
+        /// the choice rather than making it; the Arbiter is who you name a new
+        /// path to.
+        /// </summary>
+        private bool Respec(GamePlayer player, DbInventoryItem item)
+        {
+            if (!player.MLGranted)
             {
-                // Handed back rather than swallowed. Choosing a Master Level
-                // path is not implemented anywhere in this server -- MLLine is
-                // read but never written outside the GM command -- so there is
-                // nothing for a respec to undo, and taking the token would cost
-                // 5,000 bounty points for nothing.
                 SayTo(player, eChatLoc.CL_PopupWindow,
-                      "Keep it. There is no path here to turn you from, and I " +
-                      "will not take payment for undoing a choice you were " +
-                      "never given.");
+                      "Keep it. You have no discipline to turn from yet.");
                 return false;
             }
 
-            return base.ReceiveItem(source, item);
+            if (!player.Inventory.RemoveItem(item))
+                return false;
+
+            player.MLLine = 0;
+            player.SaveIntoDatabase();
+            player.RefreshSpecDependantSkills(true);
+            player.Out.SendUpdatePlayer();
+
+            SayTo(player, eChatLoc.CL_PopupWindow,
+                  "The star is spent and your training with it. Go back to the " +
+                  "Arbiter and name the discipline you would rather have.");
+
+            player.Out.SendMessage(
+                "Your Master Level discipline has been set aside. Speak to the " +
+                "Arbiter to choose again.",
+                eChatType.CT_Important, eChatLoc.CL_SystemWindow);
+
+            return true;
         }
 
         /// <summary>Hand back a credit, receive the Master Level it names.</summary>

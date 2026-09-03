@@ -164,3 +164,39 @@ needs alongside the script.
 Worth doing after the current round of content settles, since every fix so far
 has turned up another core behaviour that cannot be subclassed around, and
 those are exactly the things the document exists to record.
+
+---
+
+## Taskmasters should hand you on by name
+
+**Deferred deliberately. Not while task dungeons are being tested, because it
+changes which dungeon you are sent to and that moves the ground under the
+testing.**
+
+On live a taskmaster serves a level band and only that band. Reach the top of
+it and he tells you he has nothing more for you, and names the next one --
+"seek out Nelarid in Howth" -- so the chain walks you across the realm as you
+level. The bands and their taskmasters are already recorded above.
+
+Ours does not. Any taskmaster serves anybody: the core picks the dungeon from
+the PLAYER's level rather than from the taskmaster's band --
+
+    ushort rid = GetRegionFromLevel(player.Level, player.Realm, dungeonType);
+
+-- so a level 40 character can take a task from the Mag Mell taskmaster and be
+sent to a level 40 dungeon. Nothing is broken by that, which is why it can
+wait, but it loses the thing the chain was for: it is how a player found out
+where to go next.
+
+What it needs:
+
+- A band per taskmaster. The mob rows exist and are already placed in the right
+  towns, so this is a column and a lookup rather than new content.
+- The refusal, naming the next taskmaster and his town, when the player is past
+  the band.
+- Something sensible below the band too -- a level 5 character talking to the
+  41-50 taskmaster should be sent back down the chain, not handed a dungeon
+  that will kill him.
+
+Worth doing straight after the dungeon layout settles, since both touch the
+same conversation.

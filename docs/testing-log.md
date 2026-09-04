@@ -90,7 +90,9 @@ so the class announces itself at boot instead:
     GaherisPlayer: in use as player_class (DOL.GS.Scripts.GaherisPlayer).
 
 **Focus Shell -- rebuilt.** Nature's Cocoon, Hand of God and Spirit Shell now
-absorb, drain and end. Three things had to be done here rather than left to
+absorb, drain and end. The numbers after each are **spec** levels, not
+character levels: 47 in Druid Nurture, 46 in Cleric Enhancement, 41 in Shaman
+Augmentation. Three things had to be done here rather than left to
 core: the absorption was on a dead event, the power drain was on a timer the
 dead callback never started, and **nothing in core can cancel it** --
 `CancelFocusSpells` only ends effects of type Pulse and these carry Pulse 0 --
@@ -129,7 +131,7 @@ how a group survives. **Turn them off and you have exactly what core does.**
 
 ### What to test
 
-1. **Focus Shell.** A Druid, Cleric or Healer casts it, on themselves or another
+1. **Focus Shell.** A Druid, Cleric or Shaman casts it, on themselves or another
    player, and takes a beating. Watch the health drop slow and the power drain.
    `focus_shell_log` narrates every absorb, drain and ending.
 2. **That it ends** -- walk, swing, run out of power, walk the target out of

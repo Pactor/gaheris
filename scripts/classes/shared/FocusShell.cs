@@ -8,10 +8,15 @@ namespace DOL.GS.Scripts
     /// <summary>
     /// Focus Shell: Nature's Cocoon, Hand of God and Spirit Shell.
     ///
-    /// One spell each for the Druid at 47, the Cleric at 46 and the Healer at
-    /// 41 -- the primary healer of every realm -- absorbing 90, 85 and 70
-    /// percent of the damage their target takes while the caster stands still
-    /// and pays for it.
+    /// One spell each for the Druid, the Cleric and the Shaman, absorbing 90,
+    /// 85 and 70 percent of the damage their target takes while the caster
+    /// stands still and pays for it.
+    ///
+    /// The levels are *spec* levels, not character levels: 47 in Druid
+    /// Nurture, 46 in Cleric Enhancement, 41 in Shaman Augmentation. Each
+    /// lives in a line whose ClassIDHint names one class, so Augmentation
+    /// being shared with the Healer and the Seer does not give either of them
+    /// Spirit Shell.
     ///
     /// **None of it happened.** The core handler puts the whole spell in
     /// `OnEffectStart(GameSpellEffect)`, and nothing calls that handler's
@@ -139,7 +144,7 @@ namespace DOL.GS.Scripts
 
         /// <summary>
         /// The blow, made smaller. Percentages come from the spell: 90 for the
-        /// Druid, 85 for the Cleric, 70 for the Healer.
+        /// Druid, 85 for the Cleric, 70 for the Shaman.
         /// </summary>
         public void Soften(AttackData ad)
         {

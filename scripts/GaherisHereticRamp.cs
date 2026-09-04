@@ -284,6 +284,11 @@ namespace DOL.GS.Scripts
 
         private bool _watching;
         private GameLiving _watched;
+        private ECSGameTimer _feet;
+        private Point3D _stood;
+
+        /// <summary>How far counts as having moved rather than having wobbled.</summary>
+        private const int A_STEP = 32;
 
         /// <summary>
         /// Notice the moment the caster takes a step, or is struck.
@@ -300,7 +305,15 @@ namespace DOL.GS.Scripts
                 return;
 
             _watching = true;
-            GameEventMgr.AddHandler(Caster, GamePlayerEvent.Moving, new DOLEventHandler(Moved));
+
+            // Movement is sampled, not awaited. GamePlayerEvent.Moving is
+            // never fired anywhere in this server -- three places subscribe to
+            // it, including the Heretic wiring that was abandoned, and nothing
+            // raises it. So the channel watches the caster's own feet several
+            // times a second instead.
+            _stood = new Point3D(Caster.X, Caster.Y, Caster.Z);
+            _feet = new ECSGameTimer(Caster, Step, 400);
+            _feet.Start(400);
             GameEventMgr.AddHandler(Caster, GameLivingEvent.AttackedByEnemy, new DOLEventHandler(Struck));
 
             // And the target's death, which is the one ending that cannot be
@@ -320,7 +333,13 @@ namespace DOL.GS.Scripts
                 return;
 
             _watching = false;
-            GameEventMgr.RemoveHandler(Caster, GamePlayerEvent.Moving, new DOLEventHandler(Moved));
+
+            if (_feet != null)
+            {
+                _feet.Stop();
+                _feet = null;
+            }
+
             GameEventMgr.RemoveHandler(Caster, GameLivingEvent.AttackedByEnemy, new DOLEventHandler(Struck));
 
             if (_watched != null)
@@ -359,9 +378,27 @@ namespace DOL.GS.Scripts
             CancelPulsingSpell(Caster, Spell.SpellType);
         }
 
-        private void Moved(DOLEvent e, object sender, EventArgs args)
+        /// <summary>
+        /// A few times a second, has he moved. Both tests are here on purpose:
+        /// IsMoving catches somebody walking at the instant it is read, and
+        /// the distance catches somebody who walked between two readings and
+        /// stopped.
+        /// </summary>
+        private int Step(ECSGameTimer timer)
         {
-            Break("the caster moved");
+            if (!_watching || Caster == null)
+                return 0;
+
+            bool moving = Caster.IsMoving;
+            bool shifted = _stood != null && _stood.GetDistanceTo(Caster) > A_STEP;
+
+            if (moving || shifted)
+            {
+                Break("the caster moved");
+                return 0;
+            }
+
+            return 400;
         }
 
         private void TargetDied(DOLEvent e, object sender, EventArgs args)

@@ -259,6 +259,15 @@ namespace DOL.GS.Scripts
             if (Caster == null || !Caster.IsAlive)
                 return "the caster is gone";
 
+            // "Caster may not do anything else while spell is in effect."
+            // Sitting and swinging both count, and both are listed as
+            // interrupting a focus channel.
+            if (Caster is GamePlayer resting && resting.IsSitting)
+                return "the caster sat down";
+
+            if (Caster.attackComponent != null && Caster.attackComponent.AttackState)
+                return "the caster attacked";
+
             if (target == null || !target.IsAlive ||
                 target.ObjectState != GameObject.eObjectState.Active)
                 return "the target is dead";
@@ -274,7 +283,15 @@ namespace DOL.GS.Scripts
 
         private bool _watching;
 
-        /// <summary>Notice the moment the caster takes a step.</summary>
+        /// <summary>
+        /// Notice the moment the caster takes a step, or is struck.
+        ///
+        /// The rules are the 1.616 spell data's, not a preference: a focus
+        /// channel "cannot be interrupted by ranged attacks" -- archery,
+        /// crossbows and spells -- and "can be interrupted by melee attacks
+        /// and sitting". That distinction only applies to the three
+        /// uninterruptible ones; everything else breaks on any of it.
+        /// </summary>
         private void Watch()
         {
             if (_watching || Caster == null)
@@ -282,6 +299,7 @@ namespace DOL.GS.Scripts
 
             _watching = true;
             GameEventMgr.AddHandler(Caster, GamePlayerEvent.Moving, new DOLEventHandler(Moved));
+            GameEventMgr.AddHandler(Caster, GameLivingEvent.AttackedByEnemy, new DOLEventHandler(Struck));
         }
 
         private void Unwatch()
@@ -291,17 +309,41 @@ namespace DOL.GS.Scripts
 
             _watching = false;
             GameEventMgr.RemoveHandler(Caster, GamePlayerEvent.Moving, new DOLEventHandler(Moved));
+            GameEventMgr.RemoveHandler(Caster, GameLivingEvent.AttackedByEnemy, new DOLEventHandler(Struck));
         }
 
-        private void Moved(DOLEvent e, object sender, EventArgs args)
+        /// <summary>
+        /// Struck while channelling. A melee blow always breaks it. Anything
+        /// at range -- an arrow, a bolt, a spell -- breaks the ordinary
+        /// channels and is exactly what the three Blazes are for.
+        /// </summary>
+        private void Struck(DOLEvent e, object sender, EventArgs args)
+        {
+            if (args is not AttackedByEnemyEventArgs hit || hit.AttackData == null)
+                return;
+
+            bool melee = hit.AttackData.IsMeleeAttack;
+
+            if (!melee && Spell.Uninterruptible)
+                return;
+
+            Break(melee ? "struck in melee" : "struck from range");
+        }
+
+        private void Break(string why)
         {
             if (_pulses > 0)
-                Say("channel ended after " + _pulses + " pulses -- the caster moved");
+                Say("channel ended after " + _pulses + " pulses -- " + why);
 
             _pulses = 0;
             Unwatch();
             MessageToCaster("You lose your concentration.", eChatType.CT_SpellExpires);
             CancelPulsingSpell(Caster, Spell.SpellType);
+        }
+
+        private void Moved(DOLEvent e, object sender, EventArgs args)
+        {
+            Break("the caster moved");
         }
 
         private void Say(string what)

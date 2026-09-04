@@ -144,9 +144,20 @@ holds still never end. Two are fixed. See `master-levels.md`.
 
 ---
 
+## Status: concept done, further testing needed
+
+Four faults found and fixed, three of them confirmed in play: the auras stop on
+movement and on death and no longer disconnect the caster, fear makes monsters
+flee, and befriend turns them to your side without them rounding on you.
+
+Everything else is verified as *wired* -- every spell type she can cast reaches
+a live path -- but has not been fired in anger, because the rest needs combat
+and other targets to mean anything. Picked up when there is a group to test
+with.
+
 ## What is left to test
 
-Everything above is wired. What remains is whether it feels right.
+Everything below is wired. What remains is whether it feels right.
 
 1. **Fear**, on something at or below the level cap -- `Spell.Value` is a
    maximum level, not a strength. Vanquishing Screech reaches 27; the six run

@@ -9,6 +9,16 @@ pulse.
 
 ---
 
+## Done for now
+
+**The Bainshee.** Four faults found and fixed, three confirmed in play -- the
+auras, fear, and befriend. Everything else about her is verified as wired but
+needs combat and other targets to test, so she is parked. See `bainshee.md`.
+
+**The Valkyrie.** Verified and **nothing found broken** -- the first class of
+which that is true here. Her cone crash was fixed before anyone hit it and the
+cone has since been cast without incident. See `valkyrie.md`.
+
 ## Start here: the Bainshee
 
 She is mid-test and two of her faults were only fixed after you logged off.

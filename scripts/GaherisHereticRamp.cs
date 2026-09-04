@@ -95,6 +95,7 @@ namespace DOL.GS.Scripts
         /// </summary>
         public override void OnSpellPulse(PulsingSpellEffect effect)
         {
+            Say("OnSpellPulse");
             base.OnSpellPulse(effect);
 
             GameLiving at = Caster?.TargetObject as GameLiving ?? _channelling;
@@ -127,6 +128,8 @@ namespace DOL.GS.Scripts
         /// </summary>
         public override void OnEffectPulse(GameSpellEffect effect)
         {
+            Say("OnEffectPulse on " + (effect?.Owner?.Name ?? "?"));
+
             if (Caster != null && effect?.Owner != null)
             {
                 bool inRange = Caster.IsWithinRadius(effect.Owner, Spell.CalculateEffectiveRange(Caster));
@@ -183,13 +186,38 @@ namespace DOL.GS.Scripts
         public override void OnEffectStart(GameSpellEffect effect)
         {
             _pulses = 0;
+            Say("OnEffectStart on " + (effect?.Owner?.Name ?? "?"));
             base.OnEffectStart(effect);
         }
 
         public override void FinishSpellCast(GameLiving target)
         {
             _channelling = target;
+            Say("FinishSpellCast at " + (target?.Name ?? "no target"));
             base.FinishSpellCast(target);
+        }
+
+        public override void ApplyEffectOnTarget(GameLiving target)
+        {
+            Say("ApplyEffectOnTarget " + (target?.Name ?? "no target"));
+            base.ApplyEffectOnTarget(target);
+        }
+
+        public override void OnDirectEffect(GameLiving target)
+        {
+            Say("OnDirectEffect " + (target?.Name ?? "no target"));
+            base.OnDirectEffect(target);
+        }
+
+        public override bool StartSpell(GameLiving target)
+        {
+            Say("StartSpell " + (target?.Name ?? "no target"));
+            return base.StartSpell(target);
+        }
+
+        private void Say(string what)
+        {
+            Console.WriteLine("Heretic: " + Spell.Name + " -- " + what);
         }
 
         public override int OnEffectExpires(GameSpellEffect effect, bool noMessages)

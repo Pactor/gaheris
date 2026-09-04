@@ -155,6 +155,34 @@ a live path -- but has not been fired in anger, because the rest needs combat
 and other targets to mean anything. Picked up when there is a group to test
 with.
 
+---
+
+## She could not be trained
+
+Found on 4 September, sweeping trainers across all sixty-two classes.
+
+Every Albion class and every Midgard class has a trainer at home. Every
+Hibernia class has between five and nine, across Hibernia, the Shrouded Isles
+and Tir na Nog. **The Bainshee had none.** Her only three stood in Atlantis and
+on Agramon, and all three are ours -- upstream OpenDAoC placed no Bainshee
+trainer anywhere.
+
+She was the only class in the game in that state.
+
+This matters more than the count suggests, because of when it was found. The
+audit above went through every spell line, every realm ability, her champion
+and master level entries, her auras, her fear and her befriend, and it was
+called complete. Not one of those checks asks whether a level five Bainshee can
+spend a specialisation point. **Skills were treated as the whole of a class,
+and they are not.**
+
+Migration 115 places nine more, beside the Vampiir trainers -- the other
+Hibernia class from the same expansion, so the same halls -- using nine of the
+twelve real Bainshee trainer names that were already sitting unused in
+`npctemplate`. Twelve total, which is Vampiir parity.
+
+The coordinates are ours, not live's.
+
 ## What is left to test
 
 Everything below is wired. What remains is whether it feels right.
@@ -166,5 +194,6 @@ Everything below is wired. What remains is whether it feels right.
 3. **A Spectral Guard cone** -- 23 spells and none has been fired in anger.
 4. Whether the **ramp and damage** of the auras feel right at her level.
 5. The **taunts** and the **group ablative**, neither of which has been used.
+6. **Training her at home** -- nine new trainers, none of them yet visited.
 
 `bainshee_log` narrates the auras, the channels, the fear and the befriend.

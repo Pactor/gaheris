@@ -137,6 +137,57 @@ abilities.
 Logging is behind `gaheris_log_heretic`, off by default: it is a line per
 pulse per Heretic, which is for diagnosis rather than for leaving on.
 
+---
+
+## His other two spell types, checked properly
+
+Added 4 September. The channel work covered `HereticDamageOverTime`. The
+Heretic has two more types and neither had been looked at.
+
+### HereticDamageSpeedDecrease -- not broken
+
+Fifteen spells, the Blazing and Lava families, damage with a snare. They
+inherit `HereticPiercingMagic` and so inherit its `BeginEffect`, which
+subscribes to five events this server never raises. That looks fatal and is
+not: `Pulse` is 0 on all fifteen, and the six Lava spells that *are* focus
+spells are cancelled by the core's own generic machinery --
+`castingComponent.CancelFocusSpells` runs from `GameLiving.cs:1455` when the
+caster attacks and from `InterruptCasting` when he is interrupted or moves.
+
+So the dead wiring is redundant rather than missing. **No change made**, which
+is worth recording so nobody repairs it twice.
+
+### HereticPiercingMagic -- five buffs that did nothing
+
+Not a channel at all, despite the name. It is exactly five self buffs in the
+Enhancement line -- **Arawn's Precision, Accuracy, Clarity, Acuity and
+Cunning** -- twenty minutes each, values 1, 3, 5, 7 and 10, and nothing else in
+the database uses the type.
+
+The core handler treats them as channels. Its whole body sits in
+`OnEffectStart(GameSpellEffect)`, the callback the ECS rewrite stopped
+reaching, where it registers the caster as a focus target and says "You
+concentrated on the spell!". A Heretic cast one, saw an icon, and carried no
+bonus at all.
+
+Re-typing them as `ResiPierceBuff` would not have worked either, which is worth
+knowing because it is the obvious move: `StatBuffECSEffect` takes its
+properties from `EffectHelper.GetPropertiesFromEffect(EffectType)` rather than
+from the handler, and `EffectHelper` does not mention `eProperty.ResistPierce`
+anywhere. The property has to be written directly, and
+`scripts/classes/catacombs/heretic/ArawnsPiercing.cs` writes it into
+`BaseBuffBonusCategory`, the one channel `ResistPierceCalculator` reads.
+
+That the mapping is right is confirmed rather than assumed: the calculator caps
+the property at `max(1, level / 5)`, which is exactly 10 at level 50, and
+Arawn's Cunning -- the level 50 one -- carries exactly 10.
+
+**What it will not do here.** Resist pierce reduces only the resistance a target
+gets *from items*, and ordinary monsters have no item bonuses, so against them
+it subtracts nothing. It now does what the class says, shows on the character
+sheet where it never did, and works against anything that wears gear. No damage
+increase should be expected against a mob, and none is claimed.
+
 ## What to test
 
 1. ~~Channel an **Arawn's** spell and watch the damage climb ten percent a

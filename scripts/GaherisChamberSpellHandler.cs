@@ -139,9 +139,15 @@ namespace DOL.GS.Scripts
             if (Caster is not GamePlayer player)
                 return;
 
-            // A discharge closes nothing; no window was opened for it.
+            // A discharge. This is where it has to happen: the cast finishing
+            // is the only thing that runs, and returning here -- as this did --
+            // means the chamber is recognised, announced, and then quietly does
+            // nothing at all. Which is precisely how it behaved.
             if (Armed() != null)
+            {
+                StartSpell(target);
                 return;
+            }
 
             ChamberLoader.Loading loaded = ChamberLoader.Close(player);
 

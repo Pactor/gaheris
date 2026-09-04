@@ -1,120 +1,103 @@
 # The Shrouded Isles classes
 
 Shrouded Isles, November 2002 -- the first expansion, and a **different six**
-from the Catacombs five we have been fixing. Necromancer and Reaver in Albion,
-Savage and Bonedancer in Midgard, Valewalker and Animist in Hibernia, plus the
-Flexible, Scythe and Hand-to-Hand weapon lines.
+from the Catacombs five: Necromancer and Reaver in Albion, Savage and
+Bonedancer in Midgard, Valewalker and Animist in Hibernia, plus the Flexible,
+Scythe and Hand-to-Hand weapon lines.
 
-Audited 4 September 2026 from the live database and the core source. **None of
-these have been played or fixed.** This is the starting map, not a report.
-
----
-
-## The headline
-
-**Their content is present and their handlers exist.** Across all six, the only
-spell type with no handler is one Animist spell, plus the two Sojourner ML
-spells every class in the game shares. There is no missing content to import.
-
-That matches what the Catacombs classes turned out to be: the data was always
-there, and what was broken was wiring.
+Swept 5 September 2026 against the running server, using the checks that found
+every fault in the Catacombs classes.
 
 ---
 
-## Class by class
+## The result: they are mechanically sound
 
-### Necromancer (12) -- Albion
+**One gap across all six**, and it is a single spell.
 
-| Line | | Spells |
-|---|---|---|
-| Deathsight / Death Servant / Painworking | baseline | 24 / 22 / 20 |
-| Deathsight Spec / Death Servant Spec / Painworking Spec | spec | 34 / 32 / 37 |
-
-169 spells, 71 types, all handled. **No pulsing spells at all**, so none of the
-movement faults that plagued the Bainshee apply.
-
-The class is a pet class that becomes a shade while the pet lives, which is
-structural rather than spell data, and none of it was examined here. That is the
-first thing to look at.
-
-### Reaver (19) -- Albion
-
-One spec line, **Soulrending**, 53 spells. 75 types, all handled.
-
-**Worth attention:** Soulrending's spells *pulse* -- 9 direct damage, 7 melee
-damage debuffs, 6 armour absorption debuffs, all with a non-zero Pulse. Nothing
-in this server stops a pulsing spell when the caster moves unless it was written
-to, because the event that announced movement is dead. Whether a Reaver's
-lifetaps are meant to be sustained or are simply flagged oddly is the question
-to settle first, and it wants a patch note rather than a guess.
-
-### Savage (32) -- Midgard
-
-One line, **Savagery**, 48 spells. 77 types, all handled. Nothing pulsing,
-nothing blank.
-
-The Savage's mechanic is self-buffs bought with health, which is a data
-property rather than a handler, so a clean audit here means little. Test the
-health cost.
-
-### Bonedancer (30) -- Midgard
-
-The largest of the six: three baselines and six spec lines, 345 spells, 98
-types, all handled.
-
-| | Lines |
+| Check | Result |
 |---|---|
-| baseline | Bone Army 35, Suppression 39, Darkness 20 |
-| spec | Bone Warriors 53, Bone Guardians 52, Spirit Dimming 42, Bone Mystics 39, Spirit Suppression 38, Runes of Darkness 34, Runes of Suppression 33 |
+| Spell types **deliverable** (not merely present) | **45 of 45** |
+| Class type vs how its spell specs are marked | all six consistent |
+| Realm abilities instantiating | **186 of 186** |
+| Realm abilities on dead events | **none** |
+| Champion trees: right realm, right count | all six correct |
+| Blank spell types | one, below |
 
-**Pulsing:** 3 bladeturns in Runes of Suppression, 6 snares in Bone Guardians.
-Same question as the Reaver.
+That is a real result rather than an absence of effort. The same sweep found
+Fear and Befriend dead on the Bainshee, Disarm and Silence dead on the Mauler,
+and Odin's Will mismarked on the Valkyrie.
 
-A note from an earlier session that still stands: each Bonedancer line fills
-levels 15 through 48 in threes, so a level that looks wrong usually is not --
-the rung belongs to a different line.
+### Why they survived when the Catacombs classes did not
 
-### Animist (55) -- Hibernia
+Nothing in these six parks its behaviour in `OnEffectStart(GameSpellEffect)`,
+the legacy callback the ECS rewrite stopped reaching. Their spells are damage,
+pets, buffs and debuffs -- the paths that were migrated. The classes that broke
+were the ones doing something unusual enough to need a custom effect:
+attaching a brain, cancelling a pulse, returning power from a blow.
 
-Four baselines and four spec lines, 299 spells, 91 types.
+### The hybrid marking, checked because of the Valkyrie
 
-**One spell has a blank `Type` and therefore no handler at all:**
-`150000 Fungal Potency`, Creeping Path level 29 -- *"Target's spells have an
-enhanced effectiveness... will reduce the chance of a resisted spell. (Only
-usable in PVE)"*, Value 15, 60s, radius 350.
+| Class | Declares | Its spell specs |
+|---|---|---|
+| Reaver | Hybrid | Soulrending marked hybrid |
+| Savage | PureTank (from ClassViking) | Savagery marked hybrid |
+| Necromancer | ListCaster (from ClassDisciple) | unmarked, correct for a list caster |
+| Bonedancer | ListCaster | unmarked |
+| Animist | ListCaster | unmarked |
+| Valewalker | ListCaster (from ClassForester) | unmarked |
 
-It is **not** fixed, deliberately. The spell ID is 150000, far above the ranges
-around it, which is the signature of something added to this database rather
-than imported from live data, and the "(Only usable in PVE)" note reads the same
-way. `EffectivenessBuff` would probably make it work, but making an invented
-spell work is not the same as matching live. **Decide whether it belongs before
-giving it a type.**
-
-### Valewalker (56) -- Hibernia
-
-Two baselines and two spec lines, 134 spells, 82 types, all handled. Nothing
-pulsing, nothing blank.
-
-Scythe and the no-armour rule are the class, and neither is spell data.
-
----
-
-## What every one of them shares
-
-Two Sojourner ML spells with blank types, described in `master-levels.md` --
-one now removed from its line, one still broken and needing a core change.
-
-Six ML abilities that never end, four of them still broken. Every class reaches
-all of them.
+All six agree with themselves. The Valkyrie's fault -- a Hybrid class with an
+unmarked line -- appears nowhere here.
 
 ---
 
-## Where to start
+## The one gap: the Animist's Fungal Potency
 
-The Reaver and the Bonedancer, because both have pulsing spec lines and pulsing
-is where every fault so far has been. Then the Necromancer's shade mechanic,
-which is the most structural thing in the six and the least likely to be
-correct given how the Bainshee's wraith form turned out.
+`Creeping Path`, level 29, spell **150000**. It has **no `Type` and no
+`Target`**, so it has no handler and no way to choose a target: it does
+nothing at all.
 
-Nothing here justifies a fix yet. The audit says the content is present; it does
-not say the mechanics work, and no one has played any of them.
+I first recorded this as probably invented, on the strength of its round spell
+id and its "(Only usable in PVE)" wording. **That was wrong.** It is real, and
+was added in **patch 1.88**:
+
+> Animists receive a new ability in their Creeping baseline at level 29 called
+> Fungal Potency. It is only usable in PVE zones, has a 2 second cast time, is
+> non-interruptible and castable while on the move. The effect is a 350 radius
+> pet cast ability that reduces resists against high level monsters.
+
+Our import is faithful everywhere it has a value: `CastTime 2`, `MoveCast 1`,
+`Uninterruptible 1`, `Range 2000`, `Radius 350`, `Value 15`, level 29 of the
+Creeping baseline. Only the two columns that were blank in the reference are
+blank here.
+
+**Not fixed, and not by a Type guess.** Nothing in `eSpellType` matches it. The
+resist types are all per damage type -- Body, Cold, Crush, Energy, Heat,
+Matter, Slash, Spirit, Thrust -- and this reduces resists generally, in a
+radius around the caster's pet, against monsters only. Giving it the nearest
+wrong type would make it do something wrong, which is worse than doing nothing
+visibly. It wants a handler written, as Severing the Tether did.
+
+---
+
+## What each class still needs from play
+
+Nothing here is known broken, so what follows is behaviour rather than wiring.
+
+**Necromancer** -- the shade and pet mechanic is the most structural thing in
+the six and none of it is spell data, so this sweep says nothing about it. Most
+worth an hour of play.
+
+**Reaver** -- Soulrending's 22 spells pulse. Every pulsing line so far has had
+something wrong with it, and his are the only ones in these six that were not
+checked for stop-on-movement, because there is no source saying they should.
+
+**Bonedancer** -- the largest, 345 spells, with pulsing bladeturns and snares.
+His sub-pets are the thing to watch.
+
+**Savage** -- self-buffs bought with health. The cost is data, not a handler,
+so it needs feeling rather than auditing.
+
+**Animist** -- turrets, and Fungal Potency doing nothing at 29.
+
+**Valewalker** -- scythe and no armour, neither of which is spell data.

@@ -17,7 +17,7 @@ Walked through and seen working, not merely written.
 | Hired companions | Real classes, gear, tactics, formations, travel, recovery |
 | New Frontiers | Region 163 populated, keeps garrisoned, all crossings retargeted |
 | Border keep doors | Both directions, all six |
-| Task dungeons | Given, entered, cleared partially, exited |
+| Task dungeons | Given, entered, fought in, exited. Never cleared to zero |
 | The dungeon exit | Confirmed twice; logged client zonepoints `570` and `571` |
 | Mercenaries through a dungeon | Follow in, follow out, survive the instance closing |
 | `/task` | Shows the mission; the core's version reads a different system entirely |
@@ -28,15 +28,38 @@ Walked through and seen working, not merely written.
 
 Written and compiled, not yet watched end to end.
 
-**A clear task reaching zero.** The closest run ended 20 alive of 37 with 34
-required. Every fix since -- respawn off, the met radius at 500, six rescues a
-tick, the persistent trail -- aims at exactly this. It is the single most
-useful thing to test next, because it is the last unknown in the dungeon work.
+**That the relocation works at all.** It has never run. Not once, across
+every test so far. Three separate guards each looked correct and each
+silently disabled it:
 
-**The persistent trail.** The first run in a given region will log
-`DungeonTrail: learning region N for the first time`, and the second run in
-that same region should log `remembered from N known points` and start
+1. `m_owner is not GamePlayer` -- a task taken while grouped belongs to the
+   Group, and anyone with hired companions is always grouped, so the watcher
+   never started.
+2. Straight-line distance from the trail, then a thousand-unit "met" radius --
+   both reach through solid rock in a corridor dungeon, so creatures sealed
+   behind walls were counted as reachable and never moved.
+3. `IsVisibleToPlayers` -- reads like line of sight, is a distance flag with a
+   radius of thousands of units. Everything counted as visible, so nothing was
+   ever eligible.
+
+All three are fixed and none of the fixes has been watched working. The
+telemetry now prints `moved N`, which is the number that settles it: if it
+stays at nought while `trail` climbs past five, something is still blocking it.
+
+**A clear task reaching zero.** The closest run ended 20 alive of 37 with 34
+required -- but that was with the relocation dead, so it says nothing about
+whether the design works. This is the real test and it has not happened yet.
+
+**The persistent trail.** The first run in a region logs
+`DungeonTrail: learning region N for the first time` -- seen, for region 428.
+A repeat visit should log `remembered from N known points` and start
 populated. Nobody has yet done the second run.
+
+**Whether the boss is reachable.** He is placed at the far end relative to the
+entrance marker, and that marker is known not to be where players arrive, so
+he is likely among the stranded. On a boss mission with the relocation dead he
+was simply absent -- "he is not in here" -- which is consistent. Untested since
+the fix.
 
 **Mauler and Vampiir power from combat.** Both should now climb while
 fighting. Neither has been watched on a power bar.

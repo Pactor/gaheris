@@ -64,13 +64,7 @@ namespace DOL.GS.Scripts
         public GaherisHereticRamp(GameLiving caster, Spell spell, SpellLine line)
             : base(caster, spell, line)
         {
-            // The plainest possible proof that this class is what the server
-            // builds for these spells. Everything else was silent -- no pulse,
-            // no damage, not even an expiry -- which leaves only two
-            // explanations, and this tells them apart: either the handler is
-            // never constructed, or it is constructed and nothing calls it.
-            Console.WriteLine("Heretic: handler built for " + spell?.Name +
-                              " (" + spell?.SpellType + ") by " + (caster?.Name ?? "?"));
+
         }
 
         /// <summary>Only a held channel grows. A one-shot damage-over-time does not.</summary>
@@ -95,7 +89,6 @@ namespace DOL.GS.Scripts
         /// </summary>
         public override void OnSpellPulse(PulsingSpellEffect effect)
         {
-            Say("OnSpellPulse");
             base.OnSpellPulse(effect);
 
             GameLiving at = Caster?.TargetObject as GameLiving ?? _channelling;
@@ -128,8 +121,6 @@ namespace DOL.GS.Scripts
         /// </summary>
         public override void OnEffectPulse(GameSpellEffect effect)
         {
-            Say("OnEffectPulse on " + (effect?.Owner?.Name ?? "?"));
-
             if (Caster != null && effect?.Owner != null)
             {
                 bool inRange = Caster.IsWithinRadius(effect.Owner, Spell.CalculateEffectiveRange(Caster));
@@ -186,32 +177,61 @@ namespace DOL.GS.Scripts
         public override void OnEffectStart(GameSpellEffect effect)
         {
             _pulses = 0;
-            Say("OnEffectStart on " + (effect?.Owner?.Name ?? "?"));
             base.OnEffectStart(effect);
         }
 
         public override void FinishSpellCast(GameLiving target)
         {
             _channelling = target;
-            Say("FinishSpellCast at " + (target?.Name ?? "no target"));
             base.FinishSpellCast(target);
         }
 
+        /// <summary>
+        /// This is the beat of the channel, whatever its name suggests.
+        ///
+        /// Tracing the cast shows the pulse machinery calling StartSpell and
+        /// then ApplyEffectOnTarget, over and over, for as long as the channel
+        /// holds. OnEffectStart never fires, neither pulse hook fires, and
+        /// OnDirectEffect -- the only thing in the whole handler that deals
+        /// damage -- is never called at all. So the aura re-applied itself
+        /// every beat and nothing was ever hurt.
+        ///
+        /// The damage is therefore dealt here, where the beat actually
+        /// arrives, and the growth counted with it.
+        /// </summary>
         public override void ApplyEffectOnTarget(GameLiving target)
         {
-            Say("ApplyEffectOnTarget " + (target?.Name ?? "no target"));
             base.ApplyEffectOnTarget(target);
+
+            if (target == null || !target.IsAlive || Caster == null)
+                return;
+
+            // The channel holds only while the caster keeps this target and
+            // stays in reach of it. Either lost and the growth starts again,
+            // which is the whole tension of the class.
+            if (Caster.TargetObject != target ||
+                !Caster.IsWithinRadius(target, Spell.CalculateEffectiveRange(Caster)))
+            {
+                if (_pulses > 0)
+                    Say("channel broken after " + _pulses + " pulses");
+
+                _pulses = 0;
+                return;
+            }
+
+            OnDirectEffect(target);
+
+            if (Ramps)
+                _pulses++;
         }
 
         public override void OnDirectEffect(GameLiving target)
         {
-            Say("OnDirectEffect " + (target?.Name ?? "no target"));
             base.OnDirectEffect(target);
         }
 
         public override bool StartSpell(GameLiving target)
         {
-            Say("StartSpell " + (target?.Name ?? "no target"));
             return base.StartSpell(target);
         }
 

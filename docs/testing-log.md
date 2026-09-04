@@ -101,6 +101,21 @@ anyone. See `realm-abilities.md`.
 All 47 classes now have a class-specific ability, every one backed by a real
 handler.
 
+**Four granted realm abilities do not work, and one is inert.** Verified rather
+than assumed -- see the "Verification, not inventory" section of
+`realm-abilities.md`:
+
+| Ability | Class | |
+|---|---|---|
+| Shield Trip | Scout | root never breaks early -- stronger than it should be |
+| Entwining Snakes | Hunter | snare never breaks early -- stronger |
+| Fury of Nature | Warden | damage never heals the group -- point gone |
+| **Mark of Prey** | **Vampiir** | damage add never returns power -- point gone |
+| Severing the Tether | Mentalist | the class was never written; the button does nothing |
+
+Mark of Prey matters most for what is being tested next: it is the Vampiir's
+RR5, it was granted long before today, and it has never worked.
+
 **Still open, deliberately:** Bainshee and Warlock lack Avoidance of Magic,
 which 45 of 47 classes have. No source found saying they should have it, so it
 was not added.

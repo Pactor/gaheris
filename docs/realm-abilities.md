@@ -92,6 +92,64 @@ is held by three. Nine was never the number; six was.
 
 ---
 
+## Verification, not inventory
+
+Everything above this line was an existence check -- granted, has a row, has a
+handler file. That is not the same as working, and the difference is where
+every fault in this project has lived. Three checks that test function:
+
+**1. Does the implementation instantiate?** `SkillBase` warns at boot when an
+ability's `Implementation` will not resolve and silently substitutes an inert
+default. 123 abilities are granted; 122 instantiate; one does not, below.
+
+Read it from the boot log, not from the source tree -- `ResolveType` matches
+**case-insensitively**, so a grep for the exact class name produces false
+positives. `AtlasOF_MasteryOfConcentration` is granted to 20 classes and the
+class is spelled `AtlasOF_MasteryofConcentration`; grepping said it was broken
+and the log said it was fine. The log is right.
+
+**2. Is the handler wired to an event that never fires?** Four granted
+abilities are:
+
+| Ability | Class | What it loses | Effect |
+|---|---|---|---|
+| Shield Trip | Scout | root should break when the target is attacked | **stronger** than it should be |
+| Entwining Snakes | Hunter | snare should break when the target is attacked | **stronger** |
+| Fury of Nature | Warden | damage dealt should heal the group | the ability's whole point, gone |
+| **Mark of Prey** | **Vampiir** | damage add should return power to the Vampiir | its whole point, gone |
+
+Mark of Prey is the Vampiir's RR5 and was already granted before today. It has
+never worked.
+
+**3. Do the champion and Master Level trees hold anything unhandled?** No. Every
+spell in the 63 champion archetype lines has a type, and all 15 types have
+handlers. Every ML spell type has a handler. The only ML faults are the two
+blank-type spells and the six holds, both recorded in `master-levels.md`.
+
+## The Mentalist's RR5 is granted and inert
+
+Found in the boot log after migration 108, which is worth noting on its own:
+`SkillBase` warns when an ability's `Implementation` will not instantiate, and
+falls back to a do-nothing `Ability`. Sixteen abilities trigger that warning.
+
+Fifteen are legacy rows nobody is granted, so they cost nothing. The sixteenth
+is **`AtlasOF_SeveringTheTether`, granted to the Mentalist (42)** as its
+class-specific ability.
+
+The class does not exist. The only occurrence of that name anywhere in the core
+is the commented-out helper script that inserts the grant. So a Mentalist
+reaching RR5 gets the ability on their bar and it does nothing at all, with one
+warning at boot and silence thereafter.
+
+On live it kills summoned pets and releases charmed ones without turning them
+on their owners -- an RvR counter to pet classes. **Not implemented here**, for
+two reasons: the parameters that matter (radius, range, cast time, reuse) are
+not in any source I found, and on a co-operative PvE server an anti-pet RvR
+ability is close to useless. Worth a decision before anyone writes it.
+
+Checking a boot log for these warnings is a cheap audit and was not part of the
+sweep above. Worth repeating after any ability change.
+
 ## Still open: Avoidance of Magic
 
 `AtlasOF_AvoidanceOfMagic` is held by 45 of 47 classes. The two without it are

@@ -7,6 +7,56 @@ using DOL.GS.Spells;
 namespace DOL.GS.Scripts
 {
     /// <summary>
+    /// A befriended monster that will not turn on the Bainshee who called it.
+    ///
+    /// The core's FriendBrain overrides only CheckPlayerAggro and
+    /// CheckNpcAggro. Its caster-skip therefore covers the one path that scans
+    /// for new enemies, and misses the one that matters:
+    /// StandardMobBrain.OnAttackedByEnemy, inherited untouched, which turns any
+    /// blow into aggro against whoever landed it.
+    ///
+    /// She is a point blank caster. Her fear pulses on them, her auras pulse on
+    /// them, and every one of those pulses is a harmful spell, so each tick put
+    /// her straight back on the aggro list the brain had just been told to keep
+    /// her off. The guards she summoned spent their thirty seconds beating her,
+    /// then wandered off when the pulses stopped and the aggro decayed.
+    ///
+    /// So the skip is extended to the path that was missing it. Anything else
+    /// still angers them normally -- this only says that the one who called a
+    /// guard is not its enemy, which is what the core's own caster-skip and its
+    /// aggro clearing were both already trying to say.
+    /// </summary>
+    public class LoyalFriendBrain : FriendBrain
+    {
+        private readonly GameLiving _calledBy;
+
+        public LoyalFriendBrain(SpellHandler handler, GameLiving calledBy) : base(handler)
+        {
+            _calledBy = calledBy;
+        }
+
+        public override void OnAttackedByEnemy(AttackData ad)
+        {
+            // A guard does not round on the one who called it, however much
+            // incidental damage they take from standing next to her.
+            if (ad?.Attacker != null && ad.Attacker == _calledBy)
+                return;
+
+            base.OnAttackedByEnemy(ad);
+        }
+
+        public override void Think()
+        {
+            // Belt and braces: anything that put her on the list by another
+            // route is taken off again before it can be acted on.
+            if (_calledBy != null)
+                RemoveFromAggroList(_calledBy);
+
+            base.Think();
+        }
+    }
+
+    /// <summary>
     /// Befriend, which befriended nobody.
     ///
     /// Four spells in Phantasmal Wail turn monsters into realm guards for a
@@ -34,7 +84,7 @@ namespace DOL.GS.Scripts
     {
         private sealed class Friendship
         {
-            public FriendBrain Brain;
+            public LoyalFriendBrain Brain;
             public ECSGameTimer Until;
         }
 
@@ -78,7 +128,7 @@ namespace DOL.GS.Scripts
                 // so the creature does not round on everyone when it reverts.
                 (npc.Brain as IOldAggressiveBrain)?.ClearAggroList();
 
-                FriendBrain brain = new(this);
+                LoyalFriendBrain brain = new(this, Caster);
                 npc.AddBrain(brain);
 
                 Friendship made = new() { Brain = brain };

@@ -51,6 +51,18 @@ server never raises, so it had done nothing at all since it was written. See
 
 ---
 
+## Midgard and Hibernia had each other's champion trees
+
+`61 MaulerMid` was granted `Champion Level Hibernia` and four Hibernia
+archetype trees; `62 MaulerHib` was granted `Champion Level Midgard` and three
+Midgard ones. Each held precisely the set the other should have, which is why
+it survived being looked at -- on its own each row is entirely plausible, and
+only the class id beside it is wrong.
+
+A Mauler reaching champion level would have trained the wrong realm's
+abilities. Corrected in migration 106; everything else about the two classes
+was right. See `champion-levels.md`.
+
 ## What is worth checking against live
 
 **Pulsing bladeturns and nearsight reductions** in Aura Manipulation -- three

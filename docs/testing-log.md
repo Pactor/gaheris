@@ -67,6 +67,21 @@ Lookout, Battlewarder. See `master-levels.md`.
 
 ---
 
+## Champion levels
+
+The Maulers of Midgard and Hibernia were training **each other's** champion
+trees -- one swap in `classxspecialization`, corrected in migration 106. See
+`champion-levels.md`.
+
+- Take a **Midgard Mauler** to champion level: Mystic, Rogue, Seer.
+- A **Hibernian Mauler**: Forester, Magician, Naturalist, Stalker.
+- And on **any class**, train a champion ability and see it work. Nobody has
+  ever done that here; the swap was found by reading tables, not by playing.
+
+The empty `Champion Abilities Hibernia` line I flagged as suspicious last night
+is **not** a fault -- that line is a container and is meant to be empty. The
+content lives in the archetype trees.
+
 ## Not started
 
 - **Shrouded Isles classes** -- Bonedancer, Animist, Valewalker, Necromancer,

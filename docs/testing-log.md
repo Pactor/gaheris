@@ -1,170 +1,97 @@
 # Where to pick up testing
 
-Last session ended 4 September 2026. The server has been restarted, so
-everything below is live.
+Current to 5 September 2026. The server has been restarted, so everything below
+is live.
 
-Logging is on for the classes under test: `bainshee_log`, `heretic_log`,
-`ml_holds_log`. Turn them off when you are done -- they write a line per
-pulse.
-
----
-
-## Done for now
-
-**The Vampiir.** Played briefly and behaved; parked as good enough. Two fixes
-remain unconfirmed rather than working -- Mark of Prey did not fire during the
-session, and the power grant had no narration at the time. `combat_power_log`
-now exists, off by default, to settle it later. **The three Maulers inherit
-that same unverified assumption**, since `CombatPower` is their entire power
-supply.
-
-**The Bainshee.** Four faults found and fixed, three confirmed in play -- the
-auras, fear, and befriend. Everything else about her is verified as wired but
-needs combat and other targets to test, so she is parked. See `bainshee.md`.
-
-**The Valkyrie.** Confirmed in play. Her cone crash was fixed before anyone hit
-it and the cones now cast cleanly; her buff-strips cast themselves rather than
-their neighbours once Odin's Will was marked as the hybrid line it is. The
-audit found nothing else broken in her, and the log stayed clean throughout
-testing. See `valkyrie.md`.
-
-## Start here: the Bainshee
-
-She is mid-test and two of her faults were only fixed after you logged off.
-
-1. **Cast an aura and let something hit you.** This is the one that dropped you
-   to the character screen. It was not the aura -- it was a line of sight check
-   underneath it throwing on every pulse. Fixed. If you get dropped again,
-   stop and say so, because the fix is wrong.
-2. **Vanquishing Screech, then walk.** It used to keep going. It is a `Fear`
-   rather than a `BainsheePulseDmg`, so the first fix never saw it. Her
-   nearsights pulse too -- try **Expel Sight** and walk.
-3. **Cast an aura and die.** Should stop, and say so.
-4. **A Spectral Guard cone.** 23 of her spells are cones and not one has been
-   fired yet.
-5. **Befriend** a monster -- it should turn and fight for you.
-
-**Known and deliberately not fixed:** `RangeShield` (Wraith's Shield, Barrier,
-Barricade) does nothing. It is on a dead event, its arithmetic truncates to 0
-or 1, and all three carry `Value = 0` -- reviving it as written would make your
-group immune to ranged damage. It needs data first.
-
-**Open question:** `Diminishing Wail` has `Range 0`, so it is point blank and
-needs no target -- correct for Phantasmal Wail, but it is the *same spell row*
-in Ethereal Shriek, which is the ranged spec. That looks wrong and I have no
-source for what the ranged version should be.
+Logging currently on: `bainshee_log`, `heretic_log`, `ml_holds_log`,
+`ra_blows_log`, `combat_power_log`. Turn them off when the testing is done --
+`combat_power_log` writes a line per landed blow.
 
 ---
 
-## Then: the Valkyrie
+## All fourteen expansion classes are mechanically verified
 
-Untested, and she has a crash waiting that nobody has hit yet.
+Every spell type each of them casts has been checked as **deliverable** rather
+than merely present; every realm ability checked as **instantiating** and not
+sitting on a dead event; champion trees checked for realm and archetype.
 
-Odin's Will has five **pulsing frontal cones**, which is the same shape that
-disconnected you on the Bainshee. Fixed the same way, but never seen to work.
-**Cast one first, before anything else**, and be ready to be dropped.
-
-After that she is unexplored: mending, Odin's Will, and a resurrect in three
-separate lines.
-
----
-
-## Then: Master Levels, for any class
-
-Six ML abilities never end, because their cancel conditions ride dead events.
-Two are fixed and want testing:
-
-- **Stormlord 6, Focusing Winds** -- locks a storm while you stand still.
-  Cast it, then walk. It should release.
-- **Spymaster 10, Blanket of Camouflage** -- group stealth. Have a group
-  member move, swing, or cast. Each should drop out individually.
-  This one had a second bug: the core kept one effect field for the whole
-  group, so the wrong person's stealth would break.
-
-Four are still broken and are **not** fixed: Forceful Zephyr, Phaseshift,
-Lookout, Battlewarder. See `master-levels.md`.
+| Class | State |
+|---|---|
+| Heretic | channel confirmed in play |
+| Warlock | chambers and weave confirmed; hire now weaves too |
+| Bainshee | 4 faults fixed, 3 confirmed in play |
+| Valkyrie | **confirmed in play, nothing broken** |
+| Vampiir | parked; power and Mark of Prey still unproven |
+| Mauler ×3 | 3 faults fixed, none play-tested |
+| Necromancer, Reaver, Savage, Bonedancer, Animist, Valewalker | swept clean, one spell fixed |
 
 ---
 
-## Champion levels
+## What is fixed and never been played
 
-The Maulers of Midgard and Hibernia were training **each other's** champion
-trees -- one swap in `classxspecialization`, corrected in migration 106. See
-`champion-levels.md`.
+This is the testing queue, roughly by how much rests on it.
 
-- Take a **Midgard Mauler** to champion level: Mystic, Rogue, Seer.
-- A **Hibernian Mauler**: Forester, Magician, Naturalist, Stalker.
-- And on **any class**, train a champion ability and see it work. Nobody has
-  ever done that here; the swap was found by reading tables, not by playing.
+**1. Combat power -- Vampiir and all three Maulers.** For the Mauler this is
+the entire power supply; for the Vampiir a top-up. It granted nothing at all
+from the day it was written until 4 September. Hires of those classes were
+missed again until 5 September and now draw as well.
+*Fight something, watch the bar, and watch the log.* If it stays silent while
+you swing, stop -- a Mauler is unplayable past his first bar.
 
-The empty `Champion Abilities Hibernia` line I flagged as suspicious last night
-is **not** a fault -- that line is a container and is meant to be empty. The
-content lives in the archetype trees.
+**2. Mark of Prey** -- the Vampiir's RR5, which never returned power in the
+whole life of this server. `ra_blows_log` narrates it.
 
-## Five classes got their realm rank 5 ability back
+**3. Gift of Perizor** -- the Maulers' RR5. Absorbed its 25% correctly and
+returned nothing, here and in DOLSharp both, through one integer division.
 
-Sourced from a published RR5 listing and granted in migration 107. All five
-already existed with working handlers and had simply never been granted to
-anyone. See `realm-abilities.md`.
+**4. Disarm and Silence** -- six Mauler spells that set a timestamp nothing
+ever wrote. Demand Respect at 25 on a *casting* monster; Perizor Disarming
+Strike at 30 on something swinging. Durations are short: 2, 4 and 6 seconds by
+level.
 
-- **Scout** Shield Trip, **Friar** Whirling Staff, **Hunter** Entwining Snakes,
-  **Warden** Fury of Nature, **Ranger** Desperate Bowman, **Wizard** Wall of
-  Flame.
-- Take any of them to RR5 and check the ability appears and fires.
-- Shield Trip, Entwining Snakes and Fury of Nature sit partly on dead events,
-  so expect parts of them not to work. Report which parts.
-- **Wall of Flame** should be the cleanest of the six: instant cast, a ward at
-  your feet doing 400 fire damage every 3 seconds for 15, in a 150 radius.
-  Nothing about it touches a dead event.
+**5. The four Master Level holds** -- Focusing Winds, Blanket of Camouflage,
+Lookout, Battlewarder. Each should end when its holder moves; every class
+reaches all four.
 
-All 47 classes now have a class-specific ability, every one backed by a real
-handler.
+**6. Fungal Potency** -- Animist, Creeping Path 29. Cast on the pet; everything
+hostile within 350 loses 15% of all six magic resists for 60 seconds. Should
+say *"The ground around your pet festers, weakening N creatures."*
 
-**Four granted realm abilities did nothing and are now fixed.** All four hung
-on a blow landing and listened on a dead event; all four now read
-`TakeDamage`. `ra_blows_log` is on, so each one narrates when it fires.
+**7. The hired Warlock** -- opens a weave and hangs a secondary on it rather
+than throwing secondaries alone.
 
-| Ability | Class | What to look for |
-|---|---|---|
-| **Mark of Prey** | **Vampiir** | hit something and watch your power climb -- every point of the damage add comes back |
-| Fury of Nature | Warden | your damage heals the group. **Style doubling is not restored** -- only the healing |
-| Shield Trip | Scout | root your target, then hit it -- it should let go |
-| Entwining Snakes | Hunter | same: snare, then hit, and it should release |
+**8. The Warlock's chamber range check** -- a discharge is now measured against
+the spell it fires rather than the chamber, which carries no range at all.
 
-Mark of Prey matters most: it is the Vampiir's own RR5, it was granted long
-before today, and it had never once returned power. Test it alongside his
-combat-power fix -- both feed the same bar, so if the bar behaves oddly, say
-which ability was up.
+**9. Nine Valkyrie trainers** in Midgard, Jordheim and Aegir. Worth walking up
+to one to confirm it is on the floor and not in a wall.
 
-**The Mentalist's Severing the Tether is now written**, and is the only ability
-in this pass that had to be rather than merely rewired. Set a ground target
-near something with a pet and use it: summoned pets are unmade, charmed ones
-let go and turn on whoever held them. Thirty minute reuse if it catches
-something, three seconds if it does not.
+---
 
-Temper expectations -- on live it counters enemy pet classes in RvR, and here
-the only pets it will meet are monsters'. It works; it will rarely matter.
+## Known broken, left deliberately
 
-**Every granted realm ability now instantiates.** Fifteen still fail at boot
-and none are granted to anyone.
+**Bainshee RangeShield** -- Wraith's Shield, Barrier, Barricade. Dead event,
+arithmetic that truncates to 0 or 1, and `Value = 0` on all three. Reviving it
+as written grants immunity to all ranged damage. **Needs a number decided
+before it needs code**, and that number is not recoverable: those rows are ours,
+generated by our own class-lines migration, not imported from anywhere.
 
-**Still open, deliberately:** Bainshee and Warlock lack Avoidance of Magic,
-which 45 of 47 classes have. No source found saying they should have it, so it
-was not added.
+**Forceful Zephyr and Phaseshift** -- not holds at all but damage absorption,
+and they edit the blow before it lands. The only live hook arrives after the
+damage is dealt, so repairing them properly needs a core change. Phaseshift
+answers only player attackers and would do nothing here regardless.
+
+**Reveal Crystalseed** -- Sojourner 3, blank type, the last such spell any class
+can reach. Reveals enemy-placed runes, which on a co-operative server nobody
+places. Needs a handler and a hosted spell type for no practical gain.
+
+---
 
 ## Not started
 
-- **Shrouded Isles classes** -- Bonedancer, Animist, Valewalker, Necromancer,
-  Reaver, Savage. See `shrouded-isles.md` for what the audit found.
-- **The Mauler** -- see `mauler.md`. Power now comes from combat, which it
-  never did before, and that has never been seen working.
-- **Mercenary versions** of Warlock, Heretic and Bainshee. The hired Warlock
-  still bypasses the pairing mechanic.
-
-## Still true from before
-
-- The Heretic is confirmed working through ramp, movement, melee and target
-  death. Untested: sitting, swinging, a Blaze holding under ranged fire, and
-  Reanimate Corpse at 41.
-- The Warlock's chambers and weave are confirmed in play.
-- Task dungeon relocation has never been observed working.
+- **Diagnostics** still loaded: `scripts/diagnostics/` and its ~176 unclaimed
+  packet handlers. Meant for removal before release; left because the opcode
+  logging was wanted.
+- **Task dungeon relocation** has never been observed working.
+- **New Frontiers**: whether Caer Benowyc, Bledmeer Faste and Dun Scathaig
+  actually have garrisons is a runtime question nobody has eyes on.

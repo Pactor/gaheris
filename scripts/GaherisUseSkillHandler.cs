@@ -101,7 +101,21 @@ namespace DOL.GS.PacketHandler.Client.v168
                 if (sk is not Spell spell || sksib is not SpellLine line)
                     return false;
 
-                return ChamberLoader.Take(player, spell, line);
+                // A chamber being filled has first claim on the click.
+                if (ChamberLoader.Take(player, spell, line))
+                    return true;
+
+                // Otherwise it is the ordinary pairing: a primary opens the
+                // weave and a secondary is hung on it. Both are the same
+                // gesture from the player's side, which is why they are
+                // decided in the same place.
+                if (WarlockPairing.Opens(spell))
+                {
+                    WarlockPairing.Begin(player, spell);
+                    return false;
+                }
+
+                return WarlockPairing.Take(player, spell, line);
             }
             catch (Exception)
             {

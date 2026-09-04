@@ -155,6 +155,14 @@ delve always said it should be.
 
 **Bolts only in the greater chambers**, per the class library.
 
+**Doubled cast time on primaries**, which is what pays for the weave. It was
+not in the data: our Warlock primaries cast at ordinary speed and in three of
+five types slightly faster than average, so this was a real change rather than
+a correction. Done in the data, because casting time is worked out per spell
+handler with no single place a script can reach, and because a player judging
+the class needs to SEE the cost -- a delve reading 2.5 seconds while the cast
+takes five would be worse than not doing it.
+
 ### Still missing
 
 **The Range effectiveness cost.** `Perennial Range` should carry a spell three
@@ -164,8 +172,7 @@ effectiveness retained -- 100 means full, 50 means half. Feeding Range through
 that formula would make `Enduring Range`, which should be the cheapest and
 strongest, cast at nothing at all. Left alone rather than bodged.
 
-**Doubled cast time on primaries.** The cost that makes the trade fair.
-Nothing implements it, so a Warlock currently gets the weave for free.
+**Nothing else.** The doubled cast time is applied -- see below.
 
 ---
 

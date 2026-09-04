@@ -109,17 +109,45 @@ class is spelled `AtlasOF_MasteryofConcentration`; grepping said it was broken
 and the log said it was fine. The log is right.
 
 **2. Is the handler wired to an event that never fires?** Four granted
-abilities are:
+abilities were. All four are now fixed, in
+`scripts/realmabilities/BlowsThatNeverLanded.cs`:
 
-| Ability | Class | What it loses | Effect |
+| Ability | Class | What it lost | Now |
 |---|---|---|---|
-| Shield Trip | Scout | root should break when the target is attacked | **stronger** than it should be |
-| Entwining Snakes | Hunter | snare should break when the target is attacked | **stronger** |
-| Fury of Nature | Warden | damage dealt should heal the group | the ability's whole point, gone |
-| **Mark of Prey** | **Vampiir** | damage add should return power to the Vampiir | its whole point, gone |
+| Shield Trip | Scout | root should break when the target is hit | breaks |
+| Entwining Snakes | Hunter | snare should break when the target is hit | breaks |
+| Fury of Nature | Warden | damage dealt should heal the group | heals (see below) |
+| **Mark of Prey** | **Vampiir** | the damage add should return power | returns it |
 
-Mark of Prey is the Vampiir's RR5 and was already granted before today. It has
-never worked.
+Every one of them hangs its purpose on a blow landing, so all four are served
+by a single handler on `GameObjectEvent.TakeDamage` -- raised, once per landed
+blow, naming both ends. It asks the victim whether they are held by one of the
+first two, and the striker whether they carry one of the second two.
+
+It reacts only to Crush, Slash and Thrust. That is the right filter -- all four
+are melee abilities -- and it is also what stops Mark of Prey feeding itself,
+since the damage it adds is Heat and cannot return as another melee blow.
+
+Two things worth knowing:
+
+**Mark of Prey needed a database change.** The core's effect keeps its caster
+in a private field and exposes it to nothing, so there was no way to know which
+Vampiir to pay. Migration 109 points the ability at a subclass that records
+both ends. The formula is the core's, unchanged; the swing interval is read
+from the striker's weapon because `TakeDamage` does not carry the `AttackData`
+the original handler was given -- the same number, since the swing that
+produced the blow is the swing being timed.
+
+**Fury of Nature is fixed by half, deliberately.** The healing is restored. The
+style damage doubling is not: the core doubles `AttackData.StyleDamage` before
+the blow is applied, and `TakeDamage` arrives afterwards carrying a total with
+no style component in it. Restoring that would mean guessing which part of the
+number came from the style. The healing is the half the delve leads with, and
+the half that was doing nothing at all.
+
+The core files still subscribe to the dead events -- those are core, untouched,
+and now simply redundant. A repeat of this audit will still name these four;
+that is the check being blunt, not the abilities being broken.
 
 **3. Do the champion and Master Level trees hold anything unhandled?** No. Every
 spell in the 63 champion archetype lines has a type, and all 15 types have

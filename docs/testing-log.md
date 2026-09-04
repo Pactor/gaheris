@@ -101,20 +101,26 @@ anyone. See `realm-abilities.md`.
 All 47 classes now have a class-specific ability, every one backed by a real
 handler.
 
-**Four granted realm abilities do not work, and one is inert.** Verified rather
-than assumed -- see the "Verification, not inventory" section of
-`realm-abilities.md`:
+**Four granted realm abilities did nothing and are now fixed.** All four hung
+on a blow landing and listened on a dead event; all four now read
+`TakeDamage`. `ra_blows_log` is on, so each one narrates when it fires.
 
-| Ability | Class | |
+| Ability | Class | What to look for |
 |---|---|---|
-| Shield Trip | Scout | root never breaks early -- stronger than it should be |
-| Entwining Snakes | Hunter | snare never breaks early -- stronger |
-| Fury of Nature | Warden | damage never heals the group -- point gone |
-| **Mark of Prey** | **Vampiir** | damage add never returns power -- point gone |
-| Severing the Tether | Mentalist | the class was never written; the button does nothing |
+| **Mark of Prey** | **Vampiir** | hit something and watch your power climb -- every point of the damage add comes back |
+| Fury of Nature | Warden | your damage heals the group. **Style doubling is not restored** -- only the healing |
+| Shield Trip | Scout | root your target, then hit it -- it should let go |
+| Entwining Snakes | Hunter | same: snare, then hit, and it should release |
 
-Mark of Prey matters most for what is being tested next: it is the Vampiir's
-RR5, it was granted long before today, and it has never worked.
+Mark of Prey matters most: it is the Vampiir's own RR5, it was granted long
+before today, and it had never once returned power. Test it alongside his
+combat-power fix -- both feed the same bar, so if the bar behaves oddly, say
+which ability was up.
+
+**Still inert, not fixed:** the Mentalist's Severing the Tether. The class was
+never written. On live it kills summoned pets and releases charmed ones, which
+is an RvR counter of little use on a co-operative server -- worth a decision
+before anyone writes it.
 
 **Still open, deliberately:** Bainshee and Warlock lack Avoidance of Magic,
 which 45 of 47 classes have. No source found saying they should have it, so it

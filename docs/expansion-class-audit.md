@@ -5,12 +5,19 @@ Generated from the live database. Regenerate rather than edit by hand.
 A note on the name first, because it changes what you should expect while
 testing: **Trials of Atlantis added no classes at all.** It brought the
 Master Levels, the artifacts and the Atlantis zones. The classes that feel
-like the same era came with **Catacombs** in 2004 -- Heretic, Valkyrie,
-Bainshee, Vampiir, Warlock -- and the Maulers with **Darkness Rising** in
-2005. Bonedancer, Animist and Valewalker are older still, from Shrouded
-Isles. They are all included here because they are the ones that were
-broken or missing, but if a mechanic feels wrong, the era is a better guide
-to what it should be than the label.
+like the same era are **Catacombs**, December 2004 -- five of them: Heretic
+in Albion, Warlock and Valkyrie in Midgard, Vampiir and Bainshee in
+Hibernia. The Maulers are later still and belong to nobody in particular:
+**Labyrinth of the Minotaur** in 2006 made them unlockable in any realm.
+
+The six classes **Shrouded Isles** added in 2002 are a different six --
+Necromancer and Reaver, Savage and Bonedancer, Valewalker and Animist --
+along with the Flexible, Scythe and Hand-to-Hand weapon lines. Three of
+them appear below because they were broken or missing, not because they
+share an era with the rest.
+
+If a mechanic feels wrong, the era is a better guide to what it should be
+than the label.
 
 ---
 
@@ -47,9 +54,9 @@ to what it should be than the label.
 | Convoker | 10 |
 | Sojourner | 10 |
 | Stormlord | 10 |
+| Warlord | 9 |
 | Battlemaster | 9 |
 | Perfecter | 9 |
-| Warlord | 9 |
 | Spymaster | 8 |
 
 ---
@@ -83,10 +90,10 @@ to what it should be than the label.
 |---|---|
 | Mending | 143 |
 | Odin's Will | 47 |
+| Convoker | 10 |
 | Sojourner | 10 |
 | Stormlord | 10 |
 | Banelord | 10 |
-| Convoker | 10 |
 | Perfecter | 9 |
 | Warlord | 9 |
 | Battlemaster | 9 |
@@ -113,16 +120,16 @@ to what it should be than the label.
 | Line | Spells |
 |---|---|
 | Ethereal Shriek | 36 |
-| Phantasmal Wail | 33 |
+| Phantasmal Wail | 32 |
+| Spectral Force | 31 |
 | Spectral Guard | 31 |
-| Spectral Force | 30 |
-| Sojourner | 10 |
-| Stormlord | 10 |
 | Banelord | 10 |
 | Convoker | 10 |
-| Perfecter | 9 |
+| Sojourner | 10 |
+| Stormlord | 10 |
 | Warlord | 9 |
 | Battlemaster | 9 |
+| Perfecter | 9 |
 | Spymaster | 8 |
 
 ---
@@ -148,13 +155,13 @@ to what it should be than the label.
 | Shadow Mastery | 46 |
 | Vampiiric Embrace | 40 |
 | Dementia | 38 |
-| Convoker | 10 |
-| Sojourner | 10 |
 | Stormlord | 10 |
 | Banelord | 10 |
-| Perfecter | 9 |
+| Convoker | 10 |
+| Sojourner | 10 |
 | Warlord | 9 |
 | Battlemaster | 9 |
+| Perfecter | 9 |
 | Spymaster | 8 |
 
 ---
@@ -181,10 +188,10 @@ to what it should be than the label.
 | Hexing | 40 |
 | Witchcraft | 38 |
 | Cursing | 31 |
+| Banelord | 10 |
 | Convoker | 10 |
 | Sojourner | 10 |
 | Stormlord | 10 |
-| Banelord | 10 |
 | Battlemaster | 9 |
 | Perfecter | 9 |
 | Warlord | 9 |
@@ -192,7 +199,7 @@ to what it should be than the label.
 
 ---
 
-## Mauler (Alb) &mdash; Albion, Darkness Rising (class 60)
+## Mauler (Alb) &mdash; Albion, Labyrinth of the Minotaur (class 60)
 
 *Fist wraps and a staff, powered by its own aura rather than mana.*
 
@@ -213,10 +220,10 @@ to what it should be than the label.
 | Power Strikes | 46 |
 | Aura Manipulation | 39 |
 | Magnetism | 38 |
-| Convoker | 10 |
 | Sojourner | 10 |
 | Stormlord | 10 |
 | Banelord | 10 |
+| Convoker | 10 |
 | Perfecter | 9 |
 | Warlord | 9 |
 | Battlemaster | 9 |
@@ -224,7 +231,7 @@ to what it should be than the label.
 
 ---
 
-## Mauler (Mid) &mdash; Midgard, Darkness Rising (class 61)
+## Mauler (Mid) &mdash; Midgard, Labyrinth of the Minotaur (class 61)
 
 *Fist wraps and a staff, powered by its own aura rather than mana.*
 
@@ -245,18 +252,18 @@ to what it should be than the label.
 | Power Strikes | 46 |
 | Aura Manipulation | 39 |
 | Magnetism | 38 |
+| Banelord | 10 |
 | Convoker | 10 |
 | Sojourner | 10 |
 | Stormlord | 10 |
-| Banelord | 10 |
+| Battlemaster | 9 |
 | Perfecter | 9 |
 | Warlord | 9 |
-| Battlemaster | 9 |
 | Spymaster | 8 |
 
 ---
 
-## Mauler (Hib) &mdash; Hibernia, Darkness Rising (class 62)
+## Mauler (Hib) &mdash; Hibernia, Labyrinth of the Minotaur (class 62)
 
 *Fist wraps and a staff, powered by its own aura rather than mana.*
 
@@ -277,13 +284,13 @@ to what it should be than the label.
 | Power Strikes | 46 |
 | Aura Manipulation | 39 |
 | Magnetism | 38 |
-| Banelord | 10 |
 | Convoker | 10 |
 | Sojourner | 10 |
 | Stormlord | 10 |
+| Banelord | 10 |
+| Perfecter | 9 |
 | Warlord | 9 |
 | Battlemaster | 9 |
-| Perfecter | 9 |
 | Spymaster | 8 |
 
 ---
@@ -309,20 +316,20 @@ to what it should be than the label.
 | Bone Warriors | 53 |
 | Bone Guardians | 52 |
 | Spirit Dimming | 42 |
-| Suppression | 39 |
 | Bone Mystics | 39 |
+| Suppression | 39 |
 | Spirit Suppression | 38 |
 | Bone Army | 35 |
 | Runes of Darkness | 34 |
 | Runes of Suppression | 33 |
 | Darkness | 20 |
-| Stormlord | 10 |
 | Banelord | 10 |
 | Convoker | 10 |
 | Sojourner | 10 |
-| Warlord | 9 |
+| Stormlord | 10 |
 | Battlemaster | 9 |
 | Perfecter | 9 |
+| Warlord | 9 |
 | Spymaster | 8 |
 
 ---
@@ -349,8 +356,8 @@ to what it should be than the label.
 | Aborial Mastery | 47 |
 | Verdant Mastery | 44 |
 | Creeping Path | 41 |
-| Creeping Path Spec | 40 |
 | Verdant Path | 40 |
+| Creeping Path Spec | 40 |
 | Arboreal Mastery | 29 |
 | Banelord | 10 |
 | Convoker | 10 |
@@ -384,74 +391,13 @@ to what it should be than the label.
 | Arboreal Path | 58 |
 | Aborial Mastery | 47 |
 | Arboreal Mastery | 29 |
-| Convoker | 10 |
 | Sojourner | 10 |
 | Stormlord | 10 |
 | Banelord | 10 |
+| Convoker | 10 |
 | Perfecter | 9 |
 | Warlord | 9 |
 | Battlemaster | 9 |
 | Spymaster | 8 |
 
 ---
-
-## Against the live patch notes
-
-Checked against the published notes for 1.129 and later. Everything below was
-verified against our own database, not assumed.
-
-### Already correct
-
-| | |
-|---|---|
-| Valkyrie: Odin's Emendation power cost 25 -> 99 | ours is 99 |
-| Warlock: every chamber and unique spell type | all 30 present and on reachable lines |
-| Heretic: Shields, and Slam at Shields 42 | present -- the stun slam is there |
-
-### Corrected -- `sql/95`
-
-| | Live | Was | Now |
-|---|---|---|---|
-| Bainshee: Alarming Screech | Spectral Force, 26 | Phantasmal Wail, 18 | Spectral Force, 26 |
-| Bonedancer: Summon Bone Deadeye | level 21 | level 45 | level 21 |
-| Animist: Purifying Rain cast | 3.0s | 5.0s | 3.0s |
-
-### Looked at and deliberately not changed
-
-**The Bainshee specialisation is not misnamed.** Spectral Force is a BASELINE
-line whose spec is Spectral Guard, which she has. Its thirty spells were
-always reachable; the first version of this audit misread the structure and
-reported a missing specialisation that was never missing.
-
-**Summon Bone Spellbinder cannot be restored.** It exists in no data we hold,
-neither this database nor the reference dump, so putting it back would mean
-inventing a spell rather than correcting one.
-
-**Pet scare cast times are already faster than the patch.** Live reduced them
-from 5.0 seconds to 3.5; ours cast in 2. Applying the change would slow them
-down.
-
-**Summon Bone Deadeye's line is still ours.** The patch names a Bone Legion
-line and we have none -- ours is Bone Warriors, under the Bone Army spec -- so
-only the level was corrected.
-
-### The three "missing" abilities were not missing
-
-They were looked for in the `spell` table. All three are realm abilities and
-live in `ability`, which is why the first pass found nothing.
-
-| | State |
-|---|---|
-| **Mark of Prey** | Present, implemented (`MarkofPreyAbility`), and already linked to the Vampiir. Nothing wrong with it. |
-| **Ichor of the Deep** | Present and implemented, linked to Shaman (28) and Valkyrie (34) as `AtlasOF_Ichor`. The patch adding it to the Heretic is single-sourced and not applied. |
-| **Call of a Thousand Storms** | The ability row exists and belongs to **Thane and Valkyrie at 40** -- not the Valkyrie alone. But **nothing in the core implements it**: no handler, no effect. Linking it would hand out a button that does nothing. Left alone. |
-
-What it actually does, for whenever it is built: a two minute self buff on a
-three minute timer that makes the caster count as several attackers against
-monsters of level 50 and up, scaled by the monster's level. That is a PvE
-mechanic, which makes it worth more here than it ever was on live.
-
-The Bainshee is the one worth understanding before testing her: a whole
-specialisation is named differently here, and the spell that moved between
-lines in that patch is still sitting on the old line at the old level. If she
-feels wrong, that is where to look first rather than at her damage.

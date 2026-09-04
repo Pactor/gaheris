@@ -24,10 +24,31 @@ Our data carries the flags: **71 primary**, **36 secondary**, 46 neither
 "Cannot be cast until after a Primary spell has been cast", and `Molding Hex`
 says nothing at all despite being primary.
 
+### Casting alone, and casting paired
+
+A primary may be cast on its own and behaves like any other spell -- "Primary
+Spells function much like any other spells and can be cast at any time". The
+secondary is something the primary OFFERS, not something it demands. What the
+primary costs for that offer is its casting time, about double a normal spell.
+
+A secondary may not be cast alone. Its own delve says so, and the primers are
+the answer: they exist so a secondary can be cast WITHOUT a primary. That is
+their real purpose, and the range, power and interruption differences are what
+distinguishes one from another rather than what they are for.
+
+So there are four things a Warlock can do, and only the last is refused:
+
+| | |
+|---|---|
+| Primary alone | fine, casts like any spell |
+| Primary, then a secondary during its cast | the secondary lands with it, free |
+| Primer, then a secondary | how a secondary is cast without a primary |
+| Secondary alone | refused |
+
 ### The primers
 
-Three primaries exist only to change what the secondary does. One per line,
-and they are the signature of the class.
+Three spells exist to carry a secondary on their own, and each changes it in a
+different way. One per line, and they are the signature of the class.
 
 | Line | Primer | Effect on the secondary |
 |---|---|---|

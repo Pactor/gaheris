@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using DOL.GS.Effects;
 using DOL.GS.PacketHandler;
 using DOL.GS.Spells;
@@ -11,45 +12,67 @@ namespace DOL.GS.Scripts
     ///
     ///     // Likely to be broken. It used to override 'CastSpell', but it no
     ///     // longer exists in 'SpellHanlder'.
-    ///     // 'StartSpell' takes a target but we're not even using it.
     ///     // Can't be tested since Warlocks aren't functional.
     ///
-    /// The discharge half of it survives -- given an armed chamber it will
-    /// fire what is inside. What a refactor took away is the loading half: the
-    /// override that swallowed the two spells clicked during the chamber's own
-    /// cast. Without it a chamber always arms empty, which is what loading one
-    /// does today.
+    /// The discharge half survives -- given an armed chamber it fires what is
+    /// inside. What a refactor took away is the loading half: the override
+    /// that swallowed the two spells clicked during the chamber's own cast.
+    /// Without it a chamber always arms empty and says so.
     ///
-    /// This replaces the core's handler rather than patching it, which works
-    /// because ScriptMgr.CacheSpellHandlerConstructor walks GameServerScripts
-    /// -- the compiled scripts first and the core assembly last -- and returns
-    /// the first match. So a [SpellHandler(eSpellType.Chamber)] here simply
-    /// wins.
+    /// How it is meant to go: the chamber is a long cast, and during that
+    /// animation the Warlock clicks a primary and then a secondary spell,
+    /// which are taken into it rather than cast. When the animation ends the
+    /// chamber is armed and floats above him. Casting it again later fires
+    /// both at once, instantly, and spends it.
     ///
-    /// The mechanic, as live had it: the chamber is a long cast, and during
-    /// that animation the Warlock clicks a primary and a secondary spell,
-    /// which are taken into it instead of being cast. When the animation ends
-    /// the chamber is armed and floats above him. Casting it again later fires
-    /// both instantly, and spends it.
+    /// This DERIVES from the core handler rather than replacing it outright,
+    /// and that is not a nicety. The packet that draws the chamber orbs does
     ///
-    /// Loading is opened here and closed here; the swallowing itself is in the
-    /// skill packet handler, which is the only place that sees the click.
+    ///     ChamberSpellHandler chamber = (ChamberSpellHandler)effect.SpellHandler;
+    ///     sortList[chamber.EffectSlot] = effect;
+    ///
+    /// so anything not descended from ChamberSpellHandler throws the moment a
+    /// chamber arms. Inheriting also means PrimarySpell, SecondarySpell and
+    /// EffectSlot are the very fields that packet reads.
+    ///
+    /// ScriptMgr.CacheSpellHandlerConstructor walks the compiled scripts before
+    /// the core assembly and returns the first match, so this is what gets
+    /// built for eSpellType.Chamber.
     /// </summary>
     [SpellHandler(eSpellType.Chamber)]
-    public class GaherisChamberSpellHandler : SpellHandler
+    public class GaherisChamberSpellHandler : ChamberSpellHandler
     {
-        private ChamberLoader.Loading m_loaded;
-
         public GaherisChamberSpellHandler(GameLiving caster, Spell spell, SpellLine line)
             : base(caster, spell, line)
         {
         }
 
-        /// <summary>Whatever this chamber was armed with.</summary>
-        public Spell PrimarySpell => m_loaded?.Primary;
-        public SpellLine PrimarySpellLine => m_loaded?.PrimaryLine;
-        public Spell SecondarySpell => m_loaded?.Secondary;
-        public SpellLine SecondarySpellLine => m_loaded?.SecondaryLine;
+        /// <summary>
+        /// Which orb this chamber occupies above the Warlock's head.
+        ///
+        /// The core's GetEffectSlot knows five names and three of ours are not
+        /// among them -- Decimation, Lesser Fate and Creation all come back
+        /// nought. That matters more than a missing icon: the packet builds a
+        /// list keyed 1 to 5 and writes one byte per entry, so a nought puts a
+        /// sixth entry in it and the client is handed a longer packet than it
+        /// expects.
+        /// </summary>
+        private static readonly Dictionary<string, int> ORBS = new()
+        {
+            { "Chamber of Minor Fate",   1 },
+            { "Chamber of Lesser Fate",  1 },
+            { "Chamber of Restraint",    2 },
+            { "Chamber of Creation",     2 },
+            { "Chamber of Destruction",  3 },
+            { "Chamber of Decimation",   3 },
+            { "Chamber of Fate",         4 },
+            { "Chamber of Greater Fate", 5 },
+        };
+
+        private static int Orb(string chamber)
+        {
+            return ORBS.TryGetValue(chamber, out int slot) ? slot : 1;
+        }
 
         /// <summary>An armed chamber of this name already floating above the caster.</summary>
         private GameSpellEffect Armed()
@@ -67,15 +90,11 @@ namespace DOL.GS.Scripts
             if (!base.CheckBeginCast(selectedTarget))
                 return false;
 
-            if (Caster is not GamePlayer player)
-                return true;
-
-            if (Armed() != null)
+            if (Caster is not GamePlayer player || Armed() != null)
                 return true;
 
             ChamberLoader.Open(player, Spell);
-            player.Out.SendMessage(
-                "Select the first spell for your " + Spell.Name + ".",
+            player.Out.SendMessage("Select the first spell for your " + Spell.Name + ".",
                 eChatType.CT_Spell, eChatLoc.CL_SystemWindow);
 
             return true;
@@ -88,28 +107,28 @@ namespace DOL.GS.Scripts
         public override void FinishSpellCast(GameLiving target)
         {
             if (Caster is not GamePlayer player)
-            {
-                base.FinishSpellCast(target);
                 return;
-            }
 
-            // A discharge closes nothing -- no window was opened for it.
-            if (m_discharging)
-            {
-                base.FinishSpellCast(target);
+            // A discharge closes nothing; no window was opened for it.
+            if (Armed() != null)
                 return;
-            }
 
-            m_loaded = ChamberLoader.Close(player);
+            ChamberLoader.Loading loaded = ChamberLoader.Close(player);
 
             Caster.Mana -= PowerCost(target);
 
-            if (m_loaded == null || m_loaded.Empty)
+            if (loaded == null || loaded.Empty)
             {
                 MessageToCaster("No spells were loaded into " + Spell.Name + ".",
                     eChatType.CT_Spell);
                 return;
             }
+
+            PrimarySpell = loaded.Primary;
+            PrimarySpellLine = loaded.PrimaryLine;
+            SecondarySpell = loaded.Secondary;
+            SecondarySpellLine = loaded.SecondaryLine;
+            EffectSlot = Orb(Spell.Name);
 
             MessageToCaster("Your " + Spell.Name + " is ready for use.", eChatType.CT_Spell);
 
@@ -119,21 +138,15 @@ namespace DOL.GS.Scripts
             player.Out.SendWarlockChamberEffect(player);
         }
 
-        private bool m_discharging;
-
         /// <summary>
-        /// Fire what is inside, if anything is. An unarmed chamber does
-        /// nothing here -- the loading happened during the cast and the
-        /// arming happened when it finished.
+        /// Fire what is inside. An unloaded chamber does nothing here -- the
+        /// loading happened during the cast and the arming when it finished.
         /// </summary>
         public override bool StartSpell(GameLiving target)
         {
             GameSpellEffect effect = Armed();
 
-            if (effect == null)
-                return true;
-
-            if (effect.SpellHandler is not GaherisChamberSpellHandler chamber)
+            if (effect == null || effect.SpellHandler is not GaherisChamberSpellHandler chamber)
                 return true;
 
             GameLiving at = (Caster as GamePlayer)?.TargetObject as GameLiving ?? target;
@@ -144,7 +157,6 @@ namespace DOL.GS.Scripts
                 return false;
             }
 
-            m_discharging = true;
             Fire(chamber.PrimarySpell, chamber.PrimarySpellLine, at);
             Fire(chamber.SecondarySpell, chamber.SecondarySpellLine, at);
 
@@ -162,8 +174,7 @@ namespace DOL.GS.Scripts
             if (spell == null || line == null)
                 return;
 
-            ISpellHandler handler = ScriptMgr.CreateSpellHandler(Caster, spell, line);
-            handler?.StartSpell(at);
+            ScriptMgr.CreateSpellHandler(Caster, spell, line)?.StartSpell(at);
         }
 
         protected override GameSpellEffect CreateSpellEffect(GameLiving target, double effectiveness)

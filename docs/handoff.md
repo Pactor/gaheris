@@ -64,30 +64,40 @@ the fix.
 **Mauler and Vampiir power from combat.** Both should now climb while
 fighting. Neither has been watched on a power bar.
 
-**Warlock chambers.** Not started. The design is understood -- see below.
+**Warlock chambers.** Now built, all three pieces, and completely untested.
+Cast a chamber, click two spells during its animation, and it should say each
+is loaded and then that the chamber is ready. Casting it again fires both at
+the target instantly and spends it.
 
 ---
 
 ## Known wrong, not yet fixed
 
-**Warlock chambers do not load.** Upstream's own comment says why:
+**Warlock chambers were never loadable.** Built today, untested. Upstream's
+own comment says what was wrong:
 
     // Likely to be broken. It used to override 'CastSpell', but it no longer
     // exists in 'SpellHanlder'. Can't be tested since Warlocks aren't functional.
 
-A chamber is loaded *during* its own cast: the spell has a long cast time and
-the Warlock clicks a primary and a secondary spell during the animation, which
-are swallowed rather than cast. That swallowing was done by an override that
-no longer exists, so the chamber always arms empty.
+A chamber is loaded *during* its own cast, not after: the spell has a long
+cast time and the Warlock clicks a primary and a secondary during the
+animation, which are swallowed rather than cast. That swallowing was done by
+an override that no longer exists, so the chamber always armed empty.
 
-Two of the three pieces are written and committed --
-`GaherisChamberLoader.cs` holds the bookkeeping and
-`GaherisChamberSpellHandler.cs` replaces the core handler (which works because
-`CreateSpellHandler` walks scripts before core and returns the first match).
-The third is not: the interception itself, which belongs in a script copy of
-`UseSkillHandler` in the `v168` namespace. Also `GetEffectSlot` knows only five
-chamber names and three of ours are not among them, so those would arm with
-slot 0 and the client would not draw the icon.
+Three pieces, all now present. `GaherisChamberLoader.cs` holds the
+bookkeeping. `GaherisChamberSpellHandler.cs` **derives from** the core handler
+rather than replacing it, which is not a nicety -- the packet that draws the
+chamber orbs casts the effect's handler to `ChamberSpellHandler`, so anything
+not descended from it throws the moment a chamber arms. And
+`GaherisUseSkillHandler.cs` catches the clicks, reading the packet far enough
+to identify the skill and rewinding to the core handler for everything that is
+not a chamber being loaded.
+
+One thing corrected along the way: the core's `GetEffectSlot` knows five
+chamber names and three of ours are not among them, so they returned nought.
+That is worse than a missing icon -- the packet keys a list 1 to 5 and writes
+a byte per entry, so a nought adds a sixth and the client gets a longer packet
+than it expects. Ours maps all six names into the five orbs.
 
 **Taskmasters do not hand you on.** Each should serve one level band and name
 the next taskmaster when you outgrow it. Ours serves anybody, because the core

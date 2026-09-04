@@ -58,15 +58,13 @@ namespace DOL.GS.Scripts
         [ScriptLoadedEvent]
         public static void OnScriptLoaded(DOLEvent e, object sender, EventArgs args)
         {
-            GameEventMgr.AddHandler(GameLivingEvent.AttackedByEnemy, new DOLEventHandler(Struck));
-            GameEventMgr.AddHandler(GameLivingEvent.AttackFinished, new DOLEventHandler(Landed));
+            GameEventMgr.AddHandler(GameObjectEvent.TakeDamage, new DOLEventHandler(Blow));
         }
 
         [ScriptUnloadedEvent]
         public static void OnScriptUnloaded(DOLEvent e, object sender, EventArgs args)
         {
-            GameEventMgr.RemoveHandler(GameLivingEvent.AttackedByEnemy, new DOLEventHandler(Struck));
-            GameEventMgr.RemoveHandler(GameLivingEvent.AttackFinished, new DOLEventHandler(Landed));
+            GameEventMgr.RemoveHandler(GameObjectEvent.TakeDamage, new DOLEventHandler(Blow));
         }
 
         /// <summary>Classes that pay for their power with violence.</summary>
@@ -76,57 +74,71 @@ namespace DOL.GS.Scripts
                 or ClassMaulerAlb or ClassMaulerMid or ClassMaulerHib;
         }
 
-        /// <summary>The half the core never had: power for being hit.</summary>
-        private static void Struck(DOLEvent e, object sender, EventArgs args)
-        {
-            if (sender is not GamePlayer player || args is not AttackedByEnemyEventArgs hit)
-                return;
-
-            Draw(player, hit.AttackData, POWER_RATE);
-        }
-
         /// <summary>
-        /// Power for landing a blow.
+        /// One blow, read from the side that took it.
         ///
-        /// The core already pays a Vampiir for this, so it only tops that up
-        /// when the rate has been raised. A Mauler is paid nothing by anybody,
-        /// so it gets the whole share.
+        /// This was two handlers, on AttackedByEnemy and AttackFinished, and
+        /// neither of those events is ever raised by this server -- so for as
+        /// long as it has been loaded this script has done nothing at all. The
+        /// ECS rewrite moved being-attacked and finishing-an-attack out of the
+        /// event system and into methods called directly, leaving twenty-seven
+        /// and twenty-one files respectively subscribed to publishers that no
+        /// longer exist.
+        ///
+        /// TakeDamage is still raised, from GameObject.TakeDamage, and it is
+        /// the better hook anyway: it fires once per blow and names both ends
+        /// of it. The victim is the sender, the striker is the source, so one
+        /// handler pays whichever of them feeds on violence -- or both, when a
+        /// Vampiir and a Mauler are hitting each other.
         /// </summary>
-        private static void Landed(DOLEvent e, object sender, EventArgs args)
+        private static void Blow(DOLEvent e, object sender, EventArgs args)
         {
-            if (sender is not GamePlayer player || args is not AttackFinishedEventArgs swing)
+            if (args is not TakeDamageEventArgs blow)
                 return;
 
-            bool coreAlreadyPaid = player.CharacterClass is ClassVampiir;
-            double share = coreAlreadyPaid ? POWER_RATE - 1.0 : POWER_RATE;
+            int damage = blow.DamageAmount + blow.CriticalAmount;
 
-            if (share <= 0)
+            if (damage <= 0)
                 return;
 
-            Draw(player, swing.AttackData, share);
+            // The half the core never had: power for being hit.
+            if (sender is GamePlayer hurt)
+                Draw(hurt, hurt, damage, POWER_RATE);
+
+            // And power for landing one. The core already pays a Vampiir for
+            // this in MakeAttack, so it only tops that up when the rate has
+            // been raised. A Mauler is paid nothing by anybody, so it gets the
+            // whole share.
+            if (blow.DamageSource is GamePlayer struck)
+            {
+                bool coreAlreadyPaid = struck.CharacterClass is ClassVampiir;
+                double share = coreAlreadyPaid ? POWER_RATE - 1.0 : POWER_RATE;
+
+                if (share > 0)
+                    Draw(struck, sender as GameObject, damage, share);
+            }
         }
 
         /// <summary>
         /// Grant a share of what the core's formula is worth for this blow.
         /// One whole share is exactly what the core pays for landing one.
         /// </summary>
-        private static void Draw(GamePlayer player, AttackData ad, double share)
+        private static void Draw(GamePlayer player, GameObject other, int damage, double share)
         {
             try
             {
-                if (ad == null || !Feeds(player) || !player.IsAlive)
-                    return;
-
-                if (ad.AttackResult is not eAttackResult.HitStyle and not eAttackResult.HitUnstyled)
+                if (!Feeds(player) || !player.IsAlive)
                     return;
 
                 // Nothing is drawn from a keep or a siege engine, the same
-                // exclusion the core makes on the other side.
-                if (ad.Target is GameKeepComponent or GameKeepDoor or GameSiegeWeapon)
+                // exclusion the core makes on the other side. Damage landing
+                // is no longer worth testing for -- TakeDamage only fires on a
+                // blow that got through, so a parry or a miss never reaches
+                // here in the first place.
+                if (other is GameKeepComponent or GameKeepDoor or GameSiegeWeapon)
                     return;
 
-                int perc = Convert.ToInt32((double) (ad.Damage + ad.CriticalDamage) / 100 *
-                                           (55 - player.Level));
+                int perc = Convert.ToInt32((double) damage / 100 * (55 - player.Level));
                 perc = perc < 1 ? 1 : (perc > 15 ? 15 : perc);
 
                 int gain = (int) Math.Ceiling(perc * player.MaxMana / 100.0 * share);

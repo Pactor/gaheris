@@ -290,6 +290,13 @@ namespace DOL.GS.Scripts
         private ECSGameTimer _feet;
         private Point3D _stood;
 
+        /// <summary>
+        /// What LastAttackedByEnemyTick read when the channel began, so that a
+        /// later reading can be recognised as a fresh blow rather than an old
+        /// one. See Watch for why this is read rather than awaited.
+        /// </summary>
+        private long _unhurtAt;
+
         /// <summary>How far counts as having moved rather than having wobbled.</summary>
         private const int A_STEP = 32;
 
@@ -317,7 +324,21 @@ namespace DOL.GS.Scripts
             _stood = new Point3D(Caster.X, Caster.Y, Caster.Z);
             _feet = new ECSGameTimer(Caster, Step, 400);
             _feet.Start(400);
-            GameEventMgr.AddHandler(Caster, GameLivingEvent.AttackedByEnemy, new DOLEventHandler(Struck));
+
+            // Being hit is sampled on the same beat, and for the same reason:
+            // GameLivingEvent.AttackedByEnemy is never fired either. Twenty-
+            // seven files in this server subscribe to it and nothing raises
+            // it. The ECS rewrite moved being-attacked from an event to a
+            // method, GameLiving.OnAttackedByEnemy, which a script cannot
+            // override -- so the event object survived with no publisher and
+            // every handler hung on it went quiet.
+            //
+            // What that method does still leave behind is readable: it stamps
+            // LastAttackedByEnemyTick on any blow that lands, and hands the
+            // blow to AttackerTracker, which keeps a running count of who is
+            // in melee. Between the two the channel can tell a sword from an
+            // arrow, which is the whole distinction the Blazes exist for.
+            _unhurtAt = Caster.LastAttackedByEnemyTick;
 
             // And the target's death, which is the one ending that cannot be
             // noticed from inside the beat. Once the target is dead the pulse
@@ -343,8 +364,6 @@ namespace DOL.GS.Scripts
                 _feet = null;
             }
 
-            GameEventMgr.RemoveHandler(Caster, GameLivingEvent.AttackedByEnemy, new DOLEventHandler(Struck));
-
             if (_watched != null)
             {
                 GameEventMgr.RemoveHandler(_watched, GameLivingEvent.Dying, new DOLEventHandler(TargetDied));
@@ -356,18 +375,27 @@ namespace DOL.GS.Scripts
         /// Struck while channelling. A melee blow always breaks it. Anything
         /// at range -- an arrow, a bolt, a spell -- breaks the ordinary
         /// channels and is exactly what the three Blazes are for.
+        ///
+        /// Melee is read from the attacker tracker rather than from the blow,
+        /// because there is no blow to read: the tracker holds every enemy who
+        /// has landed a hit recently and remembers which of them were swinging
+        /// rather than shooting. A ranged hit shows up only as the tick moving.
         /// </summary>
-        private void Struck(DOLEvent e, object sender, EventArgs args)
+        private bool Struck()
         {
-            if (args is not AttackedByEnemyEventArgs hit || hit.AttackData == null)
-                return;
+            bool melee = Caster.attackComponent?.AttackerTracker?.MeleeCount > 0;
 
-            bool melee = hit.AttackData.IsMeleeAttack;
+            if (melee)
+            {
+                Break("struck in melee");
+                return true;
+            }
 
-            if (!melee && Spell.Uninterruptible)
-                return;
+            if (Caster.LastAttackedByEnemyTick <= _unhurtAt || Spell.Uninterruptible)
+                return false;
 
-            Break(melee ? "struck in melee" : "struck from range");
+            Break("struck from range");
+            return true;
         }
 
         private void Break(string why)
@@ -401,6 +429,9 @@ namespace DOL.GS.Scripts
                 return 0;
             }
 
+            if (Struck())
+                return 0;
+
             return 400;
         }
 
@@ -417,8 +448,7 @@ namespace DOL.GS.Scripts
 
         public override int OnEffectExpires(GameSpellEffect effect, bool noMessages)
         {
-            Console.WriteLine("Heretic: " + Spell.Name + " effect expired after " +
-                              _pulses + " pulses");
+            Say("effect expired after " + _pulses + " pulses");
             return base.OnEffectExpires(effect, noMessages);
         }
     }

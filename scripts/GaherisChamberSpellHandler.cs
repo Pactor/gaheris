@@ -75,6 +75,22 @@ namespace DOL.GS.Scripts
             return ORBS.TryGetValue(chamber, out int slot) ? slot : 1;
         }
 
+        /// <summary>
+        /// A loaded chamber goes off instantly. That is the entire point of
+        /// one: six seconds are spent filling it so that later it costs
+        /// nothing but the click.
+        ///
+        /// Without this the second cast simply starts the six second
+        /// animation over again -- the discharge is recognised correctly and
+        /// then never arrives, because the spell never finishes casting. From
+        /// the outside it looks like the chamber refuses to release and tries
+        /// to re-cast itself, which is exactly how it looked.
+        /// </summary>
+        public override int CalculateCastingTime()
+        {
+            return Armed() != null ? 0 : base.CalculateCastingTime();
+        }
+
         /// <summary>An armed chamber of this name already floating above the caster.</summary>
         private GameSpellEffect Armed()
         {

@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using DOL.Database;
 using DOL.Events;
 using DOL.GS.PacketHandler;
 
@@ -150,12 +151,45 @@ namespace DOL.GS.Scripts
         }
     }
 
-    /// <summary>Money, credited to the employer.</summary>
+    /// <summary>
+    /// Money, credited to the employer, and the one place Pickpocket exists.
+    ///
+    /// Pickpocket is Spymaster ML1 and reads, in full, "20% Bonus to PvE Coin".
+    /// It is granted to every class -- any of them may walk the Spymaster path
+    /// -- and it had no code anywhere in the server. Its sibling Greatness is
+    /// implemented, in MaxConcentrationCalculator, so the omission is an
+    /// oversight rather than a decision.
+    ///
+    /// On a co-operative server every coin is PvE coin, which makes this one of
+    /// the few Master Level passives that is worth more here than on live.
+    ///
+    /// Core builds the money as a fresh DbItemTemplate on each kill (model 488,
+    /// "bag of coins"), so its price can be raised in place. GetLoot returns the
+    /// same object that stays in the list, and this generator adds no random
+    /// drops for the call to disturb.
+    /// </summary>
     public class GaherisLootMoney : LootGeneratorMoney
     {
+        /// <summary>Per the ability's own description.</summary>
+        private const int PICKPOCKET_BONUS = 20;
+
+        private const int BAG_OF_COINS = 488;
+
         public override LootList GenerateLoot(GameNPC mob, GameObject killer)
         {
-            return base.GenerateLoot(mob, GaherisLoot.Credit(killer));
+            GameObject credited = GaherisLoot.Credit(killer);
+            LootList loot = base.GenerateLoot(mob, credited);
+
+            if (credited is not GamePlayer player || !player.HasAbility("Pickpocket"))
+                return loot;
+
+            foreach (DbItemTemplate item in loot.GetLoot())
+            {
+                if (item != null && item.Model == BAG_OF_COINS && item.Price > 0)
+                    item.Price += item.Price * PICKPOCKET_BONUS / 100;
+            }
+
+            return loot;
         }
     }
 }

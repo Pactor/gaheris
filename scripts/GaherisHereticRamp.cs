@@ -203,19 +203,24 @@ namespace DOL.GS.Scripts
         {
             base.ApplyEffectOnTarget(target);
 
-            if (target == null || !target.IsAlive || Caster == null)
-                return;
+            // Everything that should end a channel, and none of it did.
+            //
+            // The core knows the list -- HereticPiercingMagic.BeginEffect
+            // registers handlers for moving, attacking, being attacked and
+            // casting -- and nothing ever calls BeginEffect, so none of them
+            // were ever hooked up. The result was a channel that carried on
+            // through the target's death, through losing it, and through
+            // walking away, because nothing was watching for any of that.
+            string over = Ended(target);
 
-            // The channel holds only while the caster keeps this target and
-            // stays in reach of it. Either lost and the growth starts again,
-            // which is the whole tension of the class.
-            if (Caster.TargetObject != target ||
-                !Caster.IsWithinRadius(target, Spell.CalculateEffectiveRange(Caster)))
+            if (over != null)
             {
                 if (_pulses > 0)
-                    Say("channel broken after " + _pulses + " pulses");
+                    Say("channel ended after " + _pulses + " pulses -- " + over);
 
                 _pulses = 0;
+                MessageToCaster("You lose your concentration.", eChatType.CT_SpellExpires);
+                CancelPulsingSpell(Caster, Spell.SpellType);
                 return;
             }
 
@@ -233,6 +238,32 @@ namespace DOL.GS.Scripts
         public override bool StartSpell(GameLiving target)
         {
             return base.StartSpell(target);
+        }
+
+        /// <summary>
+        /// Why the channel is over, or null while it holds. A Heretic asks to
+        /// be left alone with one target for sixteen seconds; this is the list
+        /// of things that refuse him.
+        /// </summary>
+        private string Ended(GameLiving target)
+        {
+            if (Caster == null || !Caster.IsAlive)
+                return "the caster is gone";
+
+            if (target == null || !target.IsAlive ||
+                target.ObjectState != GameObject.eObjectState.Active)
+                return "the target is dead";
+
+            if (Caster.TargetObject != target)
+                return "the target was lost";
+
+            if (Caster is GamePlayer walker && walker.IsMoving)
+                return "the caster moved";
+
+            if (!Caster.IsWithinRadius(target, Spell.CalculateEffectiveRange(Caster)))
+                return "out of range";
+
+            return null;
         }
 
         private void Say(string what)

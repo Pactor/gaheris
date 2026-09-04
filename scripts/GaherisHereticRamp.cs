@@ -64,6 +64,13 @@ namespace DOL.GS.Scripts
         public GaherisHereticRamp(GameLiving caster, Spell spell, SpellLine line)
             : base(caster, spell, line)
         {
+            // The plainest possible proof that this class is what the server
+            // builds for these spells. Everything else was silent -- no pulse,
+            // no damage, not even an expiry -- which leaves only two
+            // explanations, and this tells them apart: either the handler is
+            // never constructed, or it is constructed and nothing calls it.
+            Console.WriteLine("Heretic: handler built for " + spell?.Name +
+                              " (" + spell?.SpellType + ") by " + (caster?.Name ?? "?"));
         }
 
         /// <summary>Only a held channel grows. A one-shot damage-over-time does not.</summary>

@@ -68,6 +68,35 @@ landed blow.
 
 ---
 
+## Six more of his spell types did nothing
+
+Found on 5 September by sweeping every spell type in the game rather than only
+the ones a class was being tested on. All six put their whole behaviour in
+`OnEffectStart(GameSpellEffect)`, the callback duration spells stopped reaching
+in the ECS rewrite -- the Bainshee's Fear and Befriend, and the Mauler's Disarm
+and Silence, all failed the same way.
+
+**Three are fixed**, in `scripts/classes/catacombs/vampiir/VampiirBuffs.cs`.
+All three are buffs he puts on himself, so they matter every time he fights:
+
+| Type | What was never applied |
+|---|---|
+| VampiirMeleeResistance | slash, crush and thrust resistance |
+| VampiirMagicResistance | all six magic resistances |
+| VampiirStealthDetection | the stealth skill that lets him see hidden things |
+
+The bonus is applied where the effect really lands and taken back on a timer,
+because the expiry callback is as unreachable as the start one. Recasting
+refreshes rather than stacking.
+
+**Three are not fixed, deliberately.** `VampiirArmorDebuff`,
+`VampiirEffectivenessDeBuff` and `VampiirSkillBonusDeBuff` are all guarded by
+`effect.Owner is GamePlayer` and work on things only a player has -- inventory
+items, `Effectiveness`, trained skill levels. On a co-operative server, where
+everything hostile is a monster, they would do nothing even if reached.
+Reviving them would be motion rather than progress. The six pulsing
+effectiveness debuffs in Dementia are of this kind.
+
 ## What is worth checking against live
 
 **He refuses stat buffs**, and the core enforces this in several places by

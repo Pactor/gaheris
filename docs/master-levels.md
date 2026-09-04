@@ -16,12 +16,38 @@ and nothing appears in the log.
 
 | ML | Ability | Should end on | Status |
 |---|---|---|---|
-| Sojourner 8 | Forceful Zephyr | the passenger being attacked | **broken** |
-| Sojourner 9 | Phaseshift | the caster being attacked | **broken** |
-| Spymaster 7 | Lookout | either party moving | **broken** |
+| Spymaster 7 | Lookout | either party moving | **fixed** |
 | Spymaster 10 | Blanket of Camouflage | moving, attacking, casting | fixed |
-| Convoker 6 | Battlewarder | caster moving, casting, attacking | **broken** |
+| Convoker 6 | Battlewarder | caster moving, casting, attacking | **fixed** |
 | Stormlord 6 | Focusing Winds | caster moving | fixed |
+
+All four holds are now repaired.
+
+## Two of the six were never holds at all
+
+An earlier version of this note listed **Forceful Zephyr** and **Phaseshift**
+as abilities that should end when their owner is attacked. **They are not.**
+Both ride the same dead `AttackedByEnemy`, but what they do with it is absorb
+the blow:
+
+```csharp
+ad.Damage -= damageAbsorbed;            // Zephyr, 100 percent
+ad.Damage = 0; ad.CriticalDamage = 0;   // Phaseshift
+```
+
+So the loss is immunity, not an ability that overstays -- and unlike the four
+holds it cannot be repaired the same way. Both edit the `AttackData` **before**
+the blow lands, and the only live hook, `GameObjectEvent.TakeDamage`, arrives
+after the damage is already dealt. Healing it back afterwards would look
+similar and behave differently: the blow would still generate aggro, still
+interrupt, and could still kill.
+
+Phaseshift is doubly moot here. It answers only `ad.Attacker is GamePlayer`, so
+on a co-operative server, where everything hostile is a monster, it would do
+nothing even working.
+
+Both are left alone deliberately. Repairing them properly means intercepting
+damage before it is applied, which needs a core change rather than a script.
 
 The two fixed ones are in `scripts/progression/MasterLevelHolds.cs`, sampling
 through `core/MovementWatch.cs` rather than waiting on events. See
@@ -43,13 +69,12 @@ watch now closes over its own effect.
 Worth noting what this meant in practice: group stealth whose only working
 cancel was **dying**. A group could walk into a keep invisible.
 
-### The four still broken
+### Lookout watches two people
 
-They are left because their cancel is entangled with things I could not verify
-without testing -- Zephyr carries a player, Phaseshift and Battlewarder alter
-the caster's state, Lookout watches two people at once. Each needs the same
-treatment: subclass the handler, capture the effect in a closure, and replace
-the dead event with a `MovementWatch`. The pattern is in `MasterLevelHolds.cs`.
+The Spymaster hides beside a seated companion and borrows a hundred points of
+stealth; either of them moving ends it. That needed two watches rather than
+one, because the core registered two -- and the companion's own static effect,
+`LoockoutOwner`, has to be taken down by hand as the core's handler did.
 
 ---
 

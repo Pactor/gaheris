@@ -18,16 +18,27 @@ namespace DOL.GS.Scripts
     /// Every class in the game reaches all six -- ML lines are shared, so this
     /// is not a Bainshee or a Heretic problem, it is everybody's.
     ///
-    ///   Sojourner 8   Forceful Zephyr        should drop its passenger when attacked
-    ///   Sojourner 9   Phaseshift             should break when the caster is attacked
     ///   Spymaster 7   Lookout                should end when either party moves
     ///   Spymaster 10  Blanket of Camouflage  should break on moving, attacking or casting
     ///   Convoker 6    Battlewarder           should end when the caster moves, casts or attacks
     ///   Stormlord 6   Focusing Winds         should end when the caster moves
     ///
-    /// Two are done here, the two whose cancel is self-contained enough to fix
-    /// without guessing. The other four are recorded in docs/master-levels.md
-    /// with what each one needs.
+    /// All four are done here.
+    ///
+    /// Two more ride the same dead events and are NOT holds at all, which an
+    /// earlier note in this project got wrong. Forceful Zephyr and Phaseshift
+    /// do not cancel when their owner is attacked -- they *absorb the blow*:
+    ///
+    ///     ad.Damage -= damageAbsorbed;              // Zephyr, 100%
+    ///     ad.Damage = 0; ad.CriticalDamage = 0;     // Phaseshift
+    ///
+    /// So the failure there is lost immunity rather than an ability that never
+    /// ends, and it cannot be repaired the way these four can: both edit the
+    /// AttackData before the blow lands, and the only live hook arrives after
+    /// the damage is already dealt. Phaseshift is additionally written to
+    /// answer only `ad.Attacker is GamePlayer`, so on a co-operative server it
+    /// would do nothing even working. Both are recorded in
+    /// docs/master-levels.md rather than approximated with a heal.
     /// </summary>
     internal static class MasterLevelHolds
     {
@@ -135,6 +146,111 @@ namespace DOL.GS.Scripts
                 onMove: true, onAttack: true, onCast: true);
 
             watch.Start();
+        }
+    }
+
+    /// <summary>
+    /// Spymaster 7. The Spymaster hides beside a seated companion and borrows
+    /// a hundred points of stealth from them; if either of the two moves, the
+    /// arrangement is over. Neither half of that worked, so the stealth held
+    /// while both of them walked around.
+    ///
+    /// Two watches rather than one, because the core registered two: the
+    /// sitter and the Spymaster are each able to end it.
+    /// </summary>
+    [SpellHandler(eSpellType.Loockout)]
+    public class LookoutThatEnds : LoockoutSpellHandler
+    {
+        private MovementWatch _sitter;
+        private MovementWatch _scout;
+
+        public LookoutThatEnds(GameLiving caster, Spell spell, SpellLine line)
+            : base(caster, spell, line) { }
+
+        public override void OnEffectStart(GameSpellEffect effect)
+        {
+            base.OnEffectStart(effect);
+
+            if (effect?.Owner is not GamePlayer sat || Caster is not GamePlayer scout)
+                return;
+
+            GameSpellEffect held = effect;
+
+            void Ended(GameLiving who, string why)
+            {
+                MasterLevelHolds.Say(who.Name + " ends " + Spell.Name + " -- " + why);
+                MessageToLiving(who, "You are moving. Your concentration fades!",
+                    eChatType.CT_SpellResisted);
+
+                // The companion's static effect is a separate object and has to
+                // be taken down by hand, exactly as the core's own handler did.
+                FindStaticEffectOnTarget(scout, typeof(LoockoutOwner))?.Cancel(false);
+                OnEffectExpires(held, true);
+            }
+
+            _sitter?.Stop();
+            _scout?.Stop();
+
+            _sitter = new MovementWatch(sat, why => Ended(sat, why));
+            _scout = new MovementWatch(scout, why => Ended(scout, why));
+            _sitter.Start();
+            _scout.Start();
+        }
+
+        public override int OnEffectExpires(GameSpellEffect effect, bool noMessages)
+        {
+            _sitter?.Stop();
+            _scout?.Stop();
+            _sitter = null;
+            _scout = null;
+            return base.OnEffectExpires(effect, noMessages);
+        }
+    }
+
+    /// <summary>
+    /// Convoker 6. Plants a warder at the ground target that fights for the
+    /// caster while he stands still and does nothing else. Moving, casting or
+    /// swinging is supposed to dismiss it; none of the three did, so the
+    /// warder stayed for its full duration whatever its owner got up to.
+    /// </summary>
+    [SpellHandler(eSpellType.Battlewarder)]
+    public class BattlewarderThatEnds : BattlewarderSpellHandler
+    {
+        private MovementWatch _watch;
+
+        public BattlewarderThatEnds(GameLiving caster, Spell spell, SpellLine line)
+            : base(caster, spell, line) { }
+
+        public override void OnEffectStart(GameSpellEffect effect)
+        {
+            base.OnEffectStart(effect);
+
+            if (effect?.Owner is not GamePlayer owner)
+                return;
+
+            GameSpellEffect held = effect;
+
+            _watch?.Stop();
+            _watch = new MovementWatch(
+                owner,
+                why =>
+                {
+                    MasterLevelHolds.Say(owner.Name + " dismisses " + Spell.Name + " -- " + why);
+                    MessageToLiving(owner, "You are " + why + ". Your warder fades!",
+                        eChatType.CT_SpellExpires);
+                    OnEffectExpires(held, true);
+                },
+                null,
+                onMove: true, onAttack: true, onCast: true);
+
+            _watch.Start();
+        }
+
+        public override int OnEffectExpires(GameSpellEffect effect, bool noMessages)
+        {
+            _watch?.Stop();
+            _watch = null;
+            return base.OnEffectExpires(effect, noMessages);
         }
     }
 }

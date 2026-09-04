@@ -83,6 +83,67 @@ namespace DOL.GS.Scripts
             return false;
         }
 
+        /// <summary>
+        /// The pulse, without the crash.
+        ///
+        /// The core's version asks for a line of sight check on anything cone
+        /// shaped or point blank:
+        ///
+        ///     if (!Caster.castingComponent.StartEndOfCastLosCheck(target, this))
+        ///         DealDamage(target);
+        ///
+        /// and that method ignores the handler it is handed, reading the
+        /// casting component's own current one instead:
+        ///
+        ///     public bool StartEndOfCastLosCheck(GameLiving target, SpellHandler spellHandler)
+        ///     {
+        ///         if (SpellHandler.LosChecker == null || ...
+        ///
+        /// During a pulse there is no cast in progress, so that property is
+        /// null and the check throws. It surfaces as "Critical error
+        /// encountered in EffectService" and drops whoever was channelling
+        /// back to the character screen -- a rough way to discover that your
+        /// point blank aura is point blank.
+        ///
+        /// So the check is only asked for when there is a cast to hang it on,
+        /// which during a pulse there never is. The cost is that a pulse does
+        /// not test line of sight, which is what every other branch of this
+        /// handler already does, and a great deal better than disconnecting.
+        /// </summary>
+        public override void OnDirectEffect(GameLiving target)
+        {
+            if (target == null)
+                return;
+
+            bool wantsLos = Spell.Target is eSpellTarget.CONE ||
+                            (Spell.Target is eSpellTarget.ENEMY && Spell.IsPBAoE);
+
+            if (wantsLos &&
+                Caster?.castingComponent?.SpellHandler != null &&
+                Caster.castingComponent.StartEndOfCastLosCheck(target, this))
+                return;
+
+            Hit(target);
+        }
+
+        public override void OnEndOfCastLosCheck(GameLiving target, LosCheckResponse response)
+        {
+            if (response is LosCheckResponse.True)
+                Hit(target);
+        }
+
+        /// <summary>The core's DealDamage, which is private to it.</summary>
+        private void Hit(GameLiving target)
+        {
+            if (!target.IsAlive || target.ObjectState != GameObject.eObjectState.Active)
+                return;
+
+            AttackData ad = CalculateDamageToTarget(target);
+            DamageTarget(ad, true);
+            SendDamageMessages(ad);
+            target.StartInterruptTimer(target.SpellInterruptDuration, ad.AttackType, Caster);
+        }
+
         public override void FinishSpellCast(GameLiving target)
         {
             base.FinishSpellCast(target);

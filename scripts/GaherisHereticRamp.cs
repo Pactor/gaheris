@@ -54,6 +54,12 @@ namespace DOL.GS.Scripts
             "percentage of its base damage. 0 disables the ramp.", 10)]
         public static int RAMP_PER_PULSE;
 
+        [ServerProperty("gaheris", "gaheris_log_heretic",
+            "Log every pulse of a Heretic's channel and why each one ends. " +
+            "A line per pulse per Heretic, so for diagnosis rather than for " +
+            "leaving on.", false)]
+        public static bool LOG;
+
         [ServerProperty("gaheris", "gaheris_heretic_ramp_cap",
             "The most a Heretic's channelled fire can grow, as a percentage of " +
             "its base damage. 100 means it can reach double.", 100)]
@@ -158,14 +164,11 @@ namespace DOL.GS.Scripts
                 ad.Damage += ad.Damage * grown / 100;
             }
 
-            // Temporary, while the channel is being trusted. The visual worked
-            // and nothing landed, and there are several places that could
-            // swallow it -- the pulse cancels on range, on losing the target,
-            // or on power -- so this says what the damage actually was.
-            Console.WriteLine("Heretic: " + Spell.Name + " pulse " + _pulses +
-                              " base " + baseDamage + " -> " + ad.Damage +
-                              " on " + (target == null ? "?" : target.Name) +
-                              " (" + ad.AttackResult + ")");
+            if (LOG)
+                Console.WriteLine("Heretic: " + Spell.Name + " pulse " + _pulses +
+                                  " base " + baseDamage + " -> " + ad.Damage +
+                                  " on " + (target == null ? "?" : target.Name) +
+                                  " (" + ad.AttackResult + ")");
 
             return ad;
         }
@@ -408,7 +411,8 @@ namespace DOL.GS.Scripts
 
         private void Say(string what)
         {
-            Console.WriteLine("Heretic: " + Spell.Name + " -- " + what);
+            if (LOG)
+                Console.WriteLine("Heretic: " + Spell.Name + " -- " + what);
         }
 
         public override int OnEffectExpires(GameSpellEffect effect, bool noMessages)

@@ -117,6 +117,15 @@ the damage spread and the disease did not.
 be present in the data once it was looked for -- including the uninterruptible
 spells I was on the point of inventing. The gaps were all wiring.
 
+## Confirmed working
+
+The channel deals damage and ramps -- 64, 70, 76, 83, 89 across five pulses,
+ten percent a beat -- and ends on moving and on the target's death, saying
+which. Everything below the first two lines is still unwatched.
+
+Logging is behind `gaheris_log_heretic`, off by default: it is a line per
+pulse per Heretic, which is for diagnosis rather than for leaving on.
+
 ## What to test
 
 1. Channel an **Arawn's** spell and watch the damage climb ten percent a

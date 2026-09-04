@@ -81,10 +81,35 @@ namespace DOL.GS.Scripts
         }
 
         /// <summary>Classes that pay for their power with violence.</summary>
-        private static bool Feeds(GamePlayer player)
+        /// <summary>
+        /// Does this thing pay for its power with violence?
+        ///
+        /// A hire counts. It carries the same bar for the same reason, and the
+        /// core refuses it every other way of filling one exactly as it
+        /// refuses a player -- RegenBuff and the power heals test the class,
+        /// not whether anybody is holding the reins. Without this a hired
+        /// Vampiir or Mauler filled its bar once, drained it, and never
+        /// recovered, which is the fault this whole file exists to answer.
+        /// </summary>
+        private static bool Feeds(GameLiving living)
         {
-            return player.CharacterClass is ClassVampiir
-                or ClassMaulerAlb or ClassMaulerMid or ClassMaulerHib;
+            if (living is GamePlayer player)
+            {
+                return player.CharacterClass is ClassVampiir
+                    or ClassMaulerAlb or ClassMaulerMid or ClassMaulerHib;
+            }
+
+            return living is GameMercenary hire &&
+                   hire.Profile?.ClassId is eCharacterClass.Vampiir
+                       or eCharacterClass.MaulerAlb
+                       or eCharacterClass.MaulerMid
+                       or eCharacterClass.MaulerHib;
+        }
+
+        /// <summary>The core pays a Vampiir for landing a blow; nobody else.</summary>
+        private static bool CorePays(GameLiving living)
+        {
+            return living is GamePlayer player && player.CharacterClass is ClassVampiir;
         }
 
         /// <summary>
@@ -115,17 +140,16 @@ namespace DOL.GS.Scripts
                 return;
 
             // The half the core never had: power for being hit.
-            if (sender is GamePlayer hurt)
+            if (sender is GameLiving hurt)
                 Draw(hurt, hurt, damage, POWER_RATE);
 
             // And power for landing one. The core already pays a Vampiir for
             // this in MakeAttack, so it only tops that up when the rate has
-            // been raised. A Mauler is paid nothing by anybody, so it gets the
-            // whole share.
-            if (blow.DamageSource is GamePlayer struck)
+            // been raised. A Mauler is paid nothing by anybody, and neither is
+            // any hire, so both get the whole share.
+            if (blow.DamageSource is GameLiving struck)
             {
-                bool coreAlreadyPaid = struck.CharacterClass is ClassVampiir;
-                double share = coreAlreadyPaid ? POWER_RATE - 1.0 : POWER_RATE;
+                double share = CorePays(struck) ? POWER_RATE - 1.0 : POWER_RATE;
 
                 if (share > 0)
                     Draw(struck, sender as GameObject, damage, share);
@@ -136,7 +160,7 @@ namespace DOL.GS.Scripts
         /// Grant a share of what the core's formula is worth for this blow.
         /// One whole share is exactly what the core pays for landing one.
         /// </summary>
-        private static void Draw(GamePlayer player, GameObject other, int damage, double share)
+        private static void Draw(GameLiving player, GameObject other, int damage, double share)
         {
             try
             {

@@ -120,19 +120,32 @@ spells I was on the point of inventing. The gaps were all wiring.
 ## Confirmed working
 
 The channel deals damage and ramps -- 64, 70, 76, 83, 89 across five pulses,
-ten percent a beat -- and ends on moving and on the target's death, saying
-which. Everything below the first two lines is still unwatched.
+ten percent a beat -- and ends on **moving**, on the **target's death**, and on
+**being hit in melee**, saying which each time.
+
+That last one took a second pass. The interrupt was written against
+`GameLivingEvent.AttackedByEnemy`, which this server never raises -- the same
+fault as `Moving`, and not a coincidence: the ECS rewrite moved combat out of
+the event system and left the handlers subscribed to nothing. It now reads
+`attackComponent.AttackerTracker.MeleeCount` and `LastAttackedByEnemyTick` on
+the same beat that watches his feet. The tracker records whether each attacker
+was swinging or shooting, which is exactly the distinction the Blazes need.
+See [dead-events.md](dead-events.md) -- twenty-seven files were relying on that
+event, including seven Trials of Atlantis artifacts and most of the RR5 realm
+abilities.
 
 Logging is behind `gaheris_log_heretic`, off by default: it is a line per
 pulse per Heretic, which is for diagnosis rather than for leaving on.
 
 ## What to test
 
-1. Channel an **Arawn's** spell and watch the damage climb ten percent a
-   pulse, roughly doubling as the sixteen seconds run out.
-2. **Move**, **sit**, or **swing** -- it should end and say so.
-3. Let something **melee** you -- it should end.
-4. Channel a **Blaze** while something shoots you -- it should hold.
+1. ~~Channel an **Arawn's** spell and watch the damage climb ten percent a
+   pulse.~~ Confirmed.
+2. ~~**Move** -- it should end and say so.~~ Confirmed. **Sitting** and
+   **swinging** still unwatched.
+3. ~~Let something **melee** you -- it should end.~~ Confirmed.
+4. Channel a **Blaze** while something shoots you -- it should hold. This is
+   the one that proves the two lines are actually different.
 5. At 41, **Reanimate Corpse** on a dead group member: they should come up as
    a monster on full health, spreading damage and disease for forty-five
    seconds, and drop to a tenth of their health when it ends.

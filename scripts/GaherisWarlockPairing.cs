@@ -122,6 +122,20 @@ namespace DOL.GS.Scripts
                     Opened = GameLoop.GameLoopTime,
                 };
             }
+
+            // Said out loud, because the delve cannot say it. ShortDescription
+            // is what the client is shown, and the handlers for lifedrain,
+            // direct damage and speed decrease all override it with generated
+            // text -- which is to say, all three of the Warlock's main primary
+            // types. The database description those spells carry never reaches
+            // the player, so from inside the game there is no way to tell a
+            // primary from an ordinary spell.
+            //
+            // Every secondary, by contrast, states the requirement in its own
+            // delve. The game has always said what a secondary needs and never
+            // which spells provide it.
+            player.Out.SendMessage(primary.Name + " opens a weave. Add a secondary spell.",
+                eChatType.CT_Spell, eChatLoc.CL_SystemWindow);
         }
 
         /// <summary>

@@ -154,7 +154,7 @@ spell in the 63 champion archetype lines has a type, and all 15 types have
 handlers. Every ML spell type has a handler. The only ML faults are the two
 blank-type spells and the six holds, both recorded in `master-levels.md`.
 
-## The Mentalist's RR5 is granted and inert
+## The Mentalist's RR5 was granted and inert. It is now written.
 
 Found in the boot log after migration 108, which is worth noting on its own:
 `SkillBase` warns when an ability's `Implementation` will not instantiate, and
@@ -169,14 +169,32 @@ is the commented-out helper script that inserts the grant. So a Mentalist
 reaching RR5 gets the ability on their bar and it does nothing at all, with one
 warning at boot and silence thereafter.
 
-On live it kills summoned pets and releases charmed ones without turning them
-on their owners -- an RvR counter to pet classes. **Not implemented here**, for
-two reasons: the parameters that matter (radius, range, cast time, reuse) are
-not in any source I found, and on a co-operative PvE server an anti-pet RvR
-ability is close to useless. Worth a decision before anyone writes it.
+Written in `scripts/realmabilities/SeveringTheTether.cs` and pointed at by
+migration 110. Ground targeted, thousand unit radius: summoned pets are
+unmade, charmed ones are let go. Thirty minutes reuse when it catches
+something, three seconds when it catches nothing, so a misjudged cast costs
+almost nothing.
 
-Checking a boot log for these warnings is a cheap audit and was not part of the
-sweep above. Worth repeating after any ability change.
+Two choices worth recording, since neither came from a source:
+
+**Charms are released by ending the charm effect** rather than by unpicking it.
+`CharmECSGameEffect.OnStopEffect` already restores the creature's brain, clears
+its aggro, and turns a sustained charm back on whoever held it. Calling it is
+better than reimplementing it.
+
+**Who it may touch is left to `GameServer.ServerRules.IsAllowedToAttack`** on
+the pet's *owner*, rather than a rule written here. On a co-operative server
+that means monster pets and never a groupmate's or a hired hand's.
+
+Worth knowing before it is judged: on live this counters enemy pet classes in
+RvR. Here the only pets it will ever meet are monsters', so it is a far
+narrower ability than it was designed to be. It works; it will not often be
+useful.
+
+**Every granted ability now instantiates.** Fifteen abilities still fail at
+boot and none of them are granted to anybody -- they are legacy rows. Checking
+the boot log for these warnings is a cheap audit and was not part of the sweep
+above; it is worth repeating after any ability change.
 
 ## Still open: Avoidance of Magic
 

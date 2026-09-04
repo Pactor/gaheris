@@ -117,10 +117,17 @@ before today, and it had never once returned power. Test it alongside his
 combat-power fix -- both feed the same bar, so if the bar behaves oddly, say
 which ability was up.
 
-**Still inert, not fixed:** the Mentalist's Severing the Tether. The class was
-never written. On live it kills summoned pets and releases charmed ones, which
-is an RvR counter of little use on a co-operative server -- worth a decision
-before anyone writes it.
+**The Mentalist's Severing the Tether is now written**, and is the only ability
+in this pass that had to be rather than merely rewired. Set a ground target
+near something with a pet and use it: summoned pets are unmade, charmed ones
+let go and turn on whoever held them. Thirty minute reuse if it catches
+something, three seconds if it does not.
+
+Temper expectations -- on live it counters enemy pet classes in RvR, and here
+the only pets it will meet are monsters'. It works; it will rarely matter.
+
+**Every granted realm ability now instantiates.** Fifteen still fail at boot
+and none are granted to anyone.
 
 **Still open, deliberately:** Bainshee and Warlock lack Avoidance of Magic,
 which 45 of 47 classes have. No source found saying they should have it, so it

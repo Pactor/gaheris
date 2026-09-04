@@ -11,6 +11,13 @@ pulse.
 
 ## Done for now
 
+**The Vampiir.** Played briefly and behaved; parked as good enough. Two fixes
+remain unconfirmed rather than working -- Mark of Prey did not fire during the
+session, and the power grant had no narration at the time. `combat_power_log`
+now exists, off by default, to settle it later. **The three Maulers inherit
+that same unverified assumption**, since `CombatPower` is their entire power
+supply.
+
 **The Bainshee.** Four faults found and fixed, three confirmed in play -- the
 auras, fear, and befriend. Everything else about her is verified as wired but
 needs combat and other targets to test, so she is parked. See `bainshee.md`.

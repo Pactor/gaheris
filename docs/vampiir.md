@@ -3,7 +3,17 @@
 Hibernia, Catacombs (December 2004). Class 58. A melee caster who draws power
 from fighting and refuses to be buffed.
 
-Audited 4 September 2026. Partly fixed, not yet played since.
+Audited 4 September 2026, played briefly on the 5th. Nothing went wrong, and
+nothing was proved either.
+
+**Status: good enough to move on, with two fixes still unconfirmed.** He
+behaved correctly in play and the log stayed clean, but the log carried no
+evidence about the two things that were actually repaired -- Mark of Prey never
+fired during the session, and the combat-power grant had no narration of its
+own at the time. Both remain plausible rather than demonstrated.
+
+`combat_power_log` now exists, off by default, so the next person to look can
+settle it in one property rather than another code change.
 
 ---
 

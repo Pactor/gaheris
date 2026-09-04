@@ -55,6 +55,19 @@ namespace DOL.GS.Scripts
             "the Maulers, who are granted nothing at all by the core.", 1.0)]
         public static double POWER_RATE;
 
+        /// <summary>
+        /// Whether power drawn from a fight is narrated.
+        ///
+        /// This file granted nothing at all from the day it was written until
+        /// the dead events under it were found, and there was no way to tell
+        /// from outside: the only evidence either way is a bar that moves.
+        /// A line per landed blow is too much to leave on, and exactly what is
+        /// wanted while confirming it works.
+        /// </summary>
+        [ServerProperty("classes", "combat_power_log",
+            "Log each time a Vampiir or Mauler draws power from a blow.", false)]
+        public static bool LOG;
+
         [ScriptLoadedEvent]
         public static void OnScriptLoaded(DOLEvent e, object sender, EventArgs args)
         {
@@ -144,7 +157,17 @@ namespace DOL.GS.Scripts
                 int gain = (int) Math.Ceiling(perc * player.MaxMana / 100.0 * share);
 
                 if (gain > 0)
+                {
+                    int before = player.Mana;
                     player.Mana += gain;
+
+                    if (LOG)
+                        Console.WriteLine("Power: " + player.Name + " draws " + gain +
+                                          " from " + damage + " damage " +
+                                          (player == other ? "taken" : "dealt") +
+                                          " -- " + before + " to " + player.Mana +
+                                          " of " + player.MaxMana);
+                }
             }
             catch (Exception)
             {

@@ -81,7 +81,13 @@ EOF
 fi
 
 echo 'Applying the conversion:'
-for file in sql/[0-9]*.sql; do
+# Sorted by number, not as text. A plain glob sorts these lexically, which puts
+# 100 between 10 and 11 -- so every migration numbered 100 and up was applied
+# before 11 through 99, and the bulk spell imports at 46 and 90 then overwrote
+# the corrections those later migrations had just made. Only a fresh install
+# was affected; this database was built one migration at a time, in order,
+# which is why it never showed here.
+for file in $(ls sql/[0-9]*.sql | sort -V); do
   apply "$file"
 done
 

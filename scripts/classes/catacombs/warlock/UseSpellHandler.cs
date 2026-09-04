@@ -30,7 +30,7 @@ namespace DOL.GS.PacketHandler.Client.v168
     /// </summary>
     [PacketHandler(PacketHandlerType.TCP, eClientPackets.UseSpell,
         "Handles Player Use Spell Request.", eClientStatus.PlayerInGame)]
-    public class GaherisUseSpellHandler : PacketHandler
+    public class WarlockUseSpellHandler : PacketHandler
     {
         private static readonly UseSpellHandler _core = new();
 

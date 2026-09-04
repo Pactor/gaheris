@@ -536,7 +536,7 @@ namespace DOL.GS.Scripts
         /// </summary>
         private const int WORTHY = 45;
 
-        [ServerProperty("gaheris", "gaheris_ml_xp_per_level",
+        [ServerProperty("progression", "ml_xp_per_level",
             "Master Level experience earned per level of the creature killed. " +
             "A Master Level costs 32,000, so 10 is roughly 53 kills of a level " +
             "60 creature per Master Level. 0 turns Master Level progress off.", 10)]

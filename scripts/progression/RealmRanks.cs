@@ -48,7 +48,7 @@ namespace DOL.GS.Scripts
         /// </summary>
         private const double PER_LEVEL = 1.11;
 
-        [ServerProperty("gaheris", "gaheris_max_realm_level",
+        [ServerProperty("progression", "max_realm_level",
             "Highest realm level obtainable. 130 is Realm Rank 14, which is " +
             "where the core stops on its own. 140 is Realm Rank 15, as on " +
             "live. Set to 130 to turn this off.", 140)]

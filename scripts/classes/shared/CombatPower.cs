@@ -46,9 +46,9 @@ namespace DOL.GS.Scripts
     /// Power comes only from a blow that actually lands. A block, a parry or
     /// an evade is a blow that did not happen.
     /// </summary>
-    public static class VampiirPower
+    public static class CombatPower
     {
-        [ServerProperty("gaheris", "gaheris_vampiir_power_rate",
+        [ServerProperty("classes", "combat_power_rate",
             "How fast a Vampiir or Mauler draws power from a fight, as a multiplier on " +
             "the core's own formula. 1.0 grants exactly what the core grants " +
             "a Vampiir for landing a blow -- now also for taking one, and for " +

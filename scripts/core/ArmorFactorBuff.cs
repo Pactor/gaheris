@@ -32,7 +32,7 @@ namespace DOL.GS.Scripts
     /// own default, BaseBuff, which is what the parent would have used.
     /// </summary>
     [SpellHandler(eSpellType.ArmorFactorBuff)]
-    public class GaherisArmorFactorBuff(GameLiving caster, Spell spell, SpellLine line)
+    public class PlainArmorFactorBuff(GameLiving caster, Spell spell, SpellLine line)
         : ArmorFactorBuff(caster, spell, line)
     {
     }

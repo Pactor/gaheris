@@ -33,7 +33,7 @@ namespace DOL.GS.PacketHandler.Client.v168
     /// </summary>
     [PacketHandler(PacketHandlerType.TCP, eClientPackets.UseSkill,
         "Handles Player Use Skill Request.", eClientStatus.PlayerInGame)]
-    public class GaherisUseSkillHandler : PacketHandler
+    public class WarlockUseSkillHandler : PacketHandler
     {
         private static readonly UseSkillHandler _core = new();
 

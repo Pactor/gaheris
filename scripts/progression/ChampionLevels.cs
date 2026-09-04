@@ -49,7 +49,7 @@ namespace DOL.GS.Scripts
         /// </summary>
         private const int WORTHY = 45;
 
-        [ServerProperty("gaheris", "gaheris_cl_xp_per_level",
+        [ServerProperty("progression", "cl_xp_per_level",
             "Champion experience earned per level of the creature killed. A " +
             "champion level costs 32,000, so 10 is roughly 53 kills of a level " +
             "60 creature per champion level. 0 turns champion progress off.", 10)]

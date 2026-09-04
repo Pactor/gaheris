@@ -34,7 +34,7 @@ namespace DOL.GS.Scripts
     /// than edit by hand.
     /// </summary>
     [CharacterClass((int) eCharacterClass.Armsman, "Armsman", "Fighter", "Armswoman")]
-    public class GaherisRacesArmsman : ClassArmsman
+    public class ArmsmanRaces : ClassArmsman
     {
         public override List<PlayerRace> EligibleRaces => new()
         {
@@ -43,7 +43,7 @@ namespace DOL.GS.Scripts
     }
 
     [CharacterClass((int) eCharacterClass.Cabalist, "Cabalist", "Mage")]
-    public class GaherisRacesCabalist : ClassCabalist
+    public class CabalistRaces : ClassCabalist
     {
         public override List<PlayerRace> EligibleRaces => new()
         {
@@ -52,7 +52,7 @@ namespace DOL.GS.Scripts
     }
 
     [CharacterClass((int) eCharacterClass.Heretic, "Heretic", "Acolyte")]
-    public class GaherisRacesHeretic : ClassHeretic
+    public class HereticRaces : ClassHeretic
     {
         public override List<PlayerRace> EligibleRaces => new()
         {
@@ -61,7 +61,7 @@ namespace DOL.GS.Scripts
     }
 
     [CharacterClass((int) eCharacterClass.MaulerAlb, "Mauler", "Fighter")]
-    public class GaherisRacesMaulerAlb : ClassMaulerAlb
+    public class MaulerAlbRaces : ClassMaulerAlb
     {
         public override List<PlayerRace> EligibleRaces => new()
         {
@@ -70,7 +70,7 @@ namespace DOL.GS.Scripts
     }
 
     [CharacterClass((int) eCharacterClass.Mercenary, "Mercenary", "Fighter")]
-    public class GaherisRacesMercenary : ClassMercenary
+    public class MercenaryRaces : ClassMercenary
     {
         public override List<PlayerRace> EligibleRaces => new()
         {
@@ -79,7 +79,7 @@ namespace DOL.GS.Scripts
     }
 
     [CharacterClass((int) eCharacterClass.Sorcerer, "Sorcerer", "Mage", "Sorceress")]
-    public class GaherisRacesSorcerer : ClassSorcerer
+    public class SorcererRaces : ClassSorcerer
     {
         public override List<PlayerRace> EligibleRaces => new()
         {
@@ -88,7 +88,7 @@ namespace DOL.GS.Scripts
     }
 
     [CharacterClass((int) eCharacterClass.Theurgist, "Theurgist", "Elementalist")]
-    public class GaherisRacesTheurgist : ClassTheurgist
+    public class TheurgistRaces : ClassTheurgist
     {
         public override List<PlayerRace> EligibleRaces => new()
         {
@@ -97,7 +97,7 @@ namespace DOL.GS.Scripts
     }
 
     [CharacterClass((int) eCharacterClass.Wizard, "Wizard", "Elementalist")]
-    public class GaherisRacesWizard : ClassWizard
+    public class WizardRaces : ClassWizard
     {
         public override List<PlayerRace> EligibleRaces => new()
         {
@@ -106,7 +106,7 @@ namespace DOL.GS.Scripts
     }
 
     [CharacterClass((int) eCharacterClass.Bainshee, "Bainshee", "Magician")]
-    public class GaherisRacesBainshee : ClassBainshee
+    public class BainsheeRaces : ClassBainshee
     {
         public override List<PlayerRace> EligibleRaces => new()
         {
@@ -115,7 +115,7 @@ namespace DOL.GS.Scripts
     }
 
     [CharacterClass((int) eCharacterClass.Blademaster, "Blademaster", "Guardian")]
-    public class GaherisRacesBlademaster : ClassBlademaster
+    public class BlademasterRaces : ClassBlademaster
     {
         public override List<PlayerRace> EligibleRaces => new()
         {
@@ -124,7 +124,7 @@ namespace DOL.GS.Scripts
     }
 
     [CharacterClass((int) eCharacterClass.Champion, "Champion", "Guardian")]
-    public class GaherisRacesChampion : ClassChampion
+    public class ChampionRaces : ClassChampion
     {
         public override List<PlayerRace> EligibleRaces => new()
         {
@@ -133,7 +133,7 @@ namespace DOL.GS.Scripts
     }
 
     [CharacterClass((int) eCharacterClass.Hero, "Hero", "Guardian", "Heroine")]
-    public class GaherisRacesHero : ClassHero
+    public class HeroRaces : ClassHero
     {
         public override List<PlayerRace> EligibleRaces => new()
         {
@@ -142,7 +142,7 @@ namespace DOL.GS.Scripts
     }
 
     [CharacterClass((int) eCharacterClass.MaulerHib, "Mauler", "Guardian")]
-    public class GaherisRacesMaulerHib : ClassMaulerHib
+    public class MaulerHibRaces : ClassMaulerHib
     {
         public override List<PlayerRace> EligibleRaces => new()
         {
@@ -151,7 +151,7 @@ namespace DOL.GS.Scripts
     }
 
     [CharacterClass((int) eCharacterClass.Mentalist, "Mentalist", "Magician")]
-    public class GaherisRacesMentalist : ClassMentalist
+    public class MentalistRaces : ClassMentalist
     {
         public override List<PlayerRace> EligibleRaces => new()
         {
@@ -160,7 +160,7 @@ namespace DOL.GS.Scripts
     }
 
     [CharacterClass((int) eCharacterClass.Ranger, "Ranger", "Stalker")]
-    public class GaherisRacesRanger : ClassRanger
+    public class RangerRaces : ClassRanger
     {
         public override List<PlayerRace> EligibleRaces => new()
         {
@@ -169,7 +169,7 @@ namespace DOL.GS.Scripts
     }
 
     [CharacterClass((int) eCharacterClass.Vampiir, "Vampiir", "Stalker")]
-    public class GaherisRacesVampiir : ClassVampiir
+    public class VampiirRaces : ClassVampiir
     {
         public override List<PlayerRace> EligibleRaces => new()
         {
@@ -178,7 +178,7 @@ namespace DOL.GS.Scripts
     }
 
     [CharacterClass((int) eCharacterClass.Warden, "Warden", "Naturalist")]
-    public class GaherisRacesWarden : ClassWarden
+    public class WardenRaces : ClassWarden
     {
         public override List<PlayerRace> EligibleRaces => new()
         {
@@ -187,7 +187,7 @@ namespace DOL.GS.Scripts
     }
 
     [CharacterClass((int) eCharacterClass.MaulerMid, "Mauler", "Viking")]
-    public class GaherisRacesMaulerMid : ClassMaulerMid
+    public class MaulerMidRaces : ClassMaulerMid
     {
         public override List<PlayerRace> EligibleRaces => new()
         {
@@ -196,7 +196,7 @@ namespace DOL.GS.Scripts
     }
 
     [CharacterClass((int) eCharacterClass.Valkyrie, "Valkyrie", "Viking")]
-    public class GaherisRacesValkyrie : ClassValkyrie
+    public class ValkyrieRaces : ClassValkyrie
     {
         public override List<PlayerRace> EligibleRaces => new()
         {
@@ -205,7 +205,7 @@ namespace DOL.GS.Scripts
     }
 
     [CharacterClass((int) eCharacterClass.Warlock, "Warlock", "Mystic")]
-    public class GaherisRacesWarlock : ClassWarlock
+    public class WarlockRaces : ClassWarlock
     {
         public override List<PlayerRace> EligibleRaces => new()
         {

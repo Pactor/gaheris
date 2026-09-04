@@ -43,9 +43,9 @@ namespace DOL.GS.Scripts
     /// event to hang on.
     /// </summary>
     [SpellHandler(eSpellType.BainsheePulseDmg)]
-    public class GaherisBainsheeAura : BainsheePulseDmgSpellHandler
+    public class BainsheeAura : BainsheePulseDmgSpellHandler
     {
-        [ServerProperty("gaheris", "gaheris_log_bainshee",
+        [ServerProperty("catacombs", "bainshee_log",
             "Log when a Bainshee's aura starts and what stops it.", false)]
         public static bool LOG;
 
@@ -57,7 +57,7 @@ namespace DOL.GS.Scripts
         private ECSGameTimer _feet;
         private Point3D _stood;
 
-        public GaherisBainsheeAura(GameLiving caster, Spell spell, SpellLine line)
+        public BainsheeAura(GameLiving caster, Spell spell, SpellLine line)
             : base(caster, spell, line) { }
 
         /// <summary>

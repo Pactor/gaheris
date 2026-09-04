@@ -47,20 +47,20 @@ namespace DOL.GS.Scripts
     /// hybrid who starts at about half one.
     /// </summary>
     [SpellHandler(eSpellType.HereticDamageOverTime)]
-    public class GaherisHereticRamp : HereticDoTSpellHandler
+    public class HereticChannel : HereticDoTSpellHandler
     {
-        [ServerProperty("gaheris", "gaheris_heretic_ramp_per_pulse",
+        [ServerProperty("catacombs", "heretic_ramp_per_pulse",
             "How much a Heretic's channelled fire grows with each pulse, as a " +
             "percentage of its base damage. 0 disables the ramp.", 10)]
         public static int RAMP_PER_PULSE;
 
-        [ServerProperty("gaheris", "gaheris_log_heretic",
+        [ServerProperty("catacombs", "heretic_log",
             "Log every pulse of a Heretic's channel and why each one ends. " +
             "A line per pulse per Heretic, so for diagnosis rather than for " +
             "leaving on.", false)]
         public static bool LOG;
 
-        [ServerProperty("gaheris", "gaheris_heretic_ramp_cap",
+        [ServerProperty("catacombs", "heretic_ramp_cap",
             "The most a Heretic's channelled fire can grow, as a percentage of " +
             "its base damage. 100 means it can reach double.", 100)]
         public static int RAMP_CAP;
@@ -68,7 +68,7 @@ namespace DOL.GS.Scripts
         private int _pulses;
         private GameLiving _channelling;
 
-        public GaherisHereticRamp(GameLiving caster, Spell spell, SpellLine line)
+        public HereticChannel(GameLiving caster, Spell spell, SpellLine line)
             : base(caster, spell, line)
         {
 

@@ -41,9 +41,9 @@ namespace DOL.GS.Scripts
     /// built for eSpellType.Chamber.
     /// </summary>
     [SpellHandler(eSpellType.Chamber)]
-    public class GaherisChamberSpellHandler : ChamberSpellHandler
+    public class WarlockChamber : ChamberSpellHandler
     {
-        public GaherisChamberSpellHandler(GameLiving caster, Spell spell, SpellLine line)
+        public WarlockChamber(GameLiving caster, Spell spell, SpellLine line)
             : base(caster, spell, line)
         {
         }
@@ -204,7 +204,7 @@ namespace DOL.GS.Scripts
         {
             GameSpellEffect effect = Armed();
 
-            if (effect == null || effect.SpellHandler is not GaherisChamberSpellHandler chamber)
+            if (effect == null || effect.SpellHandler is not WarlockChamber chamber)
                 return true;
 
             Console.WriteLine("Chamber: firing " + Spell.Name + " -- " +

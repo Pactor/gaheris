@@ -1,132 +1,159 @@
 # The Bainshee
 
-Research note, written like the Warlock's and the Heretic's: what the class
-*is*, checked against the official class library, our own database, and the
-core's source.
+Hibernia, Catacombs (December 2004). Class 39. A cloth caster whose magic is
+sound, and the only class in the game restricted by sex -- female avatars only,
+which the client enforces at creation.
+
+Researched 4 September 2026, fixed and verified over 4-5 September. Everything
+below that says "works" was either seen in play or checked against the running
+server, not inferred from the data.
 
 ---
 
-## What she is
+## What she has
 
-A Hibernian cloth caster whose magic is sound, and **the only class in the game
-restricted by sex** -- she may only be played by a female avatar, which the
-client enforces at creation. Three areas of attack, one per spec: point blank,
-ranged, and frontal cone.
-
-| Line | | Ours holds |
+| Line | | Holds |
 |---|---|---|
 | **Spectral Force** | baseline | 10 self armour factor, 10 direct damage, 8 root/snare, 2 absorption, 1 bladeturn |
 | **Ethereal Shriek** | ranged AoE | 10 direct damage, 7 bolts, 7 dex/qui debuff, 5 nearsight, 4 snare, 3 range shields |
 | **Phantasmal Wail** | point blank | 7 pulsing auras, 7 dex/qui debuff, 6 fear, 5 root, 4 befriend, 2 buff shear |
 | **Spectral Guard** | frontal cone | **23 cone spells** -- 9 damage, 8 bolt, 6 root -- plus 4 taunts and 3 group ablatives |
 
-**The content is right.** Line for line this matches the class library,
+130 spells, levels 1 to 50. Line for line this matches the class library,
 including the oddities: the befriend that turns monsters into realm guards, the
-nearsight focus, the group ablative, the taunts on a cloth caster. 130 spells,
-levels 1 to 50, nothing obviously missing.
+nearsight focus, the group ablative, taunts on a cloth caster.
+
+`Spectral Force` is the baseline and is labelled with the `Spectral Guard`
+spec on purpose -- `classxspecialization` grants her only three specs, so the
+baseline has to hang off one she actually has. Changing it to match its own
+name would make the baseline unreachable.
 
 ### Wraith form
 
-Implemented, in `ClassBainshee`, and **working** -- it is the one piece of her
-built on events that are actually raised.
-
-Casting anything without a positive effect turns her into a wraith: the model
-swaps by race (Celt 1883, Lurikeen 1884, Elf 1885) and a thirty-second timer
-starts, restarted by every further offensive cast. It ends on the timer or on
-leaving the world.
+Works. Casting anything without a positive effect turns her into a wraith --
+model by race, Celt 1883, Lurikeen 1884, Elf 1885 -- with a thirty second timer
+restarted by every further offensive cast. It ends on the timer or on leaving
+the world. It is the one piece of her built on events that are actually raised.
 
 One thing is commented out in the core: keeping the form while an offensive
-pulsing spell is running. As written, a Bainshee holding a Phantasmal Wail aura
-drops out of wraith form after thirty seconds while still channelling it.
+pulsing spell runs. As written she drops out of wraith form after thirty
+seconds while still channelling.
 
 ---
 
-## What is broken
+## Every spell type she can cast, and whether it can work
 
-Both faults are the dead-event problem. See [dead-events.md](dead-events.md).
+The test is not "does a handler exist" -- one existed for every one of these
+while three of them did nothing. It is whether the handler's behaviour can
+actually be delivered by the effect system that runs today.
 
-### The pulsing aura cannot be stopped
-
-`BainsheePulseDmgSpellHandler` -- the seven Phantasmal Wail auras -- registers
-for `GamePlayerEvent.Moving` and `GamePlayerEvent.Dying`. `Moving` is never
-raised by this server, so **walking does not stop the aura**. That alone is the
-Heretic's bug again.
-
-It is broken a second time underneath, and this one would bite even if the
-event worked:
-
-```csharp
-PulsingSpellEffect effect = null; // concentrationEffects[i] as PulsingSpellEffect;
-
-if (effect == null)
-    continue;
-```
-
-The cast that finds the effect is commented out, so `effect` is always null,
-the loop always continues, and `CancelPulsingSpell` **always returns false**.
-Nothing can cancel the aura -- not moving, not the `Dying` handler that is
-registered alongside it and does fire.
-
-### The range shield does nothing, and would do the wrong thing
-
-`RangeShield` -- Wraith's Shield, Barrier and Barricade, at 21, 31 and 41 --
-registers for `GameLivingEvent.AttackedByEnemy`, which is never raised. The
-ranged damage reduction never applies. It inherits from
-`BladeturnSpellHandler`, so whatever bladeturn it grants still works; the part
-the spell is named for does not.
-
-It should not simply be rewired, because the arithmetic is wrong too:
-
-```csharp
-value = Spell.Value * .01;
-attackArgs.AttackData.Damage *= (int) value;
-```
-
-`Damage` is multiplied by `value` **cast to int**. A Value of 50 gives 0.5,
-truncating to 0; a Value of 150 gives 1.5, truncating to 1. So the spell either
-erases the damage entirely or does nothing, with no setting that halves it.
-
-And all three of ours carry **`Value = 0`**. Reviving this as it stands would
-give her group total immunity to every ranged attack and every arrow for thirty
-seconds. This needs data before it needs code.
+| Type | Handler | Verdict |
+|---|---|---|
+| BainsheePulseDmg | `BainsheeAura` (ours) | **fixed** -- see below |
+| Fear | `SustainedFear` (ours) | **fixed** -- brain was never attached |
+| BeFriend | `Befriended` (ours) | **fixed** -- brain was never attached |
+| Nearsight | `SustainedNearsight` (ours) | works; stops on movement |
+| ArmorFactorBuff | `ArmorFactorBuff` (ours) | works -- core's could not be constructed |
+| Bladeturn | `BladeturnECSGameEffect` | works, ECS effect |
+| MagicAblativeArmor | `AblativeArmorSpellHandler` | works -- builds its own ECS effect |
+| DirectDamage, Bolt, SpeedDecrease, DexterityQuicknessDebuff, AcuityShear, ArmorAbsorptionBuff, Taunt | core | ordinary ECS paths, nothing legacy |
+| **RangeShield** | `RangeShield` (core) | **still broken, deliberately** |
 
 ---
 
-## Checked and cleared
+## What was wrong, and what fixed it
 
-Two things that look like faults and are not:
+Four faults, and every one of them looked correct in both the data and the
+handler. Nothing logged, nothing warned.
 
-**Her eligible races are empty in the core** -- `ClassBainshee.EligibleRaces`
-has the whole list commented out, and both `CharacterCreateRequestHandler` and
-`GameTrainer` refuse a class whose list does not contain the race. That would
-make her uncreatable and unpromotable. Our own `GaherisRaces.cs` already
-restores it.
+**The auras dealt damage but could not be stopped.** `CancelPulsingSpell` in
+the core searches concentration effects for a legacy `PulsingSpellEffect` with
+the line that finds one commented out, so it always returned false. Nothing
+could cancel an aura -- not moving, not the `Dying` handler registered beside
+it, which fires and was simply told there was nothing to cancel. Restored
+against `ECSPulseEffect`, which is where pulses actually live.
 
-**The `Spectral Force` line is labelled `Spec = 'Spectral Guard'`**, which reads
-like a mislabel. It is not. `classxspecialization` grants her exactly three
-specs -- Ethereal Shriek, Phantasmal Wail, Spectral Guard -- and no Spectral
-Force, so the baseline has to hang off a spec she actually has. Changing it to
-match its own name would make the baseline unreachable.
+**Movement never ended anything**, because `GamePlayerEvent.Moving` is never
+raised. Her feet are sampled every 400ms instead.
+
+**Her auras crashed whoever cast one.** `OnDirectEffect` asks the casting
+component for a line of sight check on anything point blank, and that method
+reads the component's *own* current spell handler rather than the one it is
+given. During a pulse nothing is being cast, so it is null and it throws --
+surfacing as a critical error in EffectService and dropping the caster to the
+character screen. The check is now only asked for when there is a cast to hang
+it on.
+
+**Fear frightened nothing, and Befriend befriended nothing.** Both attach a
+brain -- `FearBrain`, `FriendBrain` -- from `OnEffectStart(GameSpellEffect)`.
+That is the legacy effect callback and the only thing that calls it is
+`GameSpellEffect` itself, which duration spells no longer create:
+`OnDurationEffectApply` builds an `ECSGameSpellEffect` instead. So both spells
+landed, passed their resist checks, held their duration, and had no
+consequence whatsoever. Both brains are now attached where the effect is really
+applied and removed when the time is up.
+
+**The Screech was not a `BainsheePulseDmg`.** Her fear and her nearsight pulse
+too, so the first movement fix never saw them; both are covered now.
+
+**Migration 103** marked the seven auras uninterruptible, which the class
+library calls for and which a point blank spec needs, since standing in the
+middle of a fight is the whole idea. Uninterruptible is not unstoppable --
+moving and dying still end them.
+
+### Still broken, on purpose
+
+`RangeShield` -- Wraith's Shield, Barrier and Barricade at 21, 31 and 41. It
+is on a dead event, its arithmetic multiplies damage by `(int)(Value * 0.01)`
+which truncates to 0 or 1, and all three spells carry `Value = 0`. Reviving it
+as written would make her group immune to every ranged attack. **It needs data
+before it needs code.**
+
+### Open question
+
+`Diminishing Wail` has `Range 0`, making it point blank and needing no target
+-- correct for Phantasmal Wail, but it is the *same spell row* in Ethereal
+Shriek, which is the ranged spec. That looks wrong and there is no source for
+what the ranged version should be.
 
 ---
 
-## To confirm before changing anything
+## Champion, realm and Master Level
 
-The class library calls Phantasmal Wail's point blank pulse and its roots
-**uninterruptible**. All seven of our auras carry `Uninterruptible = 0`. That
-is the same shape of fault as the Heretic's Blazes, which were also
-uninterruptible on live and unmarked here -- but the Heretic had a patch note
-behind it and this does not yet. Worth checking the notes before touching the
-data.
+Checked as function rather than inventory.
 
-## What to test
+**Champion.** She is granted `Champion Level Hibernia` and four of Hibernia's
+five archetype trees -- Forester, Guardian, Naturalist, Stalker -- correctly
+excluding Magician, which is her own archetype. Every spell in those trees has
+a type and every type has a handler. See `champion-levels.md`.
 
-1. Cast a **Phantasmal Wail aura** and walk. Expect it to keep pulsing --
-   that is the bug, and it should be seen before it is fixed.
-2. Cast one and **die**. Expect it to keep pulsing too, which shows the second
-   fault is real and separate from the dead event.
-3. Cast anything offensive and watch for **wraith form**, then wait thirty
-   seconds while still channelling and watch it drop.
-4. Cast into a **cone** from Spectral Guard and confirm it hits a fan of
-   targets rather than one.
-5. **Befriend** a monster and see whether it turns and fights for you.
+**Realm abilities.** 28 granted. Every one instantiates, and none is backed by
+a handler sitting on a dead event -- checked against the boot log and the
+handler files, not assumed. Her RR5, **Sonic Barrier**, is present and backed
+by a real class.
+
+She lacks `AtlasOF_AvoidanceOfMagic`, which 45 of 47 classes have. Not added:
+there is no source saying she should have it, and the one piece of evidence
+that would have settled it -- her apparently missing Purge -- turned out to be
+a variant she does have. See `realm-abilities.md`.
+
+**Master Levels.** She reaches all eight lines, like every class. Two faults
+are hers only in the sense that they are everybody's: `Reveal Crystalseed` has
+no spell type and cannot work without a core change, and four of the six ML
+holds still never end. Two are fixed. See `master-levels.md`.
+
+---
+
+## What is left to test
+
+Everything above is wired. What remains is whether it feels right.
+
+1. **Fear**, on something at or below the level cap -- `Spell.Value` is a
+   maximum level, not a strength. Vanquishing Screech reaches 27; the six run
+   15, 27, 34, 44, 54, 65.
+2. **Befriend**, and whether the monster fights for you and reverts cleanly.
+3. **A Spectral Guard cone** -- 23 spells and none has been fired in anger.
+4. Whether the **ramp and damage** of the auras feel right at her level.
+5. The **taunts** and the **group ablative**, neither of which has been used.
+
+`bainshee_log` narrates the auras, the channels, the fear and the befriend.

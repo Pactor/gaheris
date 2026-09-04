@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using DOL.GS.PacketHandler;
 
@@ -54,6 +55,8 @@ namespace DOL.GS.Scripts
 
             lock (_lock)
                 _open[player.InternalID] = new Loading { Chamber = chamber };
+
+            Console.WriteLine("Chamber: " + player.Name + " began loading " + chamber.Name);
         }
 
         /// <summary>The cast has ended, one way or another. Hand back what was collected.</summary>
@@ -94,8 +97,15 @@ namespace DOL.GS.Scripts
             lock (_lock)
             {
                 if (!_open.TryGetValue(player.InternalID, out loading))
+                {
+                    Console.WriteLine("Chamber: " + player.Name + " clicked " + spell.Name +
+                                      " with no chamber open");
                     return false;
+                }
             }
+
+            Console.WriteLine("Chamber: " + player.Name + " offering " + spell.Name +
+                              " to " + loading.Chamber.Name);
 
             if (loading.Full)
                 return false;

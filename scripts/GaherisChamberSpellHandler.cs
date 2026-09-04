@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using DOL.GS.Effects;
 using DOL.GS.PacketHandler;
@@ -114,6 +115,11 @@ namespace DOL.GS.Scripts
                 return;
 
             ChamberLoader.Loading loaded = ChamberLoader.Close(player);
+
+            Console.WriteLine("Chamber: " + Spell.Name + " finished with " +
+                              (loaded == null ? "no window"
+                                  : (loaded.Primary?.Name ?? "-") + " / " +
+                                    (loaded.Secondary?.Name ?? "-")));
 
             Caster.Mana -= PowerCost(target);
 

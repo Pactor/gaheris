@@ -95,6 +95,9 @@ namespace DOL.GS.PacketHandler.Client.v168
                     sksib = snap[index].Item2;
                 }
 
+                Console.WriteLine("Chamber: skill packet index " + index + " type " + type +
+                                  " -> " + (sk == null ? "nothing" : sk.GetType().Name + " " + sk.Name));
+
                 if (sk is not Spell spell || sksib is not SpellLine line)
                     return false;
 

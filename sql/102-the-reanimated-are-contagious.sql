@@ -1,0 +1,30 @@
+-- The Heretic's resurrection is supposed to be catching.
+--
+-- Reanimate Corpse does not raise somebody and leave them standing there. It
+-- raises them as a monster: the model changes, they take ninety percent less
+-- damage, they come up on full health -- and for forty-five seconds they leak.
+-- Every pulse the reanimated player casts two spells of their own, a damage
+-- over time and a disease, on everything around them. Then it ends and drops
+-- them to a tenth of their health.
+--
+-- The whole chain is present: 14076 raises, 14078 transforms, 14077 is the
+-- damage and 14079 the disease. One link is mistyped. 14079 carries the type
+-- Disease rather than MonsterDisease, and the difference is the entire point
+-- of it:
+--
+--     [SpellHandler(eSpellType.MonsterDisease)]
+--     public class MonsterDisease : DiseaseSpellHandler
+--     {
+--         public override List<GameLiving> SelectTargets(GameObject castTarget)
+--         ... everything within Spell.Radius of the reanimated player ...
+--
+-- A plain Disease hits one target. MonsterDisease hits everyone inside five
+-- hundred units, which is what makes the corpse contagious rather than merely
+-- unwell. The row already carries Radius 500 for exactly that, and nothing was
+-- reading it.
+--
+-- Its partner, 14077, is typed correctly and does spread. So half the
+-- contagion worked and half did not, which is the sort of thing nobody would
+-- notice without reading the handler.
+
+UPDATE spell SET Type = 'MonsterDisease' WHERE SpellID = 14079 AND Type = 'Disease';

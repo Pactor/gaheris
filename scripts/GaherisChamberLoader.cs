@@ -98,8 +98,13 @@ namespace DOL.GS.Scripts
             {
                 if (!_open.TryGetValue(player.InternalID, out loading))
                 {
-                    Console.WriteLine("Chamber: " + player.Name + " clicked " + spell.Name +
-                                      " with no chamber open");
+                    // The chamber spell itself comes through here on its way to
+                    // being cast, before its own handler opens the window. That
+                    // is expected and not worth a line.
+                    if (spell.SpellType is not eSpellType.Chamber)
+                        Console.WriteLine("Chamber: " + player.Name + " clicked " + spell.Name +
+                                          " with no chamber open");
+
                     return false;
                 }
             }

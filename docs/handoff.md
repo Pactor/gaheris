@@ -21,6 +21,7 @@ Walked through and seen working, not merely written.
 | The dungeon exit | Confirmed twice; logged client zonepoints `570` and `571` |
 | Mercenaries through a dungeon | Follow in, follow out, survive the instance closing |
 | `/task` | Shows the mission; the core's version reads a different system entirely |
+| Warlock chambers | Loaded, armed, orb drawn, both spells fired on discharge |
 
 ---
 
@@ -64,40 +65,18 @@ the fix.
 **Mauler and Vampiir power from combat.** Both should now climb while
 fighting. Neither has been watched on a power bar.
 
-**Warlock chambers.** Now built, all three pieces, and completely untested.
-Cast a chamber, click two spells during its animation, and it should say each
-is loaded and then that the chamber is ready. Casting it again fires both at
-the target instantly and spends it.
+**Warlock chambers work.** Proven end to end: Chamber of Lesser Fate loaded
+with Molding Hex and Infernal Sore, armed, drew its orb, and fired both on the
+second cast. This mechanic had never worked in this codebase -- upstream's own
+note reads "Can't be tested since Warlocks aren't functional."
+
+No restriction is enforced on what may be chambered beyond refusing another
+chamber. Live restricted it, and if something obviously unbankable can be
+loaded that is a gap here rather than in the core.
 
 ---
 
 ## Known wrong, not yet fixed
-
-**Warlock chambers were never loadable.** Built today, untested. Upstream's
-own comment says what was wrong:
-
-    // Likely to be broken. It used to override 'CastSpell', but it no longer
-    // exists in 'SpellHanlder'. Can't be tested since Warlocks aren't functional.
-
-A chamber is loaded *during* its own cast, not after: the spell has a long
-cast time and the Warlock clicks a primary and a secondary during the
-animation, which are swallowed rather than cast. That swallowing was done by
-an override that no longer exists, so the chamber always armed empty.
-
-Three pieces, all now present. `GaherisChamberLoader.cs` holds the
-bookkeeping. `GaherisChamberSpellHandler.cs` **derives from** the core handler
-rather than replacing it, which is not a nicety -- the packet that draws the
-chamber orbs casts the effect's handler to `ChamberSpellHandler`, so anything
-not descended from it throws the moment a chamber arms. And
-`GaherisUseSkillHandler.cs` catches the clicks, reading the packet far enough
-to identify the skill and rewinding to the core handler for everything that is
-not a chamber being loaded.
-
-One thing corrected along the way: the core's `GetEffectSlot` knows five
-chamber names and three of ours are not among them, so they returned nought.
-That is worse than a missing icon -- the packet keys a list 1 to 5 and writes
-a byte per entry, so a nought adds a sixth and the client gets a longer packet
-than it expects. Ours maps all six names into the five orbs.
 
 **Taskmasters do not hand you on.** Each should serve one level band and name
 the next taskmaster when you outgrow it. Ours serves anybody, because the core

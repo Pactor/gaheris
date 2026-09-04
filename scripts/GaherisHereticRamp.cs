@@ -1,4 +1,5 @@
 using System;
+using DOL.Events;
 using DOL.GS.Effects;
 using DOL.GS.PacketHandler;
 using DOL.GS.ServerProperties;
@@ -211,6 +212,13 @@ namespace DOL.GS.Scripts
             // were ever hooked up. The result was a channel that carried on
             // through the target's death, through losing it, and through
             // walking away, because nothing was watching for any of that.
+            // Watch for the step itself. Testing IsMoving at pulse time only
+            // catches somebody who happens to be moving on the beat -- walk
+            // between two pulses and stop, and it reads false both times,
+            // which is why the channel carried on through a walk. The event
+            // fires on the step.
+            Watch();
+
             string over = Ended(target);
 
             if (over != null)
@@ -219,6 +227,7 @@ namespace DOL.GS.Scripts
                     Say("channel ended after " + _pulses + " pulses -- " + over);
 
                 _pulses = 0;
+                Unwatch();
                 MessageToCaster("You lose your concentration.", eChatType.CT_SpellExpires);
                 CancelPulsingSpell(Caster, Spell.SpellType);
                 return;
@@ -257,13 +266,42 @@ namespace DOL.GS.Scripts
             if (Caster.TargetObject != target)
                 return "the target was lost";
 
-            if (Caster is GamePlayer walker && walker.IsMoving)
-                return "the caster moved";
-
             if (!Caster.IsWithinRadius(target, Spell.CalculateEffectiveRange(Caster)))
                 return "out of range";
 
             return null;
+        }
+
+        private bool _watching;
+
+        /// <summary>Notice the moment the caster takes a step.</summary>
+        private void Watch()
+        {
+            if (_watching || Caster == null)
+                return;
+
+            _watching = true;
+            GameEventMgr.AddHandler(Caster, GamePlayerEvent.Moving, new DOLEventHandler(Moved));
+        }
+
+        private void Unwatch()
+        {
+            if (!_watching || Caster == null)
+                return;
+
+            _watching = false;
+            GameEventMgr.RemoveHandler(Caster, GamePlayerEvent.Moving, new DOLEventHandler(Moved));
+        }
+
+        private void Moved(DOLEvent e, object sender, EventArgs args)
+        {
+            if (_pulses > 0)
+                Say("channel ended after " + _pulses + " pulses -- the caster moved");
+
+            _pulses = 0;
+            Unwatch();
+            MessageToCaster("You lose your concentration.", eChatType.CT_SpellExpires);
+            CancelPulsingSpell(Caster, Spell.SpellType);
         }
 
         private void Say(string what)

@@ -136,6 +136,9 @@ namespace DOL.GS.Scripts
             // which spells provide it.
             player.Out.SendMessage(primary.Name + " opens a weave. Add a secondary spell.",
                 eChatType.CT_Spell, eChatLoc.CL_SystemWindow);
+
+            Console.WriteLine("Weave: " + player.Name + " opened with " + primary.Name +
+                              (primary.IsPrimary ? " (primary)" : " (primer " + primary.SpellType + ")"));
         }
 
         /// <summary>
@@ -176,6 +179,9 @@ namespace DOL.GS.Scripts
 
             pairing.Secondary = spell;
             pairing.SecondaryLine = line;
+
+            Console.WriteLine("Weave: " + player.Name + " wove " + spell.Name +
+                              " into " + pairing.Primary.Name);
 
             player.Out.SendMessage(spell.Name + " is woven into " + pairing.Primary.Name + ".",
                 eChatType.CT_Spell, eChatLoc.CL_SystemWindow);

@@ -165,6 +165,23 @@ namespace DOL.GS.Scripts
                 return;
             }
 
+            // A chamber holds a pair or it holds nothing. Every description of
+            // the mechanic is of loading a primary AND a secondary, and none
+            // describes banking one spell -- which makes sense, since a
+            // chamber that held a single spell would be a free instant cast
+            // rather than a trade.
+            //
+            // The core's orb packet does have a branch for a primary with no
+            // secondary, which is what first suggested it was allowed. That
+            // shows the client can draw such a chamber, not that the game ever
+            // let you make one.
+            if (loaded.Primary == null || loaded.Secondary == null)
+            {
+                MessageToCaster(Spell.Name + " needs both a primary and a secondary spell. " +
+                                "It collapses unused.", eChatType.CT_SpellResisted);
+                return;
+            }
+
             PrimarySpell = loaded.Primary;
             PrimarySpellLine = loaded.PrimaryLine;
             SecondarySpell = loaded.Secondary;

@@ -153,21 +153,45 @@ namespace DOL.GS.Scripts
                 return true;
             }
 
+            // A chamber holds a primary and then a secondary, in that order.
+            // Nothing enforced it before, so any two spells could go in --
+            // two primaries, or a secondary on its own -- and a mechanic that
+            // accepts anything teaches nothing. Refusing by name is also the
+            // only way a player can find out which spell is which, since the
+            // delve does not say for the types a Warlock mostly casts.
             if (loading.Primary == null)
             {
+                if (!spell.IsPrimary && !WarlockPairing.IsPrimer(spell))
+                {
+                    player.Out.SendMessage(
+                        spell.Name + " is a secondary spell. A chamber takes a primary first.",
+                        eChatType.CT_SpellResisted, eChatLoc.CL_SystemWindow);
+                    return true;
+                }
+
                 loading.Primary = spell;
                 loading.PrimaryLine = line;
                 player.Out.SendMessage(
-                    spell.Name + " is loaded. Select the second spell for your " +
+                    spell.Name + " is loaded as the primary. Now choose a secondary for your " +
                     loading.Chamber.Name + ".",
                     eChatType.CT_Spell, eChatLoc.CL_SystemWindow);
             }
             else
             {
+                if (!spell.IsSecondary)
+                {
+                    player.Out.SendMessage(
+                        spell.Name + " is not a secondary spell. " + loading.Chamber.Name +
+                        " already holds " + loading.Primary.Name + ".",
+                        eChatType.CT_SpellResisted, eChatLoc.CL_SystemWindow);
+                    return true;
+                }
+
                 loading.Secondary = spell;
                 loading.SecondaryLine = line;
                 player.Out.SendMessage(
-                    spell.Name + " is loaded.", eChatType.CT_Spell, eChatLoc.CL_SystemWindow);
+                    spell.Name + " is loaded as the secondary.",
+                    eChatType.CT_Spell, eChatLoc.CL_SystemWindow);
             }
 
             return true;

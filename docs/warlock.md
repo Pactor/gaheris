@@ -57,6 +57,13 @@ fill, ten second reuse, then released instantly with one click.
 
 Only the level 37 chambers may hold bolt spells.
 
+A chamber holds a **pair** or nothing. Every description of the mechanic is of
+loading a primary and a secondary; none describes banking a single spell, and
+one that held a single spell would be a free instant cast rather than a trade.
+The core's orb packet does carry a branch for a primary with no secondary,
+which shows only that the client can draw such a chamber -- not that the game
+ever let one be made.
+
 ### The shape of the three lines
 
 Read from our own data, because the summary pages do not break it down and the

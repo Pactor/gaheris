@@ -88,12 +88,24 @@ bank his heaviest spell and the later ones would be worth nothing.
 
 ---
 
-## What is missing
+## What was missing, and what is built
 
-The data is complete. The engine is not.
+The data was always complete. The engine was not, and most of it now is.
 
-**Powerless does nothing.** It is commented out in the core, in
-`SpellHandler.PowerCost`:
+### Built
+
+**The pairing.** A primary opens a weave; the next secondary clicked is hung
+on it and lands when the primary does. Applied directly rather than cast,
+because "at the same time" is the point and a second cast would be neither
+simultaneous nor free.
+
+**The primers open a weave too.** They carry `IsPrimary = 0` -- they are not
+damage or control -- so a flag test alone would have missed the three spells
+the class is named for.
+
+**Powerless.** Applying a spell directly skips its power cost, so the cost is
+taken by hand for every primary except Powerless. That is exactly what the
+primer buys, and it replaces this, which is commented out in the core:
 
 ```csharp
 // Warlock.
@@ -102,45 +114,43 @@ if (effect != null && !m_spell.IsPrimary)
     return 0;*/
 ```
 
-**Range does nothing.** Nothing anywhere reads the Range primer to extend a
-secondary's reach.
+**Range.** Enforced here because it cannot be enforced anywhere else --
+applying directly skips the range check a cast would have made, so without it
+a woven spell would reach across the zone. A Range primer replaces the
+secondary's own reach with its own.
 
-**The pairing itself does not exist.** Searching the whole codebase for
-`IsPrimary` and `IsSecondary` finds two uses: a commented-out block, and one
-effectiveness penalty for Uninterruptable. Nothing makes a secondary land with
-a primary, and nothing gives primaries their doubled cast time.
+**Uninterruptable** needed nothing. Its penalty lives inside `StartSpell`,
+which is what the pairing calls, so it applies of its own accord.
 
-**The rule is not enforced.** `Infernal Sore`'s own delve says it cannot be
-cast until after a primary. It can be, freely.
+**The rule.** A secondary with no primary in flight is refused, as its own
+delve always said it should be.
 
-**Chambers were entirely broken** until today, and are now the only part of
-the mechanic that works -- because the pairing had to be implemented inside
-them to make them work at all.
+**Bolts only in the greater chambers**, per the class library.
 
----
+### Still missing
 
-## What that means for the class as it stands
+**The Range effectiveness cost.** `Perennial Range` should carry a spell three
+thousand units at half strength; here it carries it at full. The core has one
+formula for this and it reads `Value` as a reduction, while Range stores
+effectiveness retained -- 100 means full, 50 means half. Feeding Range through
+that formula would make `Enduring Range`, which should be the cheapest and
+strongest, cast at nothing at all. Left alone rather than bodged.
 
-A Warlock here is a caster with a large spell list, no pairing, no primers
-that do anything, and working chambers. Every individual spell casts and does
-its damage, so nothing looks broken from the outside. What is absent is the
-reason to play the class.
-
-The parts already built for chambers are most of what a full implementation
-needs: `ChamberLoader` already tracks an open primary and the secondary that
-follows it, and both packet paths that carry a spell are already intercepted.
-Extending that from "while a chamber is casting" to "while any primary is
-casting" is the same shape of work.
+**Doubled cast time on primaries.** The cost that makes the trade fair.
+Nothing implements it, so a Warlock currently gets the weave for free.
 
 ---
 
-## Order worth doing it in
+## What to test
 
-1. **Pairing.** A primary opens a window; the next secondary is bound to it
-   and lands with it. Everything else depends on this.
-2. **Powerless and Range.** Once a secondary knows which primary it belongs
-   to, both are small.
-3. **The rule.** Refuse a secondary with no primary, as its own delve says.
-4. **Doubled cast time on primaries**, which is the cost that makes the whole
-   trade fair. Worth doing last, because until the pairing works it is a
-   penalty with no benefit attached.
+1. Cast a **primary** -- a root, a lifedrain, a direct damage curse. It should
+   cast as normal.
+2. During that cast, click a **secondary** -- a damage-over-time, a snare. It
+   should say it is woven in rather than casting.
+3. When the primary lands, the secondary should land with it.
+4. Click a **secondary alone**. It should be refused.
+5. Cast a **Powerless** primer, then a secondary: no power spent.
+6. Cast a **Range** primer, then a secondary at something far away: it should
+   reach where it otherwise would not.
+7. Cast one of the eight plain Cursing Spec curses. It should behave like any
+   ordinary spell, because it is one.

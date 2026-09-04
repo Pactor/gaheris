@@ -71,12 +71,34 @@ Our import is faithful everywhere it has a value: `CastTime 2`, `MoveCast 1`,
 Creeping baseline. Only the two columns that were blank in the reference are
 blank here.
 
-**Not fixed, and not by a Type guess.** Nothing in `eSpellType` matches it. The
-resist types are all per damage type -- Body, Cold, Crush, Energy, Heat,
-Matter, Slash, Spirit, Thrust -- and this reduces resists generally, in a
-radius around the caster's pet, against monsters only. Giving it the nearest
-wrong type would make it do something wrong, which is worse than doing nothing
-visibly. It wants a handler written, as Severing the Tether did.
+**Fixed** -- migration 114 and
+`scripts/classes/shrouded-isles/FungalPotency.cs`. Cast on the pet at 2000
+range, everything hostile within 350 of it loses **15% of all six magic
+resists** for 60 seconds. The Animist's own turrets are never touched.
+
+Two decisions worth keeping.
+
+**Not resist pierce**, which is the obvious reading of "reduces resists".
+`eProperty.ResistPierce` exists and is applied, but only like this:
+
+```csharp
+primaryResistModifier -= Math.Max(0, Math.Min(ad.Target.ItemBonus[property], resistPierce));
+```
+
+It offsets the victim's *item* resistance, and a monster has no items. Against
+the only targets this spell is permitted it would have done nothing whatsoever
+while looking perfectly correct in the database -- the exact failure this
+project keeps finding.
+
+**It hangs off `BodyResistDebuff`** because a script cannot add a value to the
+core's `eSpellType`. The special path is entered only for a spell aimed at a
+**PET with a radius**, and no resist debuff in the database has that shape --
+checked against all nine types, not one of which targets a pet. Every ordinary
+resist debuff still runs the core's handler untouched.
+
+All six magic resists rather than Body alone: the patch note says "resists"
+without qualification, and the row's Body damage type is simply the first magic
+resist, which reads as an import default rather than a choice.
 
 ---
 

@@ -73,7 +73,15 @@ namespace DOL.GS.Scripts
 
                 int damage = blow.DamageAmount + blow.CriticalAmount;
 
-                if (damage <= 0 || !Melee(blow.DamageType))
+                if (damage <= 0)
+                    return;
+
+                // Gift of Perizor is settled before the melee filter, because
+                // it feeds on every kind of damage rather than only weapons.
+                if (sender is GameLiving shielded)
+                    PayThePerizor(shielded, damage);
+
+                if (!Melee(blow.DamageType))
                     return;
 
                 if (sender is GameLiving hurt)
@@ -90,6 +98,55 @@ namespace DOL.GS.Scripts
                 // A realm ability payout is not worth taking the damage path
                 // down with it.
             }
+        }
+
+        /// <summary>
+        /// Gift of Perizor -- the Maulers' Realm Rank 5 -- puts a shield on a
+        /// groupmate that swallows a quarter of the damage they take and hands
+        /// it to the Mauler as power.
+        ///
+        /// The swallowing works. The handing over never has, in this server or
+        /// in DOLSharp before it, because of one pair of integers:
+        ///
+        ///     int difference = (int) (0.25 * damageDealt);
+        ///     double manareturned = (difference / this.MaxHealth * TheMauler.MaxMana);
+        ///
+        /// `difference` and `MaxHealth` are both int, so that division is
+        /// integer division. Unless a single blow exceeds the target's entire
+        /// health pool it yields 0, and nought times MaxMana is nought. The
+        /// comment above it says what was meant -- "apply this % to mauler
+        /// maxmana" -- and the arithmetic throws the percentage away.
+        ///
+        /// It cannot be corrected where it lives, inside GameLiving.TakeDamage,
+        /// so it is done here instead. The core still adds its zero, which
+        /// costs nothing. This runs before the melee filter because the shield
+        /// answers every kind of damage, not only weapons.
+        ///
+        /// The damage seen here is the full amount: GameObject.TakeDamage
+        /// raises this event before GameLiving.TakeDamage reaches the absorb,
+        /// which is the same number the core's own calculation starts from.
+        /// </summary>
+        private static void PayThePerizor(GameLiving shielded, int damage)
+        {
+            if (shielded.EffectList.GetOfType<GiftOfPerizorEffect>() == null)
+                return;
+
+            GamePlayer mauler = shielded.TempProperties.GetProperty<GamePlayer>("GiftOfPerizorOwner");
+
+            if (mauler == null || !mauler.IsAlive || shielded.MaxHealth <= 0)
+                return;
+
+            int swallowed = (int) (0.25 * damage);
+
+            // The division the core meant to make, in doubles.
+            int power = (int) ((double) swallowed / shielded.MaxHealth * mauler.MaxMana);
+
+            if (power <= 0)
+                return;
+
+            mauler.ChangeMana(shielded, eManaChangeType.Spell, power);
+            Say(mauler.Name + " draws " + power + " power as " + shielded.Name +
+                " takes " + damage + " (" + swallowed + " swallowed)");
         }
 
         /// <summary>

@@ -15,9 +15,11 @@ pulse.
 auras, fear, and befriend. Everything else about her is verified as wired but
 needs combat and other targets to test, so she is parked. See `bainshee.md`.
 
-**The Valkyrie.** Verified and **nothing found broken** -- the first class of
-which that is true here. Her cone crash was fixed before anyone hit it and the
-cone has since been cast without incident. See `valkyrie.md`.
+**The Valkyrie.** Confirmed in play. Her cone crash was fixed before anyone hit
+it and the cones now cast cleanly; her buff-strips cast themselves rather than
+their neighbours once Odin's Will was marked as the hybrid line it is. The
+audit found nothing else broken in her, and the log stayed clean throughout
+testing. See `valkyrie.md`.
 
 ## Start here: the Bainshee
 

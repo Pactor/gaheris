@@ -3,9 +3,13 @@
 Midgard, Catacombs (December 2004). Class 34. Chain armour, spear and sword, a
 hybrid who heals and fights. Odin's chooser of the slain.
 
-Verified 5 September 2026 against the running server. **Nothing in her is
-known to be broken.** She is the first class audited here of which that is
-true.
+Verified 5 September 2026 against the running server and then confirmed in
+play. **Nothing in her is known to be broken.**
+
+Two faults were found and fixed, neither of them in her spell content: a crash
+waiting in her pulsing cones, and her damage line not being marked as the
+hybrid line it is, which made her buff-strips cast their neighbours. Both are
+confirmed working. The log stayed clean through testing.
 
 ---
 

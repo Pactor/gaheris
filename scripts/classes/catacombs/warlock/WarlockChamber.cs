@@ -220,6 +220,26 @@ namespace DOL.GS.Scripts
                 return false;
             }
 
+            // Range is measured against what the chamber FIRES, not against
+            // the chamber itself. Every chamber spell carries Range 0, so the
+            // ordinary check in CheckBeginCast tests nothing whatsoever, while
+            // the spell banked inside reaches between 1500 and 2250. Without
+            // this a chamber discharges a bolt across the zone.
+            //
+            // DOLSharp checked this explicitly, against the primary's own
+            // handler rather than the chamber's:
+            //
+            //     if (!caster.IsWithinRadius(m_spellTarget,
+            //             ((SpellHandler) spellhandler).CalculateSpellRange()))
+            //     { MessageToCaster("That target is too far away!"); return false; }
+            int reach = chamber.PrimarySpell?.Range ?? 0;
+
+            if (reach > 0 && !Caster.IsWithinRadius(at, reach))
+            {
+                MessageToCaster("That target is too far away!", eChatType.CT_SpellResisted);
+                return false;
+            }
+
             Fire(chamber.PrimarySpell, chamber.PrimarySpellLine, at);
             Fire(chamber.SecondarySpell, chamber.SecondarySpellLine, at);
 

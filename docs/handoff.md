@@ -21,7 +21,7 @@ Walked through and seen working, not merely written.
 | The dungeon exit | Confirmed twice; logged client zonepoints `570` and `571` |
 | Mercenaries through a dungeon | Follow in, follow out, survive the instance closing |
 | `/task` | Shows the mission; the core's version reads a different system entirely |
-| Warlock chambers | Loaded, armed, orb drawn, both spells fired on discharge |
+| Warlock chambers | Complete: load one or two spells, arm, orb, survive a zone, fire instantly, orb clears |
 
 ---
 
@@ -65,10 +65,33 @@ the fix.
 **Mauler and Vampiir power from combat.** Both should now climb while
 fighting. Neither has been watched on a power bar.
 
-**Warlock chambers work.** Proven end to end: Chamber of Lesser Fate loaded
-with Molding Hex and Infernal Sore, armed, drew its orb, and fired both on the
-second cast. This mechanic had never worked in this codebase -- upstream's own
-note reads "Can't be tested since Warlocks aren't functional."
+**Warlock chambers work, end to end.** Load one or two spells during the six
+second cast, the chamber arms and draws its orb, it survives zoning, and
+clicking it again fires everything inside instantly at the target and clears
+the orb.
+
+It took seven separate faults, all in the one feature, which is worth
+recording because several are traps that will catch anything else built this
+way:
+
+1. The loading override was lost to a refactor -- the core's own comment says
+   it could not even be tested.
+2. The interception was on `UseSkill`; every Warlock spell is a list spell and
+   arrives on `UseSpell`.
+3. The handler must DERIVE from `ChamberSpellHandler`. The orb packet casts to
+   it, so a replacement would throw the moment a chamber armed.
+4. Three of our six chamber names return effect slot 0 from the core's
+   `GetEffectSlot`, and the orb packet keys a list 1 to 5 and writes a byte
+   each -- a nought hands the client a longer packet than it expects.
+5. The discharge re-ran the six second cast instead of firing. A loaded
+   chamber has to cast instantly.
+6. `FinishSpellCast` is what runs when a cast ends, and it was returning early
+   on exactly the case it needed to act on.
+7. `Cancel` did not remove the effect. It batches removal in
+   BeginChanges/CommitChanges and this runs inside the casting pipeline, which
+   already holds that batch open, so the effect stayed in the list. **An
+   effect cancelled from inside a cast is not necessarily gone when the call
+   returns.**
 
 No restriction is enforced on what may be chambered beyond refusing another
 chamber. Live restricted it, and if something obviously unbankable can be

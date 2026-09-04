@@ -82,6 +82,19 @@ The empty `Champion Abilities Hibernia` line I flagged as suspicious last night
 is **not** a fault -- that line is a container and is meant to be empty. The
 content lives in the archetype trees.
 
+## Open questions needing a source, not a fix
+
+From the realm ability sweep -- see `realm-abilities.md`. All three look like
+omissions and none were changed, because looking like one is not a source.
+
+- **Nine classes have no realm rank 5 ability**: Scout, Wizard, Friar, Hunter,
+  Warden, Ranger and all three Maulers. Every class is supposed to get one.
+- **The Heretic has two** -- Fanaticism, which is certainly his, and Divine
+  Intervention, which reads like the Friar's. The Friar is one of the nine.
+  Same shape as the Mauler swap, but unconfirmed.
+- **Bainshee and Warlock lack Avoidance of Magic**, which 45 of 47 classes
+  have.
+
 ## Not started
 
 - **Shrouded Isles classes** -- Bonedancer, Animist, Valewalker, Necromancer,

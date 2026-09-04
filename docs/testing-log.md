@@ -1,6 +1,6 @@
 # Where to pick up testing
 
-Current to 5 September 2026. The server has been restarted, so everything below
+Current to 4 September 2026. The server has been restarted, so everything below
 is live.
 
 Logging currently on: `bainshee_log`, `heretic_log`, `ml_holds_log`,
@@ -86,6 +86,48 @@ can reach. Reveals enemy-placed runes, which on a co-operative server nobody
 places. Needs a handler and a hosted spell type for no practical gain.
 
 ---
+
+---
+
+## Beyond skills: the other four systems
+
+Added 4 September. Everything above this line is about what a class *casts*.
+Four systems that decide whether a class is playable at all had never been
+looked at.
+
+| System | Result |
+|---|---|
+| **Class abilities** | 92 granted; 18 had no code. See `abilities.md` |
+| **Styles** | 680 procs, 39 spell types -- **all handled, all reachable** |
+| **Trainers** | **the Bainshee had none in Hibernia**; fixed, migration 115 |
+| **Creation and gear** | all 62 classes declare eligible races, armour and weapon proficiency |
+
+The trainer finding is the one worth remembering. The Bainshee had been audited
+harder than any other class here and called complete, and none of that asked
+whether she could spend a specialisation point.
+
+### New to the queue
+
+**Nine Bainshee trainers**, in the Shrouded Isles, Hibernia and Tir na Nog,
+standing beside the Vampiir trainers. *Walk up to one and train.* The
+coordinates are ours, so the risk is a bad floor or a wall, not a bad row.
+
+**Pickpocket** -- Spymaster ML1, "20% Bonus to PvE Coin", which had no code
+anywhere in the server. *Count coin with and without it.*
+
+### Recorded, not fixed
+
+**Enduring Poison** rolls `Util.Chance(15 * 0.0001)`. That overload takes a
+probability, not a percentage, so it fires at 0.15% instead of the 15% its own
+description promises -- a hundred times too small. It is in core and this repo
+does not patch core.
+
+**Call of a thousand storms** is granted to the Thane and the **Valkyrie** at 40
+and exists nowhere -- not here, not in DOLSharp, not as a spell. The Valkyrie
+was called confirmed in play; this was missed. Eleven other abilities are dead
+too, but they are siege, keep and realm-enemy mechanics with no meaning on a
+co-operative server. Three more have descriptions that repeat their own names,
+so there is nothing to build from. All listed in `abilities.md`.
 
 ## Not started
 

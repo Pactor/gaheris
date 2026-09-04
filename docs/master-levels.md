@@ -112,3 +112,33 @@ levels earnable; the core ships the whole apparatus with no way to gain one.
 
 `ml_xp_per_level` (category `progression`) and `ml_holds_log`, which reports
 when one of the fixed holds is broken and by what.
+
+---
+
+## Three more, found only after a wrong assumption was corrected
+
+Added 4 September. An earlier sweep in this repo excused **every** Master Level
+handler on the grounds that `MasterlevelHandling` builds a legacy effect, so
+its `OnEffectStart(GameSpellEffect)` is still reached. **That was wrong.**
+`MasterlevelHandling` derives straight from `SpellHandler` and builds nothing;
+only its font and mine subclasses do. Phaseshift exposed it, and re-running the
+sweep without the excuse turned up three more.
+
+| Spell | Line | Verdict |
+|---|---|---|
+| **Leadership** | Warlord | +25% effectiveness to the realm around you for 20s. Dead. **Fixed** |
+| **Grapple** | Battlemaster | **cannot be cast here** -- refuses NPC targets with "This spell works only on realm enemys" |
+| **Demoralization** | Banelord | -25% enemy effectiveness. Reached nothing, and `Effectiveness` has an empty setter on everything but a player, so it would do nothing to a monster even repaired |
+
+Leadership is kept exactly as core has it: the bonus applies only to players.
+That is not timidity, it is the only thing that can work -- `Effectiveness` is
+declared on `GameLiving` with `set { }` and only `GamePlayer` overrides it with
+real storage. On a server whose group is hired companions, that limits the buff
+to players in range.
+
+**Grapple joins Forceful Zephyr** as a spell whose problem was never the dead
+callback: both demand a target that is attackable and not a `GameNPC`, which
+means an enemy player, and there are none here. Neither is fixable without
+changing who you may cast them on, which is a departure from live rather than a
+repair.
+

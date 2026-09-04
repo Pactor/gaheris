@@ -167,4 +167,68 @@ namespace DOL.GS.Scripts
             (SpellHandler as AncientTransmuterThatAppears)?.Dismiss();
         }
     }
+
+    /// <summary>
+    /// The Warlord's Leadership, and the Accuracy bonus some items carry.
+    ///
+    /// Twenty seconds of plus 25 percent effectiveness to the realm around you,
+    /// which is a real group buff and did nothing at all. Found only after
+    /// Phaseshift proved that MasterlevelHandling does *not* build a legacy
+    /// effect -- an earlier sweep here believed it did and excused every Master
+    /// Level handler on those grounds, which hid this one.
+    ///
+    /// Effectiveness is declared on GameLiving but its setter there is empty;
+    /// only GamePlayer really keeps it. So core's "if the owner is a player"
+    /// guard is also the only thing that could ever have worked, and it is kept
+    /// exactly as core has it rather than widened. On a server whose group is
+    /// hired companions that limits the buff to players in range, which is
+    /// worth knowing but is not something this repair should decide.
+    /// </summary>
+    [SpellHandler(eSpellType.EffectivenessBuff)]
+    public class EffectivenessBuffThatApplies : EffectivenessBuff
+    {
+        public EffectivenessBuffThatApplies(GameLiving caster, Spell spell, SpellLine line)
+            : base(caster, spell, line) { }
+
+        public override ECSGameSpellEffect CreateECSEffect(in ECSGameEffectInitParams initParams)
+        {
+            return ECSGameEffectFactory.Create(initParams, static (in i) => new EffectivenessBuffEffect(i));
+        }
+    }
+
+    public class EffectivenessBuffEffect : ECSGameSpellEffect
+    {
+        private double _given;
+
+        public EffectivenessBuffEffect(in ECSGameEffectInitParams initParams)
+            : base(initParams) { }
+
+        public override void OnStartEffect()
+        {
+            base.OnStartEffect();
+
+            if (Owner is not GamePlayer player || SpellHandler?.Spell == null)
+                return;
+
+            _given = SpellHandler.Spell.Value * 0.01;
+
+            if (_given <= 0)
+                return;
+
+            player.Effectiveness += _given;
+            player.Out.SendUpdateWeaponAndArmorStats();
+        }
+
+        public override void OnStopEffect()
+        {
+            base.OnStopEffect();
+
+            if (Owner is not GamePlayer player || _given <= 0)
+                return;
+
+            player.Effectiveness -= _given;
+            _given = 0;
+            player.Out.SendUpdateWeaponAndArmorStats();
+        }
+    }
 }

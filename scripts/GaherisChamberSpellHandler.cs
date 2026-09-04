@@ -207,7 +207,16 @@ namespace DOL.GS.Scripts
             Fire(chamber.SecondarySpell, chamber.SecondarySpellLine, at);
 
             // Spent. A chamber is a bank, not a buff.
+            //
+            // Cancel alone does not do it. It wraps its removal in
+            // BeginChanges/CommitChanges, and this runs inside the casting
+            // pipeline which already holds that batch open, so the effect is
+            // marked expired and stays in the list -- the orb was not a stale
+            // picture, it was an accurate one. Taken out of the list directly
+            // as well, which is what Cancel would have done had it been able
+            // to finish.
             effect.Cancel(false);
+            Caster.EffectList.Remove(effect);
 
             Console.WriteLine("Chamber: after firing, still armed = " + (Armed() != null));
 

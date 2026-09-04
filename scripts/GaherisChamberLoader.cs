@@ -44,6 +44,24 @@ namespace DOL.GS.Scripts
             public bool Empty => Primary == null && Secondary == null;
         }
 
+        /// <summary>
+        /// The three chambers learned at thirty-seven, which alone can hold a
+        /// bolt. Named rather than derived from a level, because a spell does
+        /// not carry the level it was learned at -- that lives on the line
+        /// entry -- and six names are cheaper to read than a lookup.
+        /// </summary>
+        private static readonly string[] GREATER_CHAMBERS =
+        {
+            "Chamber of Decimation",
+            "Chamber of Greater Fate",
+            "Chamber of Creation",
+        };
+
+        private static bool Greater(Spell chamber)
+        {
+            return Array.IndexOf(GREATER_CHAMBERS, chamber?.Name) >= 0;
+        }
+
         private static readonly Dictionary<string, Loading> _open = new();
         private static readonly object _lock = new();
 
@@ -118,6 +136,19 @@ namespace DOL.GS.Scripts
             if (spell.SpellType is eSpellType.Chamber)
             {
                 player.Out.SendMessage("A chamber cannot be loaded into another chamber.",
+                    eChatType.CT_SpellResisted, eChatLoc.CL_SystemWindow);
+                return true;
+            }
+
+            // Only the greater chambers hold a bolt. The class library is
+            // explicit about it, and it is the difference between the pair
+            // learned at seven and the pair learned at thirty-seven -- without
+            // it the first chamber a Warlock ever gets would bank his heaviest
+            // spell, and the later ones would be worth nothing.
+            if (spell.SpellType is eSpellType.Bolt && !Greater(loading.Chamber))
+            {
+                player.Out.SendMessage(
+                    loading.Chamber.Name + " is not strong enough to hold a bolt.",
                     eChatType.CT_SpellResisted, eChatLoc.CL_SystemWindow);
                 return true;
             }

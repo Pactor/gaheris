@@ -57,6 +57,35 @@ fill, ten second reuse, then released instantly with one click.
 
 Only the level 37 chambers may hold bolt spells.
 
+### The shape of the three lines
+
+Read from our own data, because the summary pages do not break it down and the
+class is easier to reason about once you can see which spells take part.
+
+| Line | Primary | Secondary | Plain |
+|---|---|---|---|
+| **Cursing** | 11 direct damage, 9 bolts | -- | 8 armour factor, 2 absorption, 1 bladeturn |
+| **Cursing Spec** | 10 bolts, 8 direct damage | 6 direct damage, 4 nearsight | 8 direct damage, 6 Range primers, 2 chambers |
+| **Hexing** | 9 roots, 8 lifedrains | 6 damage-over-time, 6 snares | 6 Uninterruptable primers, 3 matter debuffs, 2 chambers |
+| **Witchcraft** | 16 heals and heal bolts | 9 lifedrains, 3 spreadheals, 2 regen | 5 Powerless primers, 2 chambers |
+
+Three things worth noticing.
+
+**Cursing Spec carries eight plain damage spells** -- Twisting, Warping,
+Winding and Wrenching Curse, lesser and greater. These are his ordinary combat
+spells, cast alone like anybody else's, and they are exactly the ones
+`ClassWarlock.CanChangeCastingSpeed` names as exceptions. A Warlock is not
+obliged to weave everything.
+
+**Witchcraft's primaries are heals.** The line pairs a heal with a lifedrain
+or a spreadhead, which is what makes the Warlock a support caster as well as a
+damage one.
+
+**Only the greater chambers hold a bolt.** The three learned at thirty-seven
+-- Decimation, Greater Fate, Creation -- may bank one; the three learned at
+seven may not. Without that rule the first chamber a Warlock ever gets would
+bank his heaviest spell and the later ones would be worth nothing.
+
 ---
 
 ## What is missing

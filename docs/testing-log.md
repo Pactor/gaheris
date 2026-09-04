@@ -89,13 +89,17 @@ already existed with working handlers and had simply never been granted to
 anyone. See `realm-abilities.md`.
 
 - **Scout** Shield Trip, **Friar** Whirling Staff, **Hunter** Entwining Snakes,
-  **Warden** Fury of Nature, **Ranger** Desperate Bowman.
+  **Warden** Fury of Nature, **Ranger** Desperate Bowman, **Wizard** Wall of
+  Flame.
 - Take any of them to RR5 and check the ability appears and fires.
 - Shield Trip, Entwining Snakes and Fury of Nature sit partly on dead events,
   so expect parts of them not to work. Report which parts.
+- **Wall of Flame** should be the cleanest of the six: instant cast, a ward at
+  your feet doing 400 fire damage every 3 seconds for 15, in a 150 radius.
+  Nothing about it touches a dead event.
 
-**The Wizard's is still missing** -- "Wall of Fire" has no ability row and no
-handler, so it has to be written rather than granted.
+All 47 classes now have a class-specific ability, every one backed by a real
+handler.
 
 **Still open, deliberately:** Bainshee and Warlock lack Avoidance of Magic,
 which 45 of 47 classes have. No source found saying they should have it, so it

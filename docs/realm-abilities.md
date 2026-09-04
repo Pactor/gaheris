@@ -34,8 +34,29 @@ unreachable.
 Granted in migration 107, with ids following the `<Class>-RR5` convention the
 other explicitly-added ones use.
 
-**The Wizard's is not fixed.** "Wall of Fire" has no row in `ability` and no
-handler anywhere in the core. It cannot be granted, only written.
+**The Wizard's is now granted too** -- migration 108. All six are fixed, and
+every one of the 47 classes has a class-specific ability backed by a real
+handler.
+
+| Wizard | Wall of Flame | a ward at the caster's feet, 400 fire damage every 3 seconds for 15, radius 150 |
+|---|---|---|
+
+Nothing had to be written for it either. `WallOfFlameAbility`, the pulsing
+`WallOfFlameBase` static, and the `ability` row (id 122) all existed; no class
+had ever been granted it.
+
+Migration 107 said this one "cannot be granted, only written". **That was
+wrong**, and the reason is worth keeping: the published RR5 listing calls it
+*Wall of Fire* and the game calls it **Wall of Flame**. Searching the source's
+name instead of the code's found nothing, and I reported nothing there. The
+lesson is the same one the Purge variants taught an hour earlier -- an absence
+in a search is not an absence in the data.
+
+One discrepancy deliberately left: the ability page gives a fifteen minute
+reuse, and the core's `GetReUseDelay` returns 600, which is ten. Changing it
+means subclassing the handler and repointing `Implementation` at the subclass
+-- machinery for one number, on a single source, when most RR5s sit on "a ten
+or fifteen minute timer".
 
 **Before testing these:** Shield Trip, Entwining Snakes and Fury of Nature all
 register handlers on `AttackedByEnemy` or `AttackFinished`, neither of which

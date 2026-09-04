@@ -1,3 +1,4 @@
+using System;
 using DOL.GS.Effects;
 using DOL.GS.PacketHandler;
 using DOL.GS.ServerProperties;
@@ -76,6 +77,30 @@ namespace DOL.GS.Scripts
         }
 
         /// <summary>
+        /// The channel ticking. This is what actually carries the damage --
+        /// OnEffectPulse leads to OnDirectEffect -- and it is also where the
+        /// core gives up, cancelling silently if the caster has moved out of
+        /// range, lost the target, or run out of power. Worth saying which.
+        /// </summary>
+        public override void OnEffectPulse(GameSpellEffect effect)
+        {
+            if (Caster != null && effect?.Owner != null)
+            {
+                bool inRange = Caster.IsWithinRadius(effect.Owner, Spell.CalculateEffectiveRange(Caster));
+                bool onTarget = Caster.TargetObject == effect.Owner;
+                bool hasPower = Caster.Mana >= Spell.PulsePower;
+
+                if (!inRange || !onTarget || !hasPower)
+                    Console.WriteLine("Heretic: " + Spell.Name + " channel breaking -- " +
+                                      (inRange ? "" : "out of range ") +
+                                      (onTarget ? "" : "target lost ") +
+                                      (hasPower ? "" : "no power"));
+            }
+
+            base.OnEffectPulse(effect);
+        }
+
+        /// <summary>
         /// The damage as it stands after however long the channel has been
         /// held. Applied here because every path to damage passes through it,
         /// so the growth cannot be missed by one of them.
@@ -83,16 +108,27 @@ namespace DOL.GS.Scripts
         public override AttackData CalculateDamageToTarget(GameLiving target)
         {
             AttackData ad = base.CalculateDamageToTarget(target);
+            int baseDamage = ad.Damage;
 
-            if (!Ramps || _pulses <= 0)
-                return ad;
+            if (Ramps && _pulses > 0)
+            {
+                int grown = _pulses * RAMP_PER_PULSE;
 
-            int grown = _pulses * RAMP_PER_PULSE;
+                if (grown > RAMP_CAP)
+                    grown = RAMP_CAP;
 
-            if (grown > RAMP_CAP)
-                grown = RAMP_CAP;
+                ad.Damage += ad.Damage * grown / 100;
+            }
 
-            ad.Damage += ad.Damage * grown / 100;
+            // Temporary, while the channel is being trusted. The visual worked
+            // and nothing landed, and there are several places that could
+            // swallow it -- the pulse cancels on range, on losing the target,
+            // or on power -- so this says what the damage actually was.
+            Console.WriteLine("Heretic: " + Spell.Name + " pulse " + _pulses +
+                              " base " + baseDamage + " -> " + ad.Damage +
+                              " on " + (target == null ? "?" : target.Name) +
+                              " (" + ad.AttackResult + ")");
+
             return ad;
         }
 

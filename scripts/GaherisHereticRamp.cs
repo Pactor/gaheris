@@ -185,6 +185,7 @@ namespace DOL.GS.Scripts
         {
             _channelling = target;
             base.FinishSpellCast(target);
+            Watch();
         }
 
         /// <summary>
@@ -282,6 +283,7 @@ namespace DOL.GS.Scripts
         }
 
         private bool _watching;
+        private GameLiving _watched;
 
         /// <summary>
         /// Notice the moment the caster takes a step, or is struck.
@@ -300,6 +302,16 @@ namespace DOL.GS.Scripts
             _watching = true;
             GameEventMgr.AddHandler(Caster, GamePlayerEvent.Moving, new DOLEventHandler(Moved));
             GameEventMgr.AddHandler(Caster, GameLivingEvent.AttackedByEnemy, new DOLEventHandler(Struck));
+
+            // And the target's death, which is the one ending that cannot be
+            // noticed from inside the beat. Once the target is dead the pulse
+            // machinery stops calling ApplyEffectOnTarget, so every check that
+            // lives there stops running -- and the channel carries on beating
+            // at a corpse because nothing is left to cancel it.
+            _watched = _channelling;
+
+            if (_watched != null)
+                GameEventMgr.AddHandler(_watched, GameLivingEvent.Dying, new DOLEventHandler(TargetDied));
         }
 
         private void Unwatch()
@@ -310,6 +322,12 @@ namespace DOL.GS.Scripts
             _watching = false;
             GameEventMgr.RemoveHandler(Caster, GamePlayerEvent.Moving, new DOLEventHandler(Moved));
             GameEventMgr.RemoveHandler(Caster, GameLivingEvent.AttackedByEnemy, new DOLEventHandler(Struck));
+
+            if (_watched != null)
+            {
+                GameEventMgr.RemoveHandler(_watched, GameLivingEvent.Dying, new DOLEventHandler(TargetDied));
+                _watched = null;
+            }
         }
 
         /// <summary>
@@ -344,6 +362,11 @@ namespace DOL.GS.Scripts
         private void Moved(DOLEvent e, object sender, EventArgs args)
         {
             Break("the caster moved");
+        }
+
+        private void TargetDied(DOLEvent e, object sender, EventArgs args)
+        {
+            Break("the target died");
         }
 
         private void Say(string what)

@@ -209,10 +209,28 @@ namespace DOL.GS.Scripts
             // Spent. A chamber is a bank, not a buff.
             effect.Cancel(false);
 
+            Console.WriteLine("Chamber: after firing, still armed = " + (Armed() != null));
+
             if (Caster is GamePlayer player)
+            {
                 player.Out.SendWarlockChamberEffect(player);
 
+                // And once more a moment later. The orb is drawn from a walk
+                // of the effect list, and sending that while the list is still
+                // settling leaves the spent chamber painted above the head
+                // even though it is gone from the server.
+                new ECSGameTimer(player, Repaint, 500).Start(500);
+            }
+
             return true;
+        }
+
+        private static int Repaint(ECSGameTimer timer)
+        {
+            if (timer.Owner is GamePlayer player)
+                player.Out.SendWarlockChamberEffect(player);
+
+            return 0;
         }
 
         private void Fire(Spell spell, SpellLine line, GameLiving at)

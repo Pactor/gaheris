@@ -82,18 +82,24 @@ The empty `Champion Abilities Hibernia` line I flagged as suspicious last night
 is **not** a fault -- that line is a container and is meant to be empty. The
 content lives in the archetype trees.
 
-## Open questions needing a source, not a fix
+## Five classes got their realm rank 5 ability back
 
-From the realm ability sweep -- see `realm-abilities.md`. All three look like
-omissions and none were changed, because looking like one is not a source.
+Sourced from a published RR5 listing and granted in migration 107. All five
+already existed with working handlers and had simply never been granted to
+anyone. See `realm-abilities.md`.
 
-- **Nine classes have no realm rank 5 ability**: Scout, Wizard, Friar, Hunter,
-  Warden, Ranger and all three Maulers. Every class is supposed to get one.
-- **The Heretic has two** -- Fanaticism, which is certainly his, and Divine
-  Intervention, which reads like the Friar's. The Friar is one of the nine.
-  Same shape as the Mauler swap, but unconfirmed.
-- **Bainshee and Warlock lack Avoidance of Magic**, which 45 of 47 classes
-  have.
+- **Scout** Shield Trip, **Friar** Whirling Staff, **Hunter** Entwining Snakes,
+  **Warden** Fury of Nature, **Ranger** Desperate Bowman.
+- Take any of them to RR5 and check the ability appears and fires.
+- Shield Trip, Entwining Snakes and Fury of Nature sit partly on dead events,
+  so expect parts of them not to work. Report which parts.
+
+**The Wizard's is still missing** -- "Wall of Fire" has no ability row and no
+handler, so it has to be written rather than granted.
+
+**Still open, deliberately:** Bainshee and Warlock lack Avoidance of Magic,
+which 45 of 47 classes have. No source found saying they should have it, so it
+was not added.
 
 ## Not started
 

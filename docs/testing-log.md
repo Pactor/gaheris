@@ -146,6 +146,29 @@ coordinates are ours, so the risk is a bad floor or a wall, not a bad row.
 **Pickpocket** -- Spymaster ML1, "20% Bonus to PvE Coin", which had no code
 anywhere in the server. *Count coin with and without it.*
 
+### The deliverability sweep, rerun with a corrected rule
+
+Focus Shell exposed a hole in the first sweep, which treated "the handler
+mentions `CreateSpellEffect`" as proof its `OnEffectStart` is reached. Defining
+that method is not enough -- something has to **call** it. Rerun properly
+across all 298 spell types any spell line can reach, three more faults came out
+and several suspects were cleared:
+
+| Spell type | Verdict |
+|---|---|
+| **WaterBreathing** | dead -- **fixed**. 9 spells: Bard Music, Minstrel Instruments, Skald Battlesongs, a potion, an item effect, Sojourner ML |
+| **AncientTransmuter** | dead -- **fixed**. Sojourner ML, every class. Built its merchant and never called AddToWorld |
+| **WarlockSpeedDecrease** | snare works through its base; only the **model morph** is lost. Cosmetic, not fixed |
+| **EnduranceRegenBuff** | works. 44 spells including six champion lines -- mapped properly through EffectHelper |
+| 13 others | all `Item Effects` only -- ToA artifact procs, not class spells |
+
+The sweep still cannot catch everything, and that is worth writing down.
+Focus Shell is *not* flagged even by the corrected rule, because it overrides
+`CreateECSEffect` and the rule counts that as live -- but the effect it builds,
+`FocusECSEffect`, only prints two messages. No automated test distinguishes an
+effect that does the work from one that does not. **The list narrows what to
+read; it does not replace reading it.**
+
 ### Recorded, not fixed
 
 **Enduring Poison** rolls `Util.Chance(15 * 0.0001)`. That overload takes a

@@ -89,10 +89,23 @@ namespace DOL.GS.Scripts
         public override bool CheckBeginCast(GameLiving selectedTarget)
         {
             if (!base.CheckBeginCast(selectedTarget))
+            {
+                Console.WriteLine("Chamber: " + Spell.Name + " refused before casting");
                 return false;
+            }
 
-            if (Caster is not GamePlayer player || Armed() != null)
+            if (Caster is not GamePlayer player)
                 return true;
+
+            if (Armed() != null)
+            {
+                // Already loaded, so this cast spends it rather than filling
+                // it. Said out loud because from the outside the two look
+                // identical and only one of them opens a window.
+                Console.WriteLine("Chamber: " + player.Name + " casting " + Spell.Name +
+                                  " to discharge it");
+                return true;
+            }
 
             ChamberLoader.Open(player, Spell);
             player.Out.SendMessage("Select the first spell for your " + Spell.Name + ".",
@@ -154,6 +167,11 @@ namespace DOL.GS.Scripts
 
             if (effect == null || effect.SpellHandler is not GaherisChamberSpellHandler chamber)
                 return true;
+
+            Console.WriteLine("Chamber: firing " + Spell.Name + " -- " +
+                              (chamber.PrimarySpell?.Name ?? "-") + " / " +
+                              (chamber.SecondarySpell?.Name ?? "-") + " at " +
+                              ((Caster as GamePlayer)?.TargetObject?.Name ?? "no target"));
 
             GameLiving at = (Caster as GamePlayer)?.TargetObject as GameLiving ?? target;
 

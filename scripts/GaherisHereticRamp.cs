@@ -59,6 +59,7 @@ namespace DOL.GS.Scripts
         public static int RAMP_CAP;
 
         private int _pulses;
+        private GameLiving _channelling;
 
         public GaherisHereticRamp(GameLiving caster, Spell spell, SpellLine line)
             : base(caster, spell, line)
@@ -68,12 +69,47 @@ namespace DOL.GS.Scripts
         /// <summary>Only a held channel grows. A one-shot damage-over-time does not.</summary>
         private bool Ramps => Spell.Pulse > 0 && RAMP_PER_PULSE > 0;
 
+        /// <summary>
+        /// Each beat of the channel, and the beat has to deal the damage.
+        ///
+        /// This is why the spell pulsed and nothing ever landed. These spells
+        /// carry Pulse 1, so the core drives them from the caster's side
+        /// through OnSpellPulse -- but the Heretic handler only ever put its
+        /// damage in OnEffectPulse, the target-side tick, and never overrode
+        /// OnSpellPulse at all. So the aura beat away and nothing was ever
+        /// asked to work out damage.
+        ///
+        /// The core's own RampingDamageFocus does exactly what is missing:
+        ///
+        ///     pulseCount += 1;
+        ///     OnDirectEffect(Target);
+        ///
+        /// which is the shape followed here.
+        /// </summary>
         public override void OnSpellPulse(PulsingSpellEffect effect)
         {
+            base.OnSpellPulse(effect);
+
+            GameLiving at = Caster?.TargetObject as GameLiving ?? _channelling;
+
+            if (at == null || !at.IsAlive || Caster == null)
+                return;
+
+            // The channel holds only while the caster keeps his target and
+            // stays in reach. Losing either is what resets the growth.
+            if (Caster.TargetObject != at ||
+                !Caster.IsWithinRadius(at, Spell.CalculateEffectiveRange(Caster)))
+            {
+                Console.WriteLine("Heretic: " + Spell.Name + " channel broken after " +
+                                  _pulses + " pulses");
+                _pulses = 0;
+                return;
+            }
+
             if (Ramps)
                 _pulses++;
 
-            base.OnSpellPulse(effect);
+            OnDirectEffect(at);
         }
 
         /// <summary>
@@ -141,6 +177,19 @@ namespace DOL.GS.Scripts
         {
             _pulses = 0;
             base.OnEffectStart(effect);
+        }
+
+        public override void FinishSpellCast(GameLiving target)
+        {
+            _channelling = target;
+            base.FinishSpellCast(target);
+        }
+
+        public override int OnEffectExpires(GameSpellEffect effect, bool noMessages)
+        {
+            Console.WriteLine("Heretic: " + Spell.Name + " effect expired after " +
+                              _pulses + " pulses");
+            return base.OnEffectExpires(effect, noMessages);
         }
     }
 }

@@ -98,17 +98,30 @@ namespace DOL.GS.Scripts
             return spell != null && (spell.IsPrimary || IsPrimer(spell));
         }
 
-        /// <summary>Is this the class that pairs its spells?</summary>
-        public static bool Pairs(GamePlayer player)
+        /// <summary>
+        /// Is this the class that pairs its spells?
+        ///
+        /// A hired Warlock counts. The player's pairing is done by catching
+        /// the packet, and a hire sends none -- so without this it saw the
+        /// secondaries for what they look like on paper, instant casts with
+        /// real damage, and threw them one after another with no primary at
+        /// all. The class played backwards, and better than the player's
+        /// version of it.
+        /// </summary>
+        public static bool Pairs(GameLiving living)
         {
-            return player?.CharacterClass is ClassWarlock;
+            if (living is GamePlayer player)
+                return player.CharacterClass is ClassWarlock;
+
+            return living is GameMercenary hire &&
+                   hire.Profile?.ClassId is eCharacterClass.Warlock;
         }
 
         /// <summary>
         /// A primary has begun casting. From here until it lands, one
         /// secondary may be hung on it.
         /// </summary>
-        public static void Begin(GamePlayer player, Spell primary)
+        public static void Begin(GameLiving player, Spell primary)
         {
             if (!Pairs(player) || primary == null)
                 return;
@@ -134,7 +147,8 @@ namespace DOL.GS.Scripts
             // Every secondary, by contrast, states the requirement in its own
             // delve. The game has always said what a secondary needs and never
             // which spells provide it.
-            player.Out.SendMessage(primary.Name + " opens a weave. Add a secondary spell.",
+            (player as GamePlayer)?.Out.SendMessage(
+                primary.Name + " opens a weave. Add a secondary spell.",
                 eChatType.CT_Spell, eChatLoc.CL_SystemWindow);
 
             Console.WriteLine("Weave: " + player.Name + " opened with " + primary.Name +
@@ -151,7 +165,7 @@ namespace DOL.GS.Scripts
         /// which is what its own delve says should happen and what stops the
         /// class being played as an ordinary caster.
         /// </summary>
-        public static bool Take(GamePlayer player, Spell spell, SpellLine line)
+        public static bool Take(GameLiving player, Spell spell, SpellLine line)
         {
             if (!Pairs(player) || spell == null || line == null)
                 return false;
@@ -163,7 +177,7 @@ namespace DOL.GS.Scripts
 
             if (pairing == null)
             {
-                player.Out.SendMessage(
+                (player as GamePlayer)?.Out.SendMessage(
                     spell.Name + " cannot be cast until after a primary spell.",
                     eChatType.CT_SpellResisted, eChatLoc.CL_SystemWindow);
                 return true;
@@ -171,7 +185,7 @@ namespace DOL.GS.Scripts
 
             if (pairing.Secondary != null)
             {
-                player.Out.SendMessage(
+                (player as GamePlayer)?.Out.SendMessage(
                     "You are already weaving " + pairing.Secondary.Name + " into this spell.",
                     eChatType.CT_SpellResisted, eChatLoc.CL_SystemWindow);
                 return true;
@@ -183,13 +197,14 @@ namespace DOL.GS.Scripts
             Console.WriteLine("Weave: " + player.Name + " wove " + spell.Name +
                               " into " + pairing.Primary.Name);
 
-            player.Out.SendMessage(spell.Name + " is woven into " + pairing.Primary.Name + ".",
+            (player as GamePlayer)?.Out.SendMessage(
+                spell.Name + " is woven into " + pairing.Primary.Name + ".",
                 eChatType.CT_Spell, eChatLoc.CL_SystemWindow);
 
             return true;
         }
 
-        private static Pairing Current(GamePlayer player)
+        private static Pairing Current(GameLiving player)
         {
             lock (_lock)
             {
@@ -206,7 +221,7 @@ namespace DOL.GS.Scripts
             }
         }
 
-        private static Pairing Close(GamePlayer player)
+        private static Pairing Close(GameLiving player)
         {
             lock (_lock)
             {
@@ -229,7 +244,7 @@ namespace DOL.GS.Scripts
         {
             try
             {
-                if (sender is not GamePlayer player || !Pairs(player))
+                if (sender is not GameLiving player || !Pairs(player))
                     return;
 
                 if (args is not CastingEventArgs cast ||
@@ -266,8 +281,9 @@ namespace DOL.GS.Scripts
 
                 if (reach > 0 && !player.IsWithinRadius(at, reach))
                 {
-                    player.Out.SendMessage(at.GetName(0, true) + " is too far away for " +
-                                           pairing.Secondary.Name + ".",
+                    (player as GamePlayer)?.Out.SendMessage(
+                        at.GetName(0, true) + " is too far away for " +
+                        pairing.Secondary.Name + ".",
                         eChatType.CT_SpellResisted, eChatLoc.CL_SystemWindow);
                     return;
                 }
@@ -294,8 +310,8 @@ namespace DOL.GS.Scripts
         /// <summary>A primary that never landed takes its secondary with it.</summary>
         private static void Lost(DOLEvent e, object sender, EventArgs args)
         {
-            if (sender is GamePlayer player && Pairs(player))
-                Close(player);
+            if (sender is GameLiving living && Pairs(living))
+                Close(living);
         }
     }
 }

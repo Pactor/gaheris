@@ -2532,7 +2532,84 @@ namespace DOL.GS.Scripts
 
             _cooldowns[spell.ID] = now + cooldownMillis;
             TargetObject = target;
-            return CastSpell(spell, SkillBase.GetSpellLine(GlobalSpellsLines.Mob_Spells), false);
+
+            SpellLine line = SkillBase.GetSpellLine(GlobalSpellsLines.Mob_Spells);
+
+            // A hired Warlock casts two spells at once, like a real one.
+            //
+            // The player's pairing is caught in the skill packet, and a hire
+            // sends no packets, so without this it saw its secondaries for what
+            // they look like on paper -- quick casts with real damage -- and
+            // threw them one after another with no primary at all. It played
+            // the class backwards, and rather better than the player's version
+            // of it.
+            //
+            // Nothing here re-implements the weave. WarlockPairing already
+            // takes any GameLiving and closes on GameLivingEvent.CastFinished,
+            // which a hire raises exactly as a player does. All that was
+            // missing was somebody to open one.
+            if (WarlockPairing.Pairs(this) && spell.IsSecondary)
+            {
+                Spell opener = Opener();
+
+                // A secondary with nothing to hang it on is refused, which is
+                // the same rule the player is held to.
+                if (opener == null)
+                    return false;
+
+                WarlockPairing.Begin(this, opener);
+                WarlockPairing.Take(this, spell, line);
+                return CastSpell(opener, line, false);
+            }
+
+            if (WarlockPairing.Opens(spell))
+                WarlockPairing.Begin(this, spell);
+
+            return CastSpell(spell, line, false);
+        }
+
+        /// <summary>
+        /// Something for a hired Warlock to hang a secondary on.
+        ///
+        /// A primer is preferred over an ordinary primary, because that is
+        /// what the primers are for -- they exist so a secondary can be cast
+        /// without spending a primary on it. Powerless first, since a hire has
+        /// no judgement about its own power bar and will otherwise drain it;
+        /// then Uninterruptable, which is worth most in a fight; then Range.
+        ///
+        /// Failing all three, the strongest primary it knows. Casting a real
+        /// primary is not a waste -- it lands as well as the secondary does.
+        /// </summary>
+        private Spell Opener()
+        {
+            if (Kit?.Known == null)
+                return null;
+
+            Spell best = null;
+
+            foreach (Spell known in Kit.Known)
+            {
+                if (known == null || known.Level > Level)
+                    continue;
+
+                if (known.SpellType is eSpellType.Powerless)
+                    return known;
+
+                if (WarlockPairing.IsPrimer(known))
+                {
+                    // Any primer beats a primary; a later one beats an earlier.
+                    if (best == null || !WarlockPairing.IsPrimer(best) || known.Level > best.Level)
+                        best = known;
+
+                    continue;
+                }
+
+                if (known.IsPrimary && (best == null ||
+                        (!WarlockPairing.IsPrimer(best) && known.Level > best.Level)))
+                    best = known;
+            }
+
+            return best;
         }
 
         /// <summary>Casts only when the effect is actually missing.</summary>

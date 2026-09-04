@@ -163,6 +163,33 @@ handler with no single place a script can reach, and because a player judging
 the class needs to SEE the cost -- a delve reading 2.5 seconds while the cast
 takes five would be worse than not doing it.
 
+### The hired Warlock
+
+A hire now weaves as a player does. Until this it did not, and the failure ran
+the wrong way: the player's pairing is caught in the skill packet, a hire sends
+no packets, so it saw its secondaries for what they look like on paper --
+quick casts with real damage -- and threw them one after another with no
+primary at all. It played the class backwards, and rather better than the
+player's version of it.
+
+None of the weave is re-implemented for it. `WarlockPairing` already takes any
+`GameLiving` and closes on `GameLivingEvent.CastFinished`, which a hire raises
+exactly as a player does. What was missing was somebody to open one, so
+`GameMercenary.CastAt` -- the single funnel every hire's cast passes through --
+now opens the weave when it means to cast a secondary, and hangs the secondary
+on it.
+
+What it opens with, in order: a **Powerless** primer first, because a hire has
+no judgement about its own power bar and will otherwise drain it; then
+**Uninterruptable**, worth most in a fight; then **Range**; and failing all
+three the strongest **primary** it knows, which is no waste since a primary
+lands as well as the secondary does.
+
+A secondary with nothing to hang it on is refused, which is the rule the player
+is held to. That case should not arise -- every Warlock line carries a primary
+at level 1 or 2 and its first secondary no earlier than 2 -- but it is refused
+rather than quietly cast alone.
+
 ### Still missing
 
 **The Range effectiveness cost.** `Perennial Range` should carry a spell three

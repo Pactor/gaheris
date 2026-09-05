@@ -157,10 +157,47 @@ characters included. Stop the gameserver first.
 
 ## What has actually been tested
 
-`install.sh mercenaries` was installed onto a database built from the stock
-OpenDAoC seed, on 5 September 2026. All 25 migrations applied cleanly, the
-recruiters appeared, and nothing from the task dungeons or the class work came
-with it.
+Two features have been installed onto databases built from the stock OpenDAoC
+seed, on 5 September 2026 -- not onto a copy of this server.
 
-**Everything else is derived from the migration headers.** The full install
-remains the only path this server itself has ever been built by.
+**`mercenaries`** -- 25 migrations, all clean. The recruiters appeared; nothing
+from the task dungeons or the class work came with them.
+
+**`bainshee`** -- 53 migrations. It failed twice before it passed, and both
+faults were real ones that only a fresh database could show.
+
+### What the fresh install found
+
+**Migration 90 collided with upstream, and stopped the whole install.**
+OpenDAoC's seed now ships a spell at SpellID 15001, "Mind Agony". Our spell
+import uses the same id for Accursed Scourge, and a plain `INSERT` hit a
+duplicate key. Because `install.sh` runs under `set -e`, everything after it --
+91, 92 and the whole tail of the conversion -- never ran. Anyone installing
+this repo onto a current OpenDAoC database would have got a half-built server.
+
+Fixed by deleting the 1886 ids the file owns before inserting them, which also
+makes it re-runnable. Ours wins the clash: nothing in either database casts
+Mind Agony, while Accursed Scourge is referenced by a spell line.
+
+**Two trainer migrations silently did nothing.** 111 and 115 clone an existing
+trainer rather than typing fifty columns out by hand -- 111 clones Sudya, 115
+clones Morynne. Those rows come from `49-new-frontiers-population.sql` and
+`13-atlantis-mobs.sql`, which belong to *other features*. Install the Valkyrie
+or the Bainshee on their own and the source row is absent, so the insert
+matches nothing and reports success.
+
+Fixed twice over: the dependency is now declared in `features.conf`, and both
+migrations stop with an error naming the file they need instead of quietly
+placing nobody.
+
+### Still outstanding
+
+**About thirty migrations are not re-runnable.** They use a plain `INSERT` with
+no `DELETE`, no `IGNORE`, no `ON DUPLICATE KEY` and no `NOT EXISTS`, so a
+second pass fails on a duplicate key -- and under `set -e` that stops the
+install. The README's claim that re-running is always safe is **not true** of
+those files. 90 is fixed; the rest are not, and it is a larger job than one
+sitting.
+
+Everything except `mercenaries` and `bainshee` is still derived from the
+migration headers rather than installed and checked.

@@ -33,6 +33,21 @@
 --
 -- Nine new trainers, bringing her to twelve, which is Warlock parity.
 
+-- This migration clones an existing trainer rather than typing fifty columns
+-- out by hand, which means it needs that row to exist. It does not on a
+-- server that has not installed 49-new-frontiers-population.sql, and a missing source made the
+-- whole thing insert nothing at all while still reporting success -- which is
+-- how it passed unnoticed until it was installed onto a fresh database on
+-- 5 September 2026.
+--
+-- So it now stops instead. The subquery below returns two rows when the
+-- source is missing, which is an error rather than a silent no-op.
+
+SET @src := (SELECT COUNT(*) FROM mob
+              WHERE Name = 'Sudya' AND ClassType = 'DOL.GS.Trainer.ValkyrieTrainer');
+
+SELECT IF(@src > 0, 1, (SELECT 1 UNION SELECT 2)) AS `49-new-frontiers-population.sql must be installed first`;
+
 INSERT INTO mob
   (ClassType, TranslationId, Name, Suffix, Guild, ExamineArticle, MessageArticle,
    X, Y, Z, Speed, Heading, Region, Model, Size, Strength, Constitution, Dexterity,

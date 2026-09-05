@@ -9,6 +9,9 @@
 #   ./install.sh                 the whole conversion
 #   ./install.sh --list          what can be installed on its own
 #   ./install.sh --dry-run ...   name the migrations without applying any
+#   ./install.sh --no-backup     skip the automatic backup taken first
+#   ./install.sh --restore       put the newest backup back, undoing an install
+#   ./install.sh --diff          which tables differ from the newest backup
 #   ./install.sh mercenaries     one feature, and whatever it depends on
 #   ./install.sh classes travel  several
 #   ./install.sh --testkit       also the optional testing kit
@@ -58,6 +61,147 @@ apply() {
     echo 'FAILED'
     return 1
   fi
+}
+
+# Seven migrations only UPDATE serverproperty rows -- 01, 07, 22, 41, 78, 104
+# and 117 among them. Those rows do not exist until the gameserver has booted
+# once and created them from its own [ServerProperty] attributes: a stock
+# database has four of them, a booted one has around four hundred and seventy.
+#
+# So applying migrations to a database the server has never seen leaves every
+# one of those updates matching nothing, silently. The README boots first and
+# installs second for exactly this reason, but a feature install is easy to
+# reach for on a database that has not been started yet.
+check_booted() {
+  local n
+  n="$(docker exec -i -e MYSQL_PWD="$PW" "$CONTAINER" mysql -uroot -N -B         -e "SELECT COUNT(*) FROM $DATABASE.serverproperty;" 2>/dev/null || echo 0)"
+
+  if [[ "${n:-0}" -lt 50 ]]; then
+    cat >&2 <<EOF
+
+  ------------------------------------------------------------------
+  '$DATABASE' has only ${n:-0} server properties, so the gameserver has
+  probably never run against it.
+
+  The server creates those rows at boot. Until it has, every migration
+  that only updates a property matches nothing and does nothing -- the
+  experience rates, the loot rates, /level, and several others.
+
+  Start the server once, wait for "Server is now listening", then run
+  this again.
+  ------------------------------------------------------------------
+
+EOF
+    read -r -p "  Carry on anyway? [y/N] " reply < /dev/tty || reply=n
+    case "$reply" in
+      [yY]*) echo ;;
+      *) echo "  Stopped."; exit 1 ;;
+    esac
+  fi
+}
+
+BACKUPS=backups
+
+fingerprint() {
+  # A checksum per table. Row counts alone would miss a migration that only
+  # updates rows, and most of the class corrections here do exactly that.
+  docker exec -i -e MYSQL_PWD="$PW" "$CONTAINER" mysql -uroot -N -B "$DATABASE" -e "
+    SELECT CONCAT(table_name)
+      FROM information_schema.tables
+     WHERE table_schema = '$DATABASE' AND table_type = 'BASE TABLE'
+     ORDER BY table_name;" 2>/dev/null |
+  while read -r t; do
+    [[ -z "$t" ]] && continue
+    docker exec -i -e MYSQL_PWD="$PW" "$CONTAINER" mysql -uroot -N -B "$DATABASE"       -e "CHECKSUM TABLE \`$t\`;" 2>/dev/null
+  done
+}
+
+take_backup() {
+  local stamp base
+  stamp="$(date +%Y%m%d-%H%M%S)"
+  base="$BACKUPS/${DATABASE}-${stamp}"
+  mkdir -p "$BACKUPS"
+
+  echo "Backing up '$DATABASE' first:"
+  printf '  %-32s' "$(basename "$base").sql.gz"
+
+  if docker exec -e MYSQL_PWD="$PW" "$CONTAINER"        mysqldump -uroot --single-transaction --quick --routines "$DATABASE"        2>/dev/null | gzip > "$base.sql.gz"; then
+    echo "ok  ($(du -h "$base.sql.gz" | cut -f1))"
+  else
+    echo 'FAILED'
+    echo "  Refusing to change the database without a backup." >&2
+    echo "  Use --no-backup if you really mean to." >&2
+    exit 1
+  fi
+
+  printf '  %-32s' "$(basename "$base").fingerprint"
+  fingerprint > "$base.fingerprint" 2>/dev/null
+  echo "ok  ($(wc -l < "$base.fingerprint") tables)"
+  echo
+}
+
+newest_backup() {
+  ls -1t "$BACKUPS/${DATABASE}"-*.sql.gz 2>/dev/null | head -1
+}
+
+do_restore() {
+  local file="${1:-$(newest_backup)}"
+
+  if [[ -z "$file" || ! -f "$file" ]]; then
+    echo "No backup found for '$DATABASE' in $BACKUPS/" >&2
+    exit 1
+  fi
+
+  echo "About to replace the '$DATABASE' database with:"
+  echo "    $file  ($(du -h "$file" | cut -f1), $(date -r "$file" '+%Y-%m-%d %H:%M'))"
+  echo
+  echo "Everything since that backup is lost -- characters, items, the lot."
+  read -r -p "Type the database name to confirm: " reply < /dev/tty || reply=""
+
+  if [[ "$reply" != "$DATABASE" ]]; then
+    echo "Stopped."
+    exit 1
+  fi
+
+  echo "Restoring. Stop the gameserver first if it is running."
+  gunzip -c "$file" | docker exec -i -e MYSQL_PWD="$PW" "$CONTAINER"     mysql -uroot --default-character-set=utf8mb3 "$DATABASE"
+  echo "Done. Restart the gameserver."
+  exit 0
+}
+
+do_diff() {
+  local file="${1:-}"
+
+  if [[ -z "$file" ]]; then
+    file="$(ls -1t "$BACKUPS/${DATABASE}"-*.fingerprint 2>/dev/null | head -1)"
+  fi
+
+  if [[ -z "$file" || ! -f "$file" ]]; then
+    echo "No fingerprint found for '$DATABASE'. One is written with every backup." >&2
+    exit 1
+  fi
+
+  echo "Comparing '$DATABASE' against:"
+  echo "    $file  ($(date -r "$file" '+%Y-%m-%d %H:%M'))"
+  echo
+
+  local now
+  now="$(mktemp)"
+  fingerprint > "$now"
+
+  if diff -q "$file" "$now" >/dev/null; then
+    echo "  No table differs."
+  else
+    echo "  Tables that differ:"
+    join -j1 <(sort "$file") <(sort "$now") 2>/dev/null |
+      awk '$2 != $3 { printf "    %-40s
+", $1 }' | sed "s|$DATABASE.||"
+    comm -13 <(cut -f1 "$file" | sort) <(cut -f1 "$now" | sort) |
+      sed "s|^|    + |; s|$DATABASE.||"
+  fi
+
+  rm -f "$now"
+  exit 0
 }
 
 # The two big generated migrations are committed, so this should never fire.
@@ -125,21 +269,21 @@ base_extras() {
 WANTED=""        # migration numbers to apply
 SELECTED=""      # feature names already pulled in
 
-# Common ways of asking for something, and what they really are. The class
-# ones all land on `classes` because the class *data* cannot be split: the
-# bulk imports at 46 and 89-92 carry every expansion class at once, so there
-# is no set of migrations that is the Bainshee and not the Mauler. The
-# *scripts* do separate, per folder -- see docs/features.md.
+# Common ways of asking for something, and what they really are.
 resolve_alias() {
   case "$1" in
-    mercs|merc|companions)              echo mercenaries ;;
-    catacombs|si|shrouded-isles|class)  echo classes ;;
-    maulers|mauler|bainshee|valkyrie|warlock|vampiir|heretic|animist)
-                                        echo classes ;;
-    champion|champions|masterlevels|ml) echo progression ;;
-    toa|artifacts)                      echo atlantis ;;
-    dungeons|td)                        echo taskdungeons ;;
-    *)                                  echo "$1" ;;
+    mercs|merc|companions)     echo mercenaries ;;
+    mauler)                    echo maulers ;;
+    ml|mls|masterlevel)        echo masterlevels ;;
+    champions|cl)              echo champion ;;
+    ras|realmability|ra)       echo realmabilities ;;
+    toa)                       echo atlantis ;;
+    dungeons|td)               echo taskdungeons ;;
+    # No set of migrations is one expansion: the bulk imports carry every
+    # expansion class at once. Asking for an expansion gets all of them.
+    catacombs|si|shrouded-isles|class|allclasses)
+                               echo classes ;;
+    *)                         echo "$1" ;;
   esac
 }
 
@@ -149,10 +293,11 @@ want_feature() {
   f="$(resolve_alias "$asked")"
 
   if [[ "$f" != "$asked" ]]; then
-    echo "  '$asked' is part of '$f' -- installing that."
+    echo "  '$asked' means '$f' here."
     if [[ "$f" == "classes" ]]; then
-      echo "  The class data is one unit: migrations 46 and 89-92 carry every"
-      echo "  expansion class at once. The scripts do separate, per folder."
+      echo "  No set of migrations is one expansion -- the bulk imports at 46"
+      echo "  and 89-92 carry every expansion class at once. Individual class"
+      echo "  fixes ARE separable: try --list."
     fi
   fi
 
@@ -183,6 +328,9 @@ want_feature() {
 EXTRAS=""
 FEATURES=""
 DRYRUN=""
+NOBACKUP=""
+RESTORE=""
+DIFF=""
 
 for arg in "$@"; do
   case "$arg" in
@@ -205,6 +353,12 @@ for arg in "$@"; do
       ;;
     --dry-run)
       DRYRUN=1 ;;
+    --no-backup)
+      NOBACKUP=1 ;;
+    --restore)
+      RESTORE=1 ;;
+    --diff)
+      DIFF=1 ;;
     --testkit|--maintenance)
       EXTRAS="$EXTRAS $arg" ;;
     -*)
@@ -214,6 +368,19 @@ for arg in "$@"; do
       FEATURES="$FEATURES $arg" ;;
   esac
 done
+
+[[ -n "$RESTORE" ]] && do_restore "${FEATURES// /}"
+[[ -n "$DIFF" ]] && do_diff "${FEATURES// /}"
+
+if [[ -z "$DRYRUN" ]]; then
+  check_booted
+fi
+
+# A backup before anything is changed, because there is no down migration and
+# no way to take a feature back out by hand.
+if [[ -z "$DRYRUN" && -z "$NOBACKUP" ]]; then
+  take_backup
+fi
 
 # Sorted by number, not as text. A plain glob sorts these lexically, which puts
 # 100 between 10 and 11 -- so every migration numbered 100 and up was applied

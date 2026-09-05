@@ -22,4 +22,5 @@ INSERT INTO `ability` (`AbilityID`,`KeyName`,`Name`,`InternalID`,`Description`,`
 (25,'Vampiir Quickness','Vampiir Quickness',153,'Vampiirs get an increase to their stats every three levels starting at level six.',0,'DOL.GS.SkillHandler.VampiirQuickness','2000-01-01 00:00:00'),
 (26,'Vampiir Dexterity','Vampiir Dexterity',154,'Vampiirs get an increase to their stats every three levels starting at level six.',0,'DOL.GS.SkillHandler.VampiirDexterity','2000-01-01 00:00:00'),
 (27,'Vampiir Constitution','Vampiir Constitution',155,'Vampiirs get an increase to their stats every three levels starting at level six.',0,'DOL.GS.SkillHandler.VampiirConstitution','2000-01-01 00:00:00'),
-(28,'Warlock-RR5','Boiling Cauldron',156,'Summons a large cauldron that boils in place for 5 seconds before spilling and doing damage to all those nearby.',3085,'','2000-01-01 00:00:00');
+(28,'Warlock-RR5','Boiling Cauldron',156,'Summons a large cauldron that boils in place for 5 seconds before spilling and doing damage to all those nearby.',3085,'','2000-01-01 00:00:00')
+ON DUPLICATE KEY UPDATE `AbilityID` = `AbilityID`;

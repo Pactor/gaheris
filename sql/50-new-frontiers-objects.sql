@@ -23,4 +23,5 @@ INSERT INTO worldobject (`WorldObject_ID`,`ClassType`,`TranslationId`,`Name`,`Ex
 ('f02f71ed-534d-4e9e-a6fb-e2304d5e1ee9','DOL.GS.Keeps.FrontiersPortalStone','','Frontiers Portal Stone','',396005,618116,9819,3460,163,2603,0,0,0,'2000-01-01 00:00:00'),
 ('f2c68aba-7038-46e5-908e-1dcfd25279d7','DOL.GS.GameRelicPad','','Caer Benowyc Power Relic Pad','',576039,501720,9702,473,163,2655,11,0,0,'2000-01-01 00:00:00'),
 ('f5161ac9-e5c6-4d77-9e75-091195310668','DOL.GS.GameRelicPad','','Fensalir Faste Power Relic Pad','',639311,345231,9590,449,163,2655,12,0,0,'2000-01-01 00:00:00'),
-('ffdb32b1-bae0-4491-806c-afb2c1ade1df','DOL.GS.GameRelicPad','','Caer Boldiam Strength Relic Pad','',606050,575511,9806,3609,163,2655,1,0,0,'2000-01-01 00:00:00');
+('ffdb32b1-bae0-4491-806c-afb2c1ade1df','DOL.GS.GameRelicPad','','Caer Boldiam Strength Relic Pad','',606050,575511,9806,3609,163,2655,1,0,0,'2000-01-01 00:00:00')
+ON DUPLICATE KEY UPDATE `WorldObject_ID` = `WorldObject_ID`;

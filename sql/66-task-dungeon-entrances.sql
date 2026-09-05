@@ -131,4 +131,5 @@ INSERT INTO `instancexelement` (`InstanceID`,`ClassType`,`X`,`Y`,`Z`,`Heading`,`
 ('Taskdungeon478.1','entrance',31887,31623,16264,31,'0','fde6e62d-00b1-451d-9376-295027b6a40a','2000-01-01 00:00:00'),
 ('Taskdungeon444.1','entrance',31963,31675,15990,4056,'0','fe723e94-21dd-424c-a280-5848a3080f44','2000-01-01 00:00:00'),
 ('Taskdungeon406.1','entrance',32992,29108,15746,4037,'0','fead352e-5ea5-48f1-9bed-38fe5244b89b','2000-01-01 00:00:00'),
-('Taskdungeon293.1','entrance',32361,27903,15279,1048,'0','ff5b7798-2f02-405f-bcc3-fb215fffb88d','2000-01-01 00:00:00');
+('Taskdungeon293.1','entrance',32361,27903,15279,1048,'0','ff5b7798-2f02-405f-bcc3-fb215fffb88d','2000-01-01 00:00:00')
+ON DUPLICATE KEY UPDATE `InstanceID` = `InstanceID`;

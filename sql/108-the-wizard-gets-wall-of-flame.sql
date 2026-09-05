@@ -29,4 +29,5 @@
 INSERT INTO classxrealmability_atlas
   (CharClass, AbilityKey, ClassXRealmAbility_ID, ClassXRealmAbility_Atlas_ID)
 VALUES
-  (7, 'Wall of Flame', 'Wizard-RR5', 'Wizard-RR5');
+  (7, 'Wall of Flame', 'Wizard-RR5', 'Wizard-RR5')
+ON DUPLICATE KEY UPDATE `CharClass` = `CharClass`;

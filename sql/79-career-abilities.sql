@@ -151,4 +151,5 @@ VALUES
 (UUID(),'Champion Level Hibernia',3,'Weaponry: Blades',0,3429,0,'2000-01-01 00:00:00'),
 (UUID(),'Champion Level Hibernia',3,'Weaponry: Blunt',0,3430,0,'2000-01-01 00:00:00'),
 (UUID(),'Champion Level Hibernia',3,'Weaponry: Piercing',0,3431,0,'2000-01-01 00:00:00'),
-(UUID(),'Champion Level Hibernia',3,'Shield',1,3432,0,'2000-01-01 00:00:00');
+(UUID(),'Champion Level Hibernia',3,'Shield',1,3432,0,'2000-01-01 00:00:00')
+ON DUPLICATE KEY UPDATE `SpecXAbility_ID` = `SpecXAbility_ID`;

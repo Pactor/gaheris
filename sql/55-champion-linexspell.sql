@@ -458,4 +458,5 @@ INSERT INTO `linexspell` (`LineXSpell_ID`,`LineName`,`SpellID`,`Level`,`PackageI
 ('viking_column3-4_row4','Champion Viking 3',45008,4,'NEWCLSYSTEM','2000-01-01 00:00:00'),
 ('viking_column3-4_row5','Champion Viking 3',45009,5,'NEWCLSYSTEM','2000-01-01 00:00:00'),
 ('viking_column4_row4','Champion Viking 4',45008,4,'NEWCLSYSTEM','2000-01-01 00:00:00'),
-('viking_column4_row5','Champion Viking 4',45009,5,'NEWCLSYSTEM','2000-01-01 00:00:00');
+('viking_column4_row5','Champion Viking 4',45009,5,'NEWCLSYSTEM','2000-01-01 00:00:00')
+ON DUPLICATE KEY UPDATE `LineXSpell_ID` = `LineXSpell_ID`;

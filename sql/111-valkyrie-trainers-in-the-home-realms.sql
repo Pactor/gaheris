@@ -87,4 +87,12 @@ CROSS JOIN (
   UNION ALL SELECT 'Gondul',   287502, 303277, 4160, 1686, 151
   UNION ALL SELECT 'Geirahod', 289429, 354847, 3866, 3797, 151
   UNION ALL SELECT 'Thrud',    377532, 385792, 7840, 3197, 151
-) p;
+) p
+-- Re-runnable: a second pass places nobody rather than a second Herja. 115 was
+-- written this way from the start; this one was not, and a plain INSERT of
+-- nine named trainers would have doubled them on every install.
+WHERE NOT EXISTS (
+  SELECT 1 FROM mob existing
+   WHERE existing.Name = p.NewName
+     AND existing.ClassType = 'DOL.GS.Trainer.ValkyrieTrainer'
+);

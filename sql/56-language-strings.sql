@@ -5907,4 +5907,5 @@ INSERT INTO `languagesystem` (`LanguageSystem_ID`,`Text`,`TranslationId`,`Langua
 (UUID(),'[Termin??????????????????] Braves sont ceux qui ont d??????????????????fait C??????????????????tus !','SendMasterLevelWindow.Complete.ML1.Step10','EN','','2000-01-01 00:00:00'),
 (UUID(),'- {0} Level','DetailDisplayHandler.WritePotionInfo.Level','EN','','2000-01-01 00:00:00'),
 (UUID(),'I can enchant weapons or armor that are of {0} or better material. Just hand me the weapon you would like enchanted and I will work my magic upon it, for a fee.','Enchanter.Interact.Text3','EN','','2000-01-01 00:00:00'),
-(UUID(),'The third argument must be a number.','Scripts.Player.Guild.ThirdArgNotNum','EN','','2000-01-01 00:00:00');
+(UUID(),'The third argument must be a number.','Scripts.Player.Guild.ThirdArgNotNum','EN','','2000-01-01 00:00:00')
+ON DUPLICATE KEY UPDATE `LanguageSystem_ID` = `LanguageSystem_ID`;

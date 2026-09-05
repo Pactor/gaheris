@@ -79,4 +79,5 @@ INSERT INTO `specialization` (`Specialization_ID`,`KeyName`,`Name`,`Icon`,`Descr
 (UUID(),'Champion Viking 1','Champion Viking Abilities 1',0,'Subclassing Specialization Viking 1',277,'DOL.GS.LiveCLVikingSpec','2000-01-01 00:00:00'),
 (UUID(),'Champion Viking 2','Champion Viking Abilities 2',0,'Subclassing Specialization Viking 2',278,'DOL.GS.LiveCLVikingSpec','2000-01-01 00:00:00'),
 (UUID(),'Champion Viking 3','Champion Viking Abilities 3',0,'Subclassing Specialization Viking 3',279,'DOL.GS.LiveCLVikingSpec','2000-01-01 00:00:00'),
-(UUID(),'Champion Viking 4','Champion Viking Abilities 4',0,'Subclassing Specialization Viking 4',280,'DOL.GS.LiveCLVikingSpec','2000-01-01 00:00:00');
+(UUID(),'Champion Viking 4','Champion Viking Abilities 4',0,'Subclassing Specialization Viking 4',280,'DOL.GS.LiveCLVikingSpec','2000-01-01 00:00:00')
+ON DUPLICATE KEY UPDATE `Specialization_ID` = `Specialization_ID`;

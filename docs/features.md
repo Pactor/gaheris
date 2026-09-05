@@ -190,14 +190,34 @@ Fixed twice over: the dependency is now declared in `features.conf`, and both
 migrations stop with an error naming the file they need instead of quietly
 placing nobody.
 
-### Still outstanding
+### Re-running is now actually safe
 
-**About thirty migrations are not re-runnable.** They use a plain `INSERT` with
-no `DELETE`, no `IGNORE`, no `ON DUPLICATE KEY` and no `NOT EXISTS`, so a
-second pass fails on a duplicate key -- and under `set -e` that stops the
-install. The README's claim that re-running is always safe is **not true** of
-those files. 90 is fixed; the rest are not, and it is a larger job than one
-sitting.
+Thirty-one migrations used a plain `INSERT` with no guard of any kind, so a
+second pass failed on a duplicate key and, under `set -e`, stopped the install.
+The README's promise that re-running is always safe was **not true** of them.
 
-Everything except `mercenaries` and `bainshee` is still derived from the
-migration headers rather than installed and checked.
+All are guarded now, and it took two shapes rather than one:
+
+**`ON DUPLICATE KEY UPDATE`** on 3604 `INSERT ... VALUES` statements across 30
+files. Deliberately not `INSERT IGNORE`: that downgrades *every* error to a
+warning, which is precisely how a migration ends up doing nothing and reporting
+success -- the fault that hid the missing trainers. This suppresses one thing,
+the row already being there.
+
+**`WHERE NOT EXISTS`** on 111, because `ON DUPLICATE KEY` is rejected after the
+`INSERT ... SELECT ... CROSS JOIN` form it and 115 use. 115 was written that way
+from the start; 111 was not, and would have doubled its nine trainers on every
+install.
+
+Verified rather than assumed: a database built from the stock seed, the whole
+conversion applied **twice**, zero failures on both passes, and a table-by-table
+comparison of every table in the schema showing **nothing changed on the second
+pass**.
+
+### What has been proved, and what has not
+
+Proved on a stock database: the **full install**, twice over; **`mercenaries`**;
+and **`bainshee`**.
+
+The other twenty features are still derived from the migration headers and
+checked by dry run, not by installing them one at a time.

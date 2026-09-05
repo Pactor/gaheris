@@ -82,4 +82,5 @@ INSERT INTO `spellline` (`KeyName`,`Name`,`Spec`,`IsBaseLine`,`SpellLineID`,`Cla
 ('Champion Viking 4','Champion Viking 4','Champion Viking 4',0,310,0,'gaheris-champ','2000-01-01 00:00:00'),
 ('Champion Abilities Hibernia','Champion Abilities','Champion Level Hibernia',0,311,0,'gaheris-champ','2000-01-01 00:00:00'),
 ('Champion Abilities Midgard','Champion Abilities','Champion Level Midgard',0,312,0,'gaheris-champ','2000-01-01 00:00:00'),
-('Champion Abilities Albion','Champion Abilities','Champion Level Albion',0,313,0,'gaheris-champ','2000-01-01 00:00:00');
+('Champion Abilities Albion','Champion Abilities','Champion Level Albion',0,313,0,'gaheris-champ','2000-01-01 00:00:00')
+ON DUPLICATE KEY UPDATE `KeyName` = `KeyName`;

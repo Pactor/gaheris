@@ -43,4 +43,5 @@ VALUES
   (10, 'Whirling Staff',   'Friar-RR5',  'Friar-RR5'),
   (25, 'Entwining Snakes', 'Hunter-RR5', 'Hunter-RR5'),
   (46, 'Fury of Nature',   'Warden-RR5', 'Warden-RR5'),
-  (50, 'Desperate Bowman', 'Ranger-RR5', 'Ranger-RR5');
+  (50, 'Desperate Bowman', 'Ranger-RR5', 'Ranger-RR5')
+ON DUPLICATE KEY UPDATE `CharClass` = `CharClass`;

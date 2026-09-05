@@ -91,4 +91,5 @@ INSERT INTO `spellline` (`KeyName`,`Name`,`Spec`,`IsBaseLine`,`SpellLineID`,`Cla
 ('ML6 Warlord','ML6 Warlord','unknown',1,391,0,'gaheris-sweep','2000-01-01 00:00:00'),
 ('ML7 Warlord','ML7 Warlord','unknown',1,392,0,'gaheris-sweep','2000-01-01 00:00:00'),
 ('ML8 Warlord','ML8 Warlord','unknown',1,393,0,'gaheris-sweep','2000-01-01 00:00:00'),
-('ML9 Warlord','ML9 Warlord','unknown',1,394,0,'gaheris-sweep','2000-01-01 00:00:00');
+('ML9 Warlord','ML9 Warlord','unknown',1,394,0,'gaheris-sweep','2000-01-01 00:00:00')
+ON DUPLICATE KEY UPDATE `KeyName` = `KeyName`;

@@ -27,7 +27,8 @@ VALUES
      'Group', 1500, 20, 3, 'WaterBreathing', 1800, 90, 'gaheris-water'),
     ('7513', 7513, 7513, 7513, 7513, 'Breath of Leviathan',
      'Allows the group to breathe under water.',
-     'Group', 1500, 25, 3, 'WaterBreathing', 1800, 100, 'gaheris-water');
+     'Group', 1500, 25, 3, 'WaterBreathing', 1800, 100, 'gaheris-water')
+ON DUPLICATE KEY UPDATE `Spell_ID` = `Spell_ID`;
 
 INSERT INTO linexspell (LineXSpell_ID, LineName, SpellID, Level, PackageID)
 VALUES
@@ -42,4 +43,5 @@ VALUES
     ('gaheris-water-skald-10', 'Battlesongs',     7510, 10, 'gaheris-water'),
     ('gaheris-water-skald-20', 'Battlesongs',     7511, 20, 'gaheris-water'),
     ('gaheris-water-skald-30', 'Battlesongs',     7512, 30, 'gaheris-water'),
-    ('gaheris-water-skald-40', 'Battlesongs',     7513, 40, 'gaheris-water');
+    ('gaheris-water-skald-40', 'Battlesongs',     7513, 40, 'gaheris-water')
+ON DUPLICATE KEY UPDATE `LineXSpell_ID` = `LineXSpell_ID`;

@@ -562,4 +562,5 @@ VALUES
 (59,'AtlasOF_EmptyMind','Warlock1-2-6
 ','Warlock1-2-6
 ','2000-01-01 00:00:00'),
-(59,'AtlasOF_VolcanicPillar','Warlock1-2-7','Warlock1-2-7','2000-01-01 00:00:00');
+(59,'AtlasOF_VolcanicPillar','Warlock1-2-7','Warlock1-2-7','2000-01-01 00:00:00')
+ON DUPLICATE KEY UPDATE `CharClass` = `CharClass`;

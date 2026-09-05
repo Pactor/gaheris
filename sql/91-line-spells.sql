@@ -1674,4 +1674,5 @@ INSERT INTO `linexspell` (`LineXSpell_ID`,`LineName`,`SpellID`,`Level`,`PackageI
 (UUID(),'Regrowth Warden Spec',143400,48,'gaheris-sweep','2000-01-01 00:00:00'),
 (UUID(),'Combat Style Effects',20011,0,'gaheris-sweep','2000-01-01 00:00:00'),
 (UUID(),'Combat Style Effects',20010,0,'gaheris-sweep','2000-01-01 00:00:00'),
-(UUID(),'Potions',1555,0,'gaheris-sweep','2000-01-01 00:00:00');
+(UUID(),'Potions',1555,0,'gaheris-sweep','2000-01-01 00:00:00')
+ON DUPLICATE KEY UPDATE `LineXSpell_ID` = `LineXSpell_ID`;

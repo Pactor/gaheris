@@ -23,7 +23,8 @@
 -- no off hand.
 
 INSERT INTO starterequipment (StarterEquipmentID, Class, TemplateID, LastTimeRowUpdated)
-VALUES (9101, '49;50;58;', 'dagger', '2000-01-01 00:00:00');
+VALUES (9101, '49;50;58;', 'dagger', '2000-01-01 00:00:00')
+ON DUPLICATE KEY UPDATE `StarterEquipmentID` = `StarterEquipmentID`;
 
 UPDATE starterequipment SET Class = '54;49;50;'
  WHERE TemplateID = 'training_dirk' AND Class = '54;49;50;58;';

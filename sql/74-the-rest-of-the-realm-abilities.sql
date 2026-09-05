@@ -48,4 +48,5 @@ VALUES
 (59,'Physical Defense','Warlock1-1-2','Warlock1-1-2','2000-01-01 00:00:00'),
 (59,'Adrenaline Rush','Warlock1-1-7','Warlock1-1-7','2000-01-01 00:00:00'),
 (59,'Bedazzling Aura','Warlock1-1-8','Warlock1-1-8','2000-01-01 00:00:00'),
-(59,'Decimation Trap','Warlock1-1-9','Warlock1-1-9','2000-01-01 00:00:00');
+(59,'Decimation Trap','Warlock1-1-9','Warlock1-1-9','2000-01-01 00:00:00')
+ON DUPLICATE KEY UPDATE `CharClass` = `CharClass`;

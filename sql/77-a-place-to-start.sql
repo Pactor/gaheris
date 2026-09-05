@@ -32,7 +32,8 @@ INSERT INTO startuplocation
 VALUES
     (9001, 560564, 511528, 2280, 2064, 1,   0, 1, 0, 0, 0, '2000-01-01 00:00:00'),
     (9002, 803612, 726671, 4743, 2587, 100, 0, 2, 0, 0, 0, '2000-01-01 00:00:00'),
-    (9003, 347811, 490351, 5210, 1000, 200, 0, 3, 0, 0, 0, '2000-01-01 00:00:00');
+    (9003, 347811, 490351, 5210, 1000, 200, 0, 3, 0, 0, 0, '2000-01-01 00:00:00')
+ON DUPLICATE KEY UPDATE `StartupLoc_ID` = `StartupLoc_ID`;
 
 -- And put Mampy somewhere, since he was created into region 0 and cannot log
 -- in at all as he stands.

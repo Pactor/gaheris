@@ -610,21 +610,53 @@ namespace DOL.GS.Scripts
                         KeepTurret(loadout, spell);
                         break;
 
-                    case eSpellType.SummonDruidPet:
-                    case eSpellType.SummonUnderhill:
-                    case eSpellType.SummonSimulacrum:
-                    case eSpellType.SummonNecroPet:
                     case eSpellType.SummonMinion:
                         // Minions are a field, not a pet. A Bonedancer's whole
                         // shape is a commander with a crowd behind it, and
                         // treating the highest minion summon as "the pet" gave
                         // it one skeleton.
+                        //
+                        // This case stands alone on purpose. Four single-pet
+                        // summons used to share it, and every hired caster that
+                        // knew one planted a row of them instead of keeping
+                        // one: a Necromancer arrived with three necroservants,
+                        // because KeepTurret keeps one spell per level and the
+                        // Death Servant line has seven.
+                        //
+                        // Core draws the line itself, in
+                        // StandardMobBrain.CheckSpellType. SummonMinion counts
+                        // what it already has and allows another:
+                        //
+                        //     return numberOfPets < controlledBrain.Length;
+                        //
+                        // while SummonCommander, SummonDruidPet,
+                        // SummonHunterPet, SummonNecroPet, SummonUnderhill,
+                        // SummonSimulacrum and SummonSpiritFighter all answer
+                        //
+                        //     return isSelf && Body.ControlledBrain == null;
+                        //
+                        // -- one pet, and only when there is none. The pet case
+                        // below is now exactly that list.
                         KeepTurret(loadout, spell);
                         break;
 
+                    // One pet at a time, strongest known. This is core's own
+                    // single-pet list from StandardMobBrain, plus the three
+                    // elemental summons that behave the same way.
+                    //
+                    // Players never hit this because the summon handlers guard
+                    // it themselves -- SummonNecromancerPet.CheckBeginCast
+                    // refuses a second pet outright -- but that guard reads
+                    // `Caster is GamePlayer`, and a mercenary is an NPC. The
+                    // guard never fires for a hire, so the loadout has to be
+                    // right rather than relying on the spell to say no.
                     case eSpellType.SummonCommander:
                     case eSpellType.SummonSpiritFighter:
                     case eSpellType.SummonHunterPet:
+                    case eSpellType.SummonDruidPet:
+                    case eSpellType.SummonUnderhill:
+                    case eSpellType.SummonSimulacrum:
+                    case eSpellType.SummonNecroPet:
                     case eSpellType.SummonTheurgistPet:
                     case eSpellType.SummonAnimistPet:
                     case eSpellType.SummonElemental:

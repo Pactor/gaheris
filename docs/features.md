@@ -44,7 +44,7 @@ order in the README is the right one: `docker compose up -d`, wait for
 
 ## The catalogue
 
-Twenty-three features. The counts add to the 117 migrations in the repo --
+Twenty-three features. The counts add to the 118 migrations in the repo --
 nothing orphaned, nothing counted twice.
 
 ### Foundation
@@ -72,7 +72,7 @@ nothing orphaned, nothing counted twice.
 |---|---|---|---|
 | `champion` | 6 | base | champion trees, their spell lines, who may train them |
 | `masterlevels` | 5 | **atlantis** | the eight Master Level paths, their spells and gaps — see the note below, this one is data only without Atlantis |
-| `realmabilities` | 2 | base | realm ability tables for the classes that had none |
+| `realmabilities` | 3 | base | realm ability tables for the classes that had none, and the frontier zones that make realm points earnable at all |
 
 ### Classes
 
@@ -332,7 +332,7 @@ looks identical to one that works. Two were wrong when this started.
 
 All three gaps are now declared. The rest are self-contained.
 
-### One thing no feature can fix: realm points
+### Realm points, and why `realmabilities` carries a zone migration
 
 `realmabilities` and `rr5` install correctly and are still, for two realms out
 of three, unreachable.
@@ -351,10 +351,21 @@ never spend a realm skill point, and can never reach the Realm Rank 5 that
 `rr5` exists to grant. The highest realm level on this server is 10, which is
 Realm Rank 2, and nobody is above Realm Rank 1.
 
-**This is stock OpenDAoC data** -- no migration in this repo touches
-`Realmpoints` -- so it is a gap that was always there rather than something the
-conversion introduced. It is recorded here because installing `rr5` on an
-Albion or Midgard server would otherwise look like it had failed.
+**This was stock OpenDAoC data**, not something the conversion introduced --
+which is why it survived so long unnoticed.
+
+**Fixed**, migration 119, which is part of `realmabilities` because that is the
+feature it makes reachable. The eight counterpart zones now carry the same 20
+realm points and 25 bounty points Hibernia's four already had:
+
+    Albion    Forest Sauvage, Snowdonia, Pennine Mountains, Hadrian's Wall
+    Midgard   Uppland, Yggdra Forest, Jamtland Mountains, Odin's Gate
+
+Twelve zones now, four per realm. The values are Hibernia's rather than
+invented, and each realm's four are the high zone ids in its homeland region --
+11 to 15, 111 to 115, 210 to 214 -- so these are the exact counterparts of the
+four that already worked. New Frontiers is left at zero for all three realms,
+as Hibernia was.
 
 ### How far the checking went
 
@@ -366,7 +377,7 @@ exactly two, `111` and `115`. Both are fixed and both now declare what they
 need.
 
 **Reachability:** all of them, by hand, and written up in the section above.
-Three gaps found and declared; one problem found that no feature can fix.
+Three gaps found and declared, and one problem found that was older than this repo and is now fixed.
 
 ### What has been proved, and what has not
 

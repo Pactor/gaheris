@@ -227,6 +227,29 @@ too, but they are siege, keep and realm-enemy mechanics with no meaning on a
 co-operative server. Three more have descriptions that repeat their own names,
 so there is nothing to build from. All listed in `abilities.md`.
 
+## Changed, and deliberately not being tested
+
+Recorded so nobody later mistakes an untested change for a verified one, and so
+nobody re-tests something that was a considered decision rather than a
+question.
+
+**Realm points in Albion and Midgard** -- migration 119. Eight frontier zones
+given the 20 realm points and 25 bounty points Hibernia's four already carried.
+Before it, two realms out of three could not earn a realm point anywhere, so
+realm abilities and the Realm Rank 5 abilities were unreachable for them.
+
+Not being tested, by decision. What it would take is grinding a character from
+Realm Rank 1 to 5 in a frontier zone, which is a long evening for a number that
+can be read straight out of the zones table. If the rate turns out wrong in
+play, the number to change is the 20.
+
+The same applies to the eleven other features whose reachability was checked by
+reading rather than by installing: see `docs/features.md`. Two features have
+been installed onto a stock database and the full conversion has been run twice
+on one. The rest are reasoned, not proven.
+
+---
+
 ## Not started
 
 - **Diagnostics** still loaded: `scripts/diagnostics/` and its ~176 unclaimed

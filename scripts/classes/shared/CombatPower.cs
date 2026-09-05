@@ -106,7 +106,34 @@ namespace DOL.GS.Scripts
                        or eCharacterClass.MaulerHib;
         }
 
-        /// <summary>The core pays a Vampiir for landing a blow; nobody else.</summary>
+        /// <summary>
+        /// Who is paid for *taking* a blow, which is not the same list.
+        ///
+        /// Power from being hit is the Mauler's mechanic and his alone -- it is
+        /// what Defensive Combat Power Regeneration is, and only a Mauler
+        /// carries it. **The Vampiir is not on this list**, and an earlier
+        /// version of this file had him on it by mistake.
+        ///
+        /// The class library is plain: he "gains power from a variety of
+        /// attacks -- primarily melee strikes", has no normal power pool, and
+        /// fills it only by successfully attacking. Core already does exactly
+        /// that in AttackComponent.MakeAttack. Paying him for standing there
+        /// being hit was an invention, not a repair.
+        /// </summary>
+        private static bool FeedsOnBeingHit(GameLiving living)
+        {
+            if (living is GamePlayer player)
+            {
+                return player.CharacterClass
+                    is ClassMaulerAlb or ClassMaulerMid or ClassMaulerHib;
+            }
+
+            return living is GameMercenary hire &&
+                   hire.Profile?.ClassId is eCharacterClass.MaulerAlb
+                       or eCharacterClass.MaulerMid
+                       or eCharacterClass.MaulerHib;
+        }
+
         /// <summary>Core pays a Vampiir for landing a blow, in MakeAttack.</summary>
         private static bool CorePays(GameLiving living)
         {
@@ -153,21 +180,21 @@ namespace DOL.GS.Scripts
             if (damage <= 0)
                 return;
 
-            // Power for being hit -- but not for everyone.
+            // Power for being hit, which almost nobody gets from here.
             //
-            // This was written as "the half the core never had", and that was
-            // only ever true of the Vampiir. Every Mauler carries Defensive
-            // Combat Power Regeneration from career level 1, and core pays it
-            // in GamePlayer.TakeDamage:
+            // This began as "the half the core never had" and was wrong twice
+            // over. It is a Mauler mechanic, not a shared one -- Defensive
+            // Combat Power Regeneration, carried by every Mauler and nobody
+            // else -- and core already pays it in GamePlayer.TakeDamage:
             //
             //     if (HasAbility(Abilities.DefensiveCombatPowerRegeneration))
             //         Mana += (int)((damageAmount + criticalAmount) * 0.25);
             //
-            // so a Mauler standing in a fight was being paid twice over, once
-            // by core and once again here. The test is the ability rather than
-            // the class on purpose: a hired Mauler is a GameNPC, core's
-            // override never runs for it, and it still needs paying.
-            if (sender is GameLiving hurt && !CorePaysForBeingHit(hurt))
+            // So the Vampiir should never have been paid for it at all, and the
+            // Mauler was being paid for it twice. What is left for this script
+            // is the one case core cannot reach: a **hired** Mauler, which is a
+            // GameNPC, so GamePlayer.TakeDamage never runs for it.
+            if (sender is GameLiving hurt && FeedsOnBeingHit(hurt) && !CorePaysForBeingHit(hurt))
                 Draw(hurt, hurt, damage, POWER_RATE);
 
             // And power for landing one. The core already pays a Vampiir for

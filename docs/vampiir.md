@@ -161,9 +161,10 @@ classes have them. This is a population gap in `classxrealmability_atlas` that
 was never filled in for the expansion classes, not a per-class decision, and it
 applies to eight classes rather than one.
 
-**Not fixed.** Adding three realm abilities to eight classes is 24 rows and a
-real change to what those classes can spend points on. It is written down here
-for a decision rather than made quietly.
+**Fixed**, migration 118. Twenty-four rows, three for each of the eight, with a
+guard so it is safe to run twice. The Vampiir goes from 20 to 23 and stays the
+lowest in Hibernia, which is now fully explained rather than merely low:
+Augmented Acuity is correctly absent, and Purge is present under another key.
 
 ### One thing that needs your judgement
 
@@ -178,8 +179,14 @@ So the defensive half of that script is an **invention** for the Vampiir, not a
 repair. It was written on the belief that being hit ought to pay him too, and
 that belief is not supported by anything found since.
 
-It is left in place and flagged rather than removed, because taking it away is
-as much a balance decision as adding it was, and `combat_power_rate` already
-scales it. Worth noting the Mauler is the opposite case: for him, power from
-being hit **is** the live mechanic, core implements it, and the same script was
-double-paying him until it was corrected.
+**Removed.** The defensive grant now applies only to something that both feeds
+on being hit *and* is not already paid by core, and the Vampiir is neither. He
+is paid for landing blows, by core, exactly as live describes.
+
+What is left of that half is one narrow case: a **hired** Mauler. Power from
+being hit is the Mauler's mechanic, core pays it through Defensive Combat Power
+Regeneration in `GamePlayer.TakeDamage`, and a hire is a `GameNPC`, so that
+override never runs for it.
+
+So the same script had the two classes exactly backwards. It invented a
+mechanic for the Vampiir and double-paid the Mauler for a real one.

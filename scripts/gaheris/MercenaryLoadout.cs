@@ -155,10 +155,17 @@ namespace DOL.GS.Scripts
         public static Loadout For(eCharacterClass characterClass, int level, Duty duties,
                                   int masterLevel)
         {
+            return For(characterClass, level, duties, masterLevel, 0);
+        }
+
+        public static Loadout For(eCharacterClass characterClass, int level, Duty duties,
+                                  int masterLevel, int championLevel)
+        {
             level = Math.Clamp(level, 1, 50);
             masterLevel = Math.Clamp(masterLevel, 0, 10);
-            long key = (((long) characterClass * 100 + level) * 65536 + (long) duties) * 11
-                       + masterLevel;
+            championLevel = Math.Clamp(championLevel, 0, CL_MAX);
+            long key = ((((long) characterClass * 100 + level) * 65536 + (long) duties) * 11
+                       + masterLevel) * (CL_MAX + 1) + championLevel;
 
             lock (_lock)
             {
@@ -166,7 +173,7 @@ namespace DOL.GS.Scripts
                     return cached;
             }
 
-            Loadout loadout = Build(characterClass, level, duties, masterLevel);
+            Loadout loadout = Build(characterClass, level, duties, masterLevel, championLevel);
 
             lock (_lock)
                 _cache[key] = loadout;
@@ -174,8 +181,17 @@ namespace DOL.GS.Scripts
             return loadout;
         }
 
+        /// <summary>
+        /// GamePlayer.CL_MAX_LEVEL. One champion specialty point per champion
+        /// level, so this is also the size of the whole budget.
+        /// </summary>
+        private const int CL_MAX = 10;
+
+        /// <summary>Skills in one champion sub-line: five, at levels 1 to 5.</summary>
+        private const int CL_LINE_DEPTH = 5;
+
         private static Loadout Build(eCharacterClass characterClass, int level, Duty duties,
-                                     int masterLevel)
+                                     int masterLevel, int championLevel)
         {
             Loadout loadout = new();
             List<string> specs = SpecsOf(characterClass);
@@ -204,6 +220,33 @@ namespace DOL.GS.Scripts
                     lines.AddRange(found);
             }
 
+            // Champion lines have to be looked up by hand, because a class does
+            // not name them the way it names everything else.
+            //
+            // A class carries "CL Albion Disciple" in classxspecialization, and
+            // the spell lines are "Champion Disciple 1" through 4. Nothing
+            // joins those two strings, so the loop above -- which matches a
+            // line's Spec against a class's spec -- found none of them, and no
+            // hire has ever had a single champion ability.
+            //
+            // The one spec that did match, "Champion Level Albion", belongs to
+            // the line "Champion Abilities Albion", which has no spells in it.
+            // One tree, not all of them. A class carries five champion specs in
+            // Albion and Hibernia and three in Midgard -- the Heretic has
+            // Disciple, Elementalist, Fighter, Mage and Rogue -- but a champion
+            // level is worth one specialty point and there are only ten, so a
+            // player spends across a tree rather than filling every tree.
+            // Adding all five here would have handed a champion level 10 hire
+            // fifty skills where its employer has ten.
+            //
+            // Chosen by duty, exactly as the Master Level path is, and for the
+            // same reason: a hire has no opinion to express, so it takes the
+            // tree that suits the job it was hired for.
+            string championSpec = ChampionPath(specs, duties);
+
+            if (championSpec != null)
+                lines.AddRange(ChampionLinesFor(championSpec));
+
             // Master Level paths are deliberately NOT counted here.
             //
             // The even split divides a character's points across the lines it
@@ -214,8 +257,13 @@ namespace DOL.GS.Scripts
             // every Nurture, Regrowth and Nature spell it knew dropped from
             // spec 20 to spec 15 in exchange for spells it would have got
             // anyway. Turning a feature on should not make the class worse.
+            // Champion lines are excluded for the same reason Master Level
+            // paths are: they are separate progression, earned rather than
+            // bought with spec points. Counting the four sub-lines would have
+            // divided every real spec by four more and made a hire worse at its
+            // own class the moment its employer earned a champion level.
             int castingSpecs = Math.Max(1, lines
-                .Where(l => !IsMasterPath(l.Spec))
+                .Where(l => !IsMasterPath(l.Spec) && !IsChampionLine(l.Spec))
                 .Select(l => l.Spec).Distinct().Count());
 
             int specLevel = Math.Clamp((int) (level * EVEN_SPEC_SHARE / castingSpecs), 1, level);
@@ -236,7 +284,9 @@ namespace DOL.GS.Scripts
                 // only ones in the group that meant anything.
                 int reach = IsMasterPath(line.Spec)
                     ? (level >= 50 ? masterLevel : 0)
-                    : (line.IsBaseLine ? level : specLevel);
+                    : IsChampionLine(line.Spec)
+                        ? (level >= 50 ? ChampionReach(line.Spec, championLevel) : 0)
+                        : (line.IsBaseLine ? level : specLevel);
 
                 foreach (Spell spell in SkillBase.GetSpellList(line.KeyName))
                 {
@@ -507,6 +557,153 @@ namespace DOL.GS.Scripts
             // GamePlayer, so a hire is a legitimate thing to ask about, and it
             // covers realm and per-item class restrictions on the way past.
             return GameServer.ServerRules.CheckAbilityToUseItem(living, item.Template);
+        }
+
+        /// <summary>
+        /// The four spell lines behind one champion spec, or nothing.
+        ///
+        /// A class names its champion specs "CL &lt;realm&gt; &lt;archetype&gt;" --
+        /// CL Albion Disciple, CL Midgard Viking -- and the spell lines are
+        /// "Champion &lt;archetype&gt; 1" through 4. Dropping the realm gets there
+        /// for thirteen of the fifteen, and the other two are the rogues:
+        /// Albion and Midgard each have one, so those lines keep the realm to
+        /// stay apart -- "Champion Albion Rogue 1", "Champion Midgard Rogue 1".
+        ///
+        /// Rather than hardcode that exception, the realm-less name is tried
+        /// first and the realm-keeping one only if no such line exists. The
+        /// data decides, so a name that changes does not silently drop a line.
+        /// </summary>
+        private static List<DbSpellLine> ChampionLinesFor(string spec)
+        {
+            List<DbSpellLine> found = new();
+
+            if (string.IsNullOrEmpty(spec) || !spec.StartsWith("CL ", StringComparison.Ordinal))
+                return found;
+
+            // "CL Albion Disciple" -> realm "Albion", archetype "Disciple".
+            string rest = spec.Substring(3).Trim();
+            int split = rest.IndexOf(' ');
+
+            if (split <= 0)
+                return found;
+
+            string realm = rest.Substring(0, split);
+            string archetype = rest.Substring(split + 1).Trim();
+
+            if (archetype.Length == 0)
+                return found;
+
+            List<DbSpellLine> plain = ChampionSubLines("Champion " + archetype);
+
+            return plain.Count > 0
+                ? plain
+                : ChampionSubLines("Champion " + realm + " " + archetype);
+        }
+
+        /// <summary>
+        /// Which champion tree this hire walks.
+        ///
+        /// The class's own list is the constraint -- a Heretic may take
+        /// Disciple, Elementalist, Fighter, Mage or Rogue and nothing else --
+        /// and duty picks from within it. The order below is preference, not
+        /// availability: the first archetype the class actually has wins.
+        ///
+        /// Realm never has to be named. A class only ever carries its own
+        /// realm's trees, so matching on the archetype word alone cannot
+        /// stray -- "Seer" appears in no Albion class's list.
+        /// </summary>
+        private static string ChampionPath(List<string> specs, Duty duties)
+        {
+            string[] order;
+
+            if (duties.HasFlag(Duty.Heal) || duties.HasFlag(Duty.Buffs))
+                order = new[] { "Acolyte", "Seer", "Naturalist", "Magician", "Disciple" };
+            else if (duties.HasFlag(Duty.Pet))
+                order = new[] { "Disciple", "Mystic", "Magician", "Mage", "Elementalist" };
+            else if (duties.HasFlag(Duty.Archer))
+                order = new[] { "Rogue", "Stalker", "Fighter", "Viking", "Guardian" };
+            else if (duties.HasFlag(Duty.Nuke) || duties.HasFlag(Duty.CC) ||
+                     duties.HasFlag(Duty.DoT) || duties.HasFlag(Duty.PBAoE))
+                order = new[] { "Elementalist", "Mage", "Mystic", "Magician", "Disciple" };
+            else
+                order = new[] { "Fighter", "Viking", "Guardian", "Stalker", "Rogue" };
+
+            foreach (string want in order)
+            {
+                foreach (string spec in specs)
+                {
+                    if (spec.StartsWith("CL ", StringComparison.Ordinal) &&
+                        spec.EndsWith(" " + want, StringComparison.Ordinal))
+                        return spec;
+                }
+            }
+
+            // No preference matched, so take whichever the class has. Better a
+            // tree than none.
+            foreach (string spec in specs)
+            {
+                if (spec.StartsWith("CL ", StringComparison.Ordinal))
+                    return spec;
+            }
+
+            return null;
+        }
+
+        /// <summary>The numbered sub-lines under one champion archetype.</summary>
+        private static List<DbSpellLine> ChampionSubLines(string stem)
+        {
+            List<DbSpellLine> found = new();
+
+            for (int tier = 1; tier <= 4; tier++)
+            {
+                var rows = DOLDB<DbSpellLine>.SelectObjects(
+                    DB.Column("Spec").IsEqualTo(stem + " " + tier));
+
+                if (rows != null)
+                    found.AddRange(rows);
+            }
+
+            return found;
+        }
+
+        /// <summary>Whether a spec is one of the champion sub-lines.</summary>
+        private static bool IsChampionLine(string spec)
+        {
+            if (string.IsNullOrEmpty(spec) || !spec.StartsWith("Champion ", StringComparison.Ordinal))
+                return false;
+
+            // "Champion Disciple 3" -- a trailing tier number is what makes it
+            // a sub-line rather than the spec-less "Champion Abilities".
+            int space = spec.LastIndexOf(' ');
+
+            return space > 0 && int.TryParse(spec.Substring(space + 1), out int tier)
+                   && tier >= 1 && tier <= 4;
+        }
+
+        /// <summary>
+        /// How far into one champion sub-line the points reach.
+        ///
+        /// A champion level is worth one specialty point, ten levels is ten
+        /// points, and each sub-line holds five skills at levels one to five.
+        /// The order they are spent in is not a choice made here -- the tree
+        /// unlocks in order. Core's GetSkillStatus gates a skill in one line on
+        /// the line before it:
+        ///
+        ///     if (tree[skillIndex-1].Item1.Level >= itemIndex)
+        ///
+        /// so sub-line 2 opens only as far as sub-line 1 has been taken. Five
+        /// points fill the first, ten fill the first two, and a champion level
+        /// 10 hire therefore has half the tree -- which is what a champion
+        /// level 10 player has.
+        /// </summary>
+        private static int ChampionReach(string spec, int championLevel)
+        {
+            int space = spec.LastIndexOf(' ');
+
+            if (space <= 0 || !int.TryParse(spec.Substring(space + 1), out int tier))
+                return 0;
+
+            return Math.Clamp(championLevel - CL_LINE_DEPTH * (tier - 1), 0, CL_LINE_DEPTH);
         }
 
         private static List<string> SpecsOf(eCharacterClass characterClass)

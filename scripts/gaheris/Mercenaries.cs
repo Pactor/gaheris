@@ -1161,12 +1161,19 @@ namespace DOL.GS.Scripts
             if (Profile == null)
                 return;
 
-            // Master Levels belong to the employer, and the company walks them
-            // with him. A hire that arrived at level 50 already knowing all ten
-            // made your own progress through Atlantis the only progress in the
-            // group that meant nothing.
+            // Master Levels and Champion Levels belong to the employer, and
+            // the company walks them with him. A hire that arrived at level 50
+            // already knowing all ten made your own progress through Atlantis
+            // the only progress in the group that meant nothing, and champion
+            // levels are earned the same way -- so they are read off the
+            // employer rather than handed out with the contract.
+            //
+            // Both are gated on the employer actually having the progression:
+            // MLGranted for Atlantis, Champion for the champion tree. A player
+            // who has never spoken to a King has no champion levels to lend.
             Kit = MercenaryLoadout.For(Profile.ClassId, Level, Profile.Duties,
-                                       Employer is { MLGranted: true } ? Employer.MLLevel : 0);
+                                       Employer is { MLGranted: true } ? Employer.MLLevel : 0,
+                                       Employer is { Champion: true } ? Employer.ChampionLevel : 0);
             Styles = Kit.Styles;
 
             // The class's real abilities, so armour and weapon proficiency

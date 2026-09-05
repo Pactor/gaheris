@@ -35,9 +35,27 @@ once denied. Two files are load-bearing:
   `progression/MasterLevels.cs` and `gaheris/TaskMaster.cs`.
 
 Everything compiles into one assembly, so deleting either does not disable a
-feature -- it stops every script in the server. `core/` and `classes/` are
-genuinely independent, with one exception noted in
-`classes/catacombs/warlock/`.
+feature -- it stops every script in the server.
+
+The full graph, mapped rather than assumed:
+
+| From | Needs | For |
+|---|---|---|
+| `classes/shared` | `core` | `DamageGate`, `ISoftensDamage`, `MovementWatch` |
+| `progression` | `core` | the same three |
+| `classes/shared` | `gaheris` | `GameMercenary` |
+| `classes/catacombs/warlock` | `gaheris` | `GameMercenary` |
+| `progression` | `gaheris` | `GaherisLoot`, `MercenaryManager`, `GameMercenary` |
+| `toa` | `gaheris` | `GaherisLoot`, `GameMercenary` |
+| `toa` | `progression` | `GaherisArbiter` |
+| `gaheris` | `classes/catacombs/warlock` | `WarlockPairing` |
+
+`core/` reaches outward for nothing and is a real floor. So are `classes/`
+other than `shared/`, and `realmabilities/`.
+
+**The Warlock and the mercenaries need each other.** `Mercenaries.cs` calls
+`WarlockPairing.Pairs()` so a hired Warlock weaves, and `WarlockPairing.cs`
+takes a `GameMercenary`. Neither comes out alone.
 
 ## Two rules that are not obvious
 

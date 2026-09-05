@@ -142,6 +142,44 @@ the throne NPCs itself -- `GameKingThroneNpc` is what makes anyone a Champion at
 all, and no such NPC existed anywhere in the stock database -- and
 `ChampionLevels.cs` reaches outside `progression/` for nothing.
 
+### The script layer does not partition the way the features do
+
+`features.conf` governs **migrations**. The scripts have their own dependency
+graph, and it was mapped rather than guessed: every `.cs` file was scanned for
+references to classes defined in another folder, with comments stripped so a
+mention in prose does not count. Everything compiles into one assembly, so a
+missing class does not disable one feature -- it stops every script.
+
+| From | Needs | For |
+|---|---|---|
+| `classes/shared` | `core` | `DamageGate`, `ISoftensDamage`, `MovementWatch` |
+| `progression` | `core` | the same three |
+| `classes/shared` | `gaheris` | `GameMercenary` -- hires draw combat power |
+| `classes/catacombs/warlock` | `gaheris` | `GameMercenary` |
+| `progression` | `gaheris` | `GaherisLoot`, `MercenaryManager`, `GameMercenary` |
+| `toa` | `gaheris` | `GaherisLoot`, `GameMercenary` |
+| `toa` | `progression` | `GaherisArbiter` -- the Master Level respec |
+| `gaheris` | `classes/catacombs/warlock` | `WarlockPairing` |
+
+Three things fall out of that, and the last one is the one to remember.
+
+**`core/` is a genuine floor.** Nothing in it reaches outward. `classes/` other
+than `shared/` is genuinely independent too, and so is `realmabilities/`.
+
+**The Warlock and the mercenaries are mutually dependent.** `Mercenaries.cs`
+calls `WarlockPairing.Pairs()` so a hired Warlock weaves properly, and
+`WarlockPairing.cs` takes a `GameMercenary`. Neither can be taken without the
+other.
+
+**`gaheris/Mercenaries.cs` is not optional for anybody.** `GameMercenary` is
+used by six files across four folders -- the Warlock, combat power, champion
+levels, master levels, realm ranks and artifact experience. Together with
+`gaheris/Loot.cs` it is part of the real floor, whatever migrations you choose.
+
+That is the co-operative design showing through rather than sloppiness: the
+group here is hired companions, so every system that awards anything has to
+know what a companion is and who employs it.
+
 ### Two script files are load-bearing whatever you take
 
 `features.conf` governs **migrations**. It cannot express what the scripts need
@@ -268,6 +306,20 @@ Verified rather than assumed: a database built from the stock seed, the whole
 conversion applied **twice**, zero failures on both passes, and a table-by-table
 comparison of every table in the schema showing **nothing changed on the second
 pass**.
+
+### How far the checking went
+
+**Script dependencies:** all of them, by machine. Every file, every folder.
+
+**Data dependencies:** the clone pattern -- a migration that builds rows by
+copying an existing named row -- was searched for across all 117 and found in
+exactly two, `111` and `115`. Both are fixed and both now declare what they
+need.
+
+**Reachability -- whether a feature installs something a player can actually
+get to:** checked by hand for `masterlevels`, `champion` and `taskdungeons`.
+Two of those three were wrong. The others have not been read that way, and on
+that hit rate more are likely to be.
 
 ### What has been proved, and what has not
 

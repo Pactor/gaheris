@@ -71,7 +71,7 @@ nothing orphaned, nothing counted twice.
 | Feature | Migrations | Needs | What you get |
 |---|---|---|---|
 | `champion` | 6 | base | champion trees, their spell lines, who may train them |
-| `masterlevels` | 5 | base | the eight Master Level paths, their spells and gaps |
+| `masterlevels` | 5 | **atlantis** | the eight Master Level paths, their spells and gaps — see the note below, this one is data only without Atlantis |
 | `realmabilities` | 2 | base | realm ability tables for the classes that had none |
 
 ### Classes
@@ -106,6 +106,25 @@ without the Maulers, because migrations 46 and 89 through 92 are bulk imports
 class at once. `install.sh catacombs` says so and gives you `classes`.
 
 The individual *fixes* separate cleanly. The *data underneath them* does not.
+
+### Master Levels need Atlantis, and it is not decoration
+
+`masterlevels` carries the data: the eight paths, their spells, the gaps and a
+tooltip. On its own that is **unreachable**. Three things a player needs sit
+elsewhere:
+
+| Piece | Where | Why it matters |
+|---|---|---|
+| **The Arbiter** | `35-atlantis-npcs.sql` (`atlantis`) | he is what puts you on the path. In stock OpenDAoC the only thing that sets `MLGranted` is the GM command `/player startml` -- core's Arbiter prints two lines of flavour and returns |
+| **Demyphon** | `13` and `35` (`atlantis`) | sells Master Level credits *and respec tokens* for bounty points |
+| **`MasterLevelsMerchant.cs`** | `scripts/toa/` | the class those mob rows resolve to -- in the ToA folder, not `progression/` |
+
+So `install.sh masterlevels` now pulls in `atlantis`, which pulls in `travel`.
+Without the Arbiter you would have every Master Level spell in the database and
+no way for anyone but a GM to reach a single one of them.
+
+**Artifact scrolls are a different feature.** They belong to `artifacts`, which
+also needs `atlantis`. Master Levels do not require them.
 
 ### A feature is not always a folder
 

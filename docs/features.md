@@ -44,14 +44,14 @@ order in the README is the right one: `docker compose up -d`, wait for
 
 ## The catalogue
 
-Twenty-three features. The counts add to the 118 migrations in the repo --
+Twenty-three features. The counts add to the 119 migrations in the repo --
 nothing orphaned, nothing counted twice.
 
 ### Foundation
 
 | Feature | Migrations | Needs | What you get |
 |---|---|---|---|
-| `base` | 23 | — | the co-operative conversion, keep and garrison fixes, experience and loot rates, starting points, the custom player class |
+| `base` | 24 | — | the co-operative conversion, keep and garrison fixes, experience and loot rates, starting points, the custom player class |
 | `travel` | 11 | base | travel catalogue, Gate Wardens, portals, zone points |
 
 ### Content

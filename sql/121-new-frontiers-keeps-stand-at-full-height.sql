@@ -1,0 +1,55 @@
+-- New Frontiers keeps built to their full height.
+--
+-- A keep's level is not only how tough it is. It is also how tall the client
+-- draws it, and that connection is not obvious from either end:
+--
+--     GameKeepComponent.Height => Keep.Height
+--     AbstractGameKeep.Height  => KeepManager.GetHeightFromLevel(Level)
+--
+--     GetHeightFromLevel:  > 15 -> 5   > 10 -> 4   > 7 -> 3
+--                          >  4 -> 2   >  1 -> 1   else 0
+--
+-- and that height is written straight into the component packet, one byte per
+-- wall section:
+--
+--     pak.WriteByte((byte)keepComponent.Height);   // PacketLib170.cs:80
+--
+-- Every keep in region 163 was Level 4. Four is not greater than four, so every
+-- New Frontiers keep was being drawn at height 1 -- the second lowest of six
+-- build tiers -- while the terrain around it was laid out for a finished
+-- fortress. Level 4 is core's starting_keep_level, the level an *unclaimed*
+-- keep sits at, so this was never a choice anyone made here; it is simply what
+-- keeps look like before anybody has ever taken and upgraded them.
+--
+-- Ten is the maximum this server allows. max_keep_level is already 10 in this
+-- database, and AbstractGameKeep documents Level as 0-10, so this is the top of
+-- the range rather than a number picked to be large. It gives height 4.
+-- Height 5 needs level 16, outside the documented range, and is not used.
+--
+-- Region 163 only. Battleground keeps are deliberately left alone: their
+-- BaseLevel is tuned to each bracket's cap -- 19 in Thidranki, 24 in Murdaigean
+-- and so on -- and levelling them to 10 would raise their guards well past what
+-- those brackets are built for.
+--
+-- What this changes besides height: the 56 real keep guards in region 163 gain
+-- levels, because SetGuardLevel adds keep.Level times a multiplier to the guard
+-- base:
+--
+--     guard.Level = GetBaseLevel(guard) + (keep.Level * multiplier)
+--
+-- With keep_guard_level_multiplier at 1.6 and tower_guard_level_multiplier at
+-- 1.0, keep guards move from 56 to 66 and tower guards from 54 to 60. That is
+-- the honest cost of a full-height keep and it is recorded here rather than
+-- discovered later.
+--
+-- starting_keep_level is left at 4 on purpose. Raising it would apply to every
+-- keep in the game on capture, battlegrounds included. The consequence is that
+-- if a New Frontiers keep is ever captured, Reset() drops it back to 4 and it
+-- shrinks again -- acceptable on a co-operative server where the realms are not
+-- fighting each other, and noted so it is not a surprise.
+--
+-- An UPDATE, so re-running changes nothing.
+
+UPDATE keep
+   SET Level = 10
+ WHERE Region = 163;

@@ -83,6 +83,28 @@ namespace DOL.GS.Scripts
         public Spell PetSummon;
 
         /// <summary>
+        /// A heal aimed at the caster's own pet.
+        ///
+        /// The Necromancer's Death Servant line: eight of them, target Pet,
+        /// range 2000, a heal over time the servant casts on itself. Kept
+        /// apart from Heal because Heal is for the group and is chosen by who
+        /// is worst hurt -- this one has exactly one possible target and is the
+        /// only thing keeping the servant, and therefore the shade, standing.
+        /// </summary>
+        public Spell PetHeal;
+
+        /// <summary>
+        /// Power drained from a mob and handed to somebody who needs it.
+        ///
+        /// The Necromancer's Deathsight Spec line: eight PowerTransferPet
+        /// spells, target Realm, range 1500, Value carrying the power given --
+        /// sixteen at level 4 up to a hundred and two for Arawn's Gift. Not a
+        /// buff, because it is cast at whoever is short rather than kept up on
+        /// anybody.
+        /// </summary>
+        public Spell PowerGift;
+
+        /// <summary>
         /// Fire-and-forget turrets. An Animist plants these where it stands and
         /// they stay put -- they are not a pet, and they do not follow.
         /// </summary>
@@ -984,14 +1006,20 @@ namespace DOL.GS.Scripts
                                 KeepBest(loadout.Maintained, spell);
                                 break;
 
-                            // Left unfiled on purpose rather than forced into a
-                            // bucket that nearly fits. PowerTransferPet gives
-                            // the drained power to whoever in the group is
-                            // short of it, and the servant's HealOverTime keeps
-                            // the servant standing -- both need a "who needs
-                            // this" decision that no existing bucket makes.
-                            // Filing them as buffs would have them cast once on
-                            // nothing in particular and left.
+                            // These two are cast at somebody chosen at the
+                            // moment of casting, so they get buckets of their
+                            // own rather than being kept up like a buff. Both
+                            // rank by Value, which is what each actually gives:
+                            // health per tick for the servant, power for
+                            // whoever is short of it.
+                            case eSpellType.HealOverTime:
+                                Keep(ref loadout.PetHeal, spell, s => s.Value);
+                                break;
+
+                            case eSpellType.PowerTransferPet:
+                                Keep(ref loadout.PowerGift, spell, s => s.Value);
+                                break;
+
                             default:
                                 if (spell.Damage > 0)
                                 {

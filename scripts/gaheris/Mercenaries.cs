@@ -1362,7 +1362,19 @@ namespace DOL.GS.Scripts
             // an Animist replacing burnt turrets mid-fight is the class working
             // as intended, not an interruption.
             if (Profile.Has(Duty.Pet))
+            {
                 MaintainServants();
+
+                // Upkeep, not combat. Deliberately above the "is there a foe"
+                // test, for the same reason MaintainServants is: a servant that
+                // finished the last fight at a third health starts the next one
+                // there, and a heal over time is exactly the thing to put on
+                // between pulls. Handing out power belongs here too -- somebody
+                // who ran dry in the last fight wants it back before the next,
+                // not during.
+                if (TendServant(owner))
+                    return;
+            }
 
             if (Profile.Has(Duty.Heal) && Mend(owner))
                 return;
@@ -2608,6 +2620,64 @@ namespace DOL.GS.Scripts
             servant.TargetObject = aim;
 
             return servant.CastSpell(real, SkillBase.GetSpellLine(GlobalSpellsLines.Mob_Spells), false);
+        }
+
+        /// <summary>
+        /// The servant's own upkeep, and the power it hands out.
+        ///
+        /// Both are the Necromancer doing something no other class does, and
+        /// both are cast at somebody picked at the moment of casting, which is
+        /// why neither could be kept up like a buff.
+        ///
+        /// The heal goes to the servant and only the servant -- the Death
+        /// Servant line's target is Pet. Keeping the servant standing is not
+        /// pet care, it is self preservation: the shade cannot be touched while
+        /// the servant lives, and the moment it falls the Necromancer is a
+        /// cloth caster standing in the open.
+        ///
+        /// The power goes to whoever is nearest to empty, drained out of
+        /// whatever the servant has been hitting. Under seventy percent is the
+        /// same line the company already uses to decide somebody is thirsty, so
+        /// a Necromancer and a Bard reading the group agree about who needs
+        /// help. A target with no power pool at all is skipped, which is most
+        /// of the group in a fighter company.
+        /// </summary>
+        private bool TendServant(GamePlayer owner)
+        {
+            GameNPC servant = ControlledBrain?.Body;
+
+            if (servant == null || !servant.IsAlive || Kit == null)
+                return false;
+
+            // A hurt servant first. The number matches the heal: it is a heal
+            // over time of fifteen seconds, so it wants starting before the
+            // servant is nearly dead rather than after.
+            if (Kit.PetHeal != null && servant.HealthPercent < 75 &&
+                CastAt(servant, Kit.PetHeal, 8000))
+                return true;
+
+            if (Kit.PowerGift == null)
+                return false;
+
+            GameLiving driest = null;
+
+            if (owner.MaxMana > 0 && owner.ManaPercent < 70)
+                driest = owner;
+
+            foreach (GameMercenary mate in MercenaryManager.GetCompany(owner))
+            {
+                if (mate == this || !mate.IsAlive || mate.MaxMana <= 0 || mate.ManaPercent >= 70)
+                    continue;
+
+                if (driest == null || mate.ManaPercent < driest.ManaPercent)
+                    driest = mate;
+            }
+
+            // Range is the servant's, because the servant is what casts it.
+            if (driest == null || !servant.IsWithinRadius(driest, Kit.PowerGift.Range))
+                return false;
+
+            return CastAt(driest, Kit.PowerGift, 10000);
         }
 
         protected bool CastAt(GameLiving target, Spell spell, int cooldownMillis, bool allowDead = false)

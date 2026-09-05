@@ -64,7 +64,7 @@ nothing orphaned, nothing counted twice.
 | `seals` | 1 | base | dreaded seals as a currency |
 | `atlantis` | 6 | travel | Trials of Atlantis zones, population, Hall of the Corrupt |
 | `artifacts` | 2 | atlantis | artifact scrolls and the wiring that turns them into artifacts |
-| `taskdungeons` | 8 | base | fifteen task dungeons, masters, doors, populations |
+| `taskdungeons` | 8 | **mercenaries** | fifteen task dungeons, masters, doors, populations — the hires go in with you, so this one will not even compile without them |
 
 ### Progression
 
@@ -125,6 +125,42 @@ no way for anyone but a GM to reach a single one of them.
 
 **Artifact scrolls are a different feature.** They belong to `artifacts`, which
 also needs `atlantis`. Master Levels do not require them.
+
+### Task dungeons will not compile without the mercenaries
+
+Not a data dependency -- a compile-time one, which is worse, because the whole
+of `scripts/` builds into a single assembly and one unresolved reference stops
+every script on the server rather than just this feature.
+
+`TaskMaster.cs` calls `MercenaryManager.GetCompany(player)` to move the hired
+company into the instance alongside its employer, and `MercenaryTravel.cs` is
+what closes the instance again when the last of them leaves. Both live in the
+`mercenaries` feature.
+
+`champion`, by contrast, **is** self-contained: `45-champion-levels.sql` places
+the throne NPCs itself -- `GameKingThroneNpc` is what makes anyone a Champion at
+all, and no such NPC existed anywhere in the stock database -- and
+`ChampionLevels.cs` reaches outside `progression/` for nothing.
+
+### Two script files are load-bearing whatever you take
+
+`features.conf` governs **migrations**. It cannot express what the scripts need
+from each other, and two files are required by folders that look independent of
+them:
+
+| File | Compiled against by | For |
+|---|---|---|
+| `scripts/gaheris/Loot.cs` | `progression/MasterLevels.cs`, `progression/ChampionLevels.cs`, `toa/ArtifactExperience.cs` | `GaherisLoot.Credit()` -- a hire is not a pet, so a kill it lands credits nobody unless the employer is substituted first |
+| `scripts/gaheris/Mercenaries.cs` | `progression/MasterLevels.cs`, `gaheris/TaskMaster.cs` | `MercenaryManager.GetCompany()` |
+
+Delete either and champion levels, master levels and artifact experience stop
+compiling -- which stops **every** script, not just those. Keep both whatever
+migrations you choose. Installing migrations 06 and 40 does not help here; this
+is about which `.cs` files are on disk.
+
+That is not accidental. On a co-operative server the group is hired companions,
+so every system that credits a kill has to resolve the employer, and they all
+resolve it through the same helper rather than three copies of it.
 
 ### A feature is not always a folder
 

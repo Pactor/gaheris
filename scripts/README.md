@@ -23,8 +23,21 @@ cd ~/scriptcheck && ~/.dotnet/dotnet build -v q --nologo
 | `gaheris/` | The co-operative server itself -- mercenaries, task dungeons, rules, travel | Yes, if you want stock rules |
 | `diagnostics/` | Temporary packet and combat probes. **Delete before release.** | Yes, please |
 
-Nothing in `core/`, `classes/`, `progression/` or `toa/` depends on `gaheris/`,
-with one exception noted in `classes/catacombs/warlock/`.
+**`progression/` and `toa/` do depend on `gaheris/`**, which the table above
+once denied. Two files are load-bearing:
+
+* `gaheris/Loot.cs` -- `GaherisLoot.Credit()` is called by
+  `progression/MasterLevels.cs`, `progression/ChampionLevels.cs` and
+  `toa/ArtifactExperience.cs`. A hired companion is deliberately not a pet, so
+  a kill it lands credits nobody until the employer is substituted, and every
+  system that awards experience resolves it through this one helper.
+* `gaheris/Mercenaries.cs` -- `MercenaryManager.GetCompany()` is called by
+  `progression/MasterLevels.cs` and `gaheris/TaskMaster.cs`.
+
+Everything compiles into one assembly, so deleting either does not disable a
+feature -- it stops every script in the server. `core/` and `classes/` are
+genuinely independent, with one exception noted in
+`classes/catacombs/warlock/`.
 
 ## Two rules that are not obvious
 

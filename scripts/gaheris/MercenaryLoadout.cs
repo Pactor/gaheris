@@ -672,7 +672,10 @@ namespace DOL.GS.Scripts
                             Keep(ref loadout.Heal, spell, s => s.Value);
                         break;
 
+                    // MonsterRez derives from ResurrectSpellHandler, so it is a
+                    // rez and belongs with them rather than nowhere.
                     case eSpellType.Resurrect:
+                    case eSpellType.ReanimateCorpse:
                         Keep(ref loadout.Rez, spell, s => s.ResurrectHealth);
                         break;
 
@@ -680,6 +683,14 @@ namespace DOL.GS.Scripts
                     case eSpellType.DirectDamageWithDebuff:
                     case eSpellType.Bolt:
                     case eSpellType.Lifedrain:
+                    // A damaging snare is a nuke that also slows, and it is
+                    // filed by the damage because that is what the hire picks
+                    // it for. DamageSpeedDecrease is 103 spells across fifteen
+                    // lines -- whole classes fight with it -- and
+                    // HereticDamageSpeedDecrease is the Heretic's own, which is
+                    // most of what a Heretic does.
+                    case eSpellType.DamageSpeedDecrease:
+                    case eSpellType.HereticDamageSpeedDecrease:
                         // Radius alone does not make a spell point-blank. A
                         // RANGE of zero does: it bursts on the caster, so the
                         // caster has to be standing in it. Anything with both a
@@ -695,6 +706,7 @@ namespace DOL.GS.Scripts
                         break;
 
                     case eSpellType.DamageOverTime:
+                    case eSpellType.HereticDamageOverTime:
                         Keep(ref loadout.Dot, spell, s => s.Damage);
                         break;
 
@@ -753,6 +765,28 @@ namespace DOL.GS.Scripts
                     case eSpellType.PowerRegenBuff:
                     case eSpellType.CombatSpeedBuff:
                     case eSpellType.MeleeDamageBuff:
+                    // ArmorFactorBuff sat unhandled beside its own siblings:
+                    // BaseArmorFactorBuff and SpecArmorFactorBuff were both
+                    // kept and the plain one was not, so 59 spells across
+                    // fourteen lines were simply never put up.
+                    case eSpellType.ArmorFactorBuff:
+                    // Procs are buffs you leave on a weapon, not spells you
+                    // cast at something.
+                    case eSpellType.OffensiveProc:
+                    case eSpellType.DefensiveProc:
+                    // The Heretic's self buff. HereticPiercingMagic is a
+                    // SpellHandler whose whole job is OnEffectStart, so it is
+                    // maintained like any other.
+                    case eSpellType.HereticPiercingMagic:
+                    // Single-resist buffs. The grouped ones -- BodySpiritEnergy,
+                    // HeatColdMatter and AllMagicResists -- were kept while the
+                    // one-resist versions they come from were not.
+                    case eSpellType.BodyResistBuff:
+                    case eSpellType.SpiritResistBuff:
+                    case eSpellType.EnergyResistBuff:
+                    case eSpellType.HeatResistBuff:
+                    case eSpellType.ColdResistBuff:
+                    case eSpellType.MatterResistBuff:
                         KeepBest(loadout.Maintained, spell);
                         break;
                 }

@@ -307,6 +307,55 @@ conversion applied **twice**, zero failures on both passes, and a table-by-table
 comparison of every table in the schema showing **nothing changed on the second
 pass**.
 
+## Reachability: can a player actually get to it
+
+Asked of every feature, because a feature that installs data nobody can reach
+looks identical to one that works. Two were wrong when this started.
+
+| Feature | How a player reaches it | In the feature? |
+|---|---|---|
+| `travel` | Gate Wardens, placed by `25-warden-coverage.sql` | yes |
+| `frontiers` | border keeps and portal stones, `63` `65` `70` `71` | yes, plus travel |
+| `battlegrounds` | the BG teleporter -- **stock OpenDAoC**, not ours | yes |
+| `mercenaries` | recruiters, `40-city-recruiters.sql` | yes |
+| `seals` | seal collectors, in `02` with the economy | yes |
+| `atlantis` | the Gate Warden's Atlantis menu, `14` | yes, via travel |
+| `artifacts` | scroll binders and scholars, in Atlantis | yes, via atlantis |
+| `taskdungeons` | the fifteen taskmasters, `67` | yes, plus **mercenaries** |
+| `champion` | throne NPCs, placed by `45` itself | yes |
+| `masterlevels` | **the Arbiter**, `35-atlantis-npcs.sql` | **no -- needs atlantis** |
+| `realmabilities` | the ordinary realm-skill window | yes, but see below |
+| `classdata` | trainers, `75-trainers-for-the-reopened-classes.sql` | yes |
+| the class fixes | the same trainers | yes, via classdata |
+| `bainshee` | Morynne, from `13-atlantis-mobs.sql` | **no -- needs atlantis** |
+| `valkyrie` | Sudya, from `49-new-frontiers-population.sql` | **no -- needs frontiers** |
+
+All three gaps are now declared. The rest are self-contained.
+
+### One thing no feature can fix: realm points
+
+`realmabilities` and `rr5` install correctly and are still, for two realms out
+of three, unreachable.
+
+Realm points come from `NpcKillRewardProcessor`, scaled by the **zone's**
+`Realmpoints` value. Four zones in the whole database have a non-zero one:
+
+    Breifine, Cruachan Gorge, Emain Macha, Mount Collory -- all region 200
+
+Those are Hibernia's old frontier zones. Albion's equivalents -- Pennine
+Mountains, Forest Sauvage, Snowdonia -- are zero, as are Midgard's Yggdra
+Forest, Uppland and Jamtland Mountains, as is every zone in New Frontiers.
+
+So an Albion or Midgard character **cannot earn a realm point anywhere**, can
+never spend a realm skill point, and can never reach the Realm Rank 5 that
+`rr5` exists to grant. The highest realm level on this server is 10, which is
+Realm Rank 2, and nobody is above Realm Rank 1.
+
+**This is stock OpenDAoC data** -- no migration in this repo touches
+`Realmpoints` -- so it is a gap that was always there rather than something the
+conversion introduced. It is recorded here because installing `rr5` on an
+Albion or Midgard server would otherwise look like it had failed.
+
 ### How far the checking went
 
 **Script dependencies:** all of them, by machine. Every file, every folder.
@@ -316,10 +365,8 @@ copying an existing named row -- was searched for across all 117 and found in
 exactly two, `111` and `115`. Both are fixed and both now declare what they
 need.
 
-**Reachability -- whether a feature installs something a player can actually
-get to:** checked by hand for `masterlevels`, `champion` and `taskdungeons`.
-Two of those three were wrong. The others have not been read that way, and on
-that hit rate more are likely to be.
+**Reachability:** all of them, by hand, and written up in the section above.
+Three gaps found and declared; one problem found that no feature can fix.
 
 ### What has been proved, and what has not
 

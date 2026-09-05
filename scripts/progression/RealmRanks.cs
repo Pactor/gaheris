@@ -18,9 +18,15 @@ namespace DOL.GS.Scripts
     ///            RealmLevel &lt; (REALMPOINTS_FOR_LEVEL.Length - 1))
     ///
     /// and that array ends at realm level 130, which is Realm Rank 14. There is
-    /// no server property for it and GamePlayer is not swappable, so the
-    /// ceiling cannot be lifted from a script by configuration. It can be
-    /// lifted by carrying on where the core stops, which is what this does.
+    /// no server property for it, so the ceiling cannot be lifted by
+    /// configuration. It is lifted by carrying on where the core stops, which
+    /// is what this does.
+    ///
+    /// This once said GamePlayer was not swappable either. That stopped being
+    /// true on 5 September 2026, when serverproperty.player_class was pointed
+    /// at GaherisPlayer so that Focus Shell could shrink a blow. Overriding the
+    /// ladder there would now be possible -- but this works, and the class is
+    /// deliberately kept to the one override it was added for.
     ///
     /// The cost of levels 131 to 140 is not invented. The core's own table
     /// grows by exactly 1.11 per level from level 119 to its end -- every ratio

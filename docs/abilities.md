@@ -117,8 +117,8 @@ Pickpocket applies to the whole company's kills.
 | **Unburdened Warrior** | Sojourner ML1, every class | 25% bonus to encumbrance |
 | **Siege Master** | Warlord ML1, every class | reduces all siege times by 30% |
 | **Siege Resist** | pure tanks, 5 | *description is a copy of Siege Master's, so what it should do is unknown* |
-| **Sabotage** | Spymaster ML4 | destroys a targeted ward or siege engine -- the **spell** is handled; only the ability row is bare |
-| **Lookout** | Spymaster ML7 | exposes stealthers near a sitting watcher -- the **spell** is handled; only the ability row is bare |
+| ~~**Sabotage**~~ | Spymaster ML4 | destroys a targeted ward or siege engine. **Never broken** -- its handler has a live `OnDirectEffect` |
+| ~~**Lookout**~~ | Spymaster ML7 | exposes stealthers near a sitting watcher. **Was dead and is now fixed** -- see below |
 
 Nothing was invented for any of these. Several cannot be written at all yet:
 
@@ -152,8 +152,13 @@ The Spymaster line carries two Lookout rows: type `Loockout` in the `Spymaster`
 line and type `Lookout` in `ML7 Spymaster`. Both spellings exist in the spell
 type enum; **only `Loockout` has a handler**, in core and in
 `scripts/progression/MasterLevelHolds.cs`. The reachable one is the handled one,
-so this is clutter rather than a fault -- but it is the same duplicate-line
-shape that made the Valkyrie cast the wrong spell, so it is written down.
+so the duplicate is clutter rather than a fault -- but it is the same
+duplicate-line shape that made the Valkyrie cast the wrong spell, so it is
+written down.
+
+Note that "handled" was doing too much work in an earlier version of this line.
+The core `Loockout` handler existed but put its whole body in the callback
+nothing reaches, so the ability was dead in every sense until 5 September.
 
 ---
 
@@ -161,3 +166,27 @@ shape that made the Valkyrie cast the wrong spell, so it is written down.
 
 1. **Pickpocket.** Spymaster ML1, then count coin against a character without it.
 2. **Remedy** on an assassin at 50 -- believed to work, never seen to.
+
+---
+
+## Deliberately left alone
+
+Checked again on 5 September, with their live behaviour confirmed, and **not**
+implemented. Both need a change to core, and this repo does not patch core.
+
+**Unburdened Warrior** (Sojourner ML1) -- live grants a bonus to encumbrance.
+`MaxCarryingCapacity` is a non-virtual property on `GamePlayer` that consults
+exactly one ability, `AtlasOF_LifterAbility`, and `GetAbility<T>` matches with
+`GetType().Equals(typeof(T))` -- an exact type test, so even a subclass of
+Lifter would not be found. There is no property channel and no override point.
+
+**Siege Master** (Warlord ML1) -- reduces siege load, aim and fire times by 30%.
+`GameSiegeWeapon.GetActionDelay` is non-virtual, and siege weapons are built by
+core, so a script cannot reach it. It is siege-only in any case, which is worth
+very little on a co-operative server.
+
+**Sabotage was never broken.** Its handler has a live `OnDirectEffect`. The bare
+ability row beside it is the visible entry, not the behaviour.
+
+The four that *were* dead -- Lookout, Blanket of Camouflage, Battlewarder and
+Focusing Winds -- are fixed, in `scripts/progression/MasterLevelHolds.cs`.

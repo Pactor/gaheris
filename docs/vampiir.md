@@ -123,3 +123,63 @@ completely untested here.
 3. **Stealth detection** against a stealthed hire or player.
 4. A **Dementia pulsing debuff**, and whether walking stops it.
 5. Whether **buffs are refused** as they should be.
+
+---
+
+## Full audit, 5 September 2026
+
+Run to the same standard as the Mauler: not only skills, but whether the class
+can be trained, created and equipped.
+
+**Clean.** Trainers at home -- nine across the Shrouded Isles, Hibernia and Tir
+na Nog. Champion line is Hibernia's. Twenty spell types across Vampiiric
+Embrace, Dementia and Shadow Mastery, every one with a handler. Styles present
+(Blades 110, Blunt 77, Piercing 101). Hibernia armour with Blades, Blunt and
+Piercing. Races Celt, Lurikeen and Shar. `ClassType` is `ListCaster` and all
+three of his specs have a NULL implementation, which is the consistent pairing
+-- the mismatch that made the Valkyrie cast the wrong spell is not here.
+
+### The realm ability gap is not his
+
+He has 20 realm abilities, fewest in Hibernia against 26 for a Mauler and 30 to
+34 for everyone else. Checked properly, that splits three ways.
+
+**Correctly absent: Augmented Acuity.** A Vampiir has no acuity-driven power
+pool -- he has no normal power pool at all -- and acuity is documented as not
+affecting him in any way. Leaving it off is right.
+
+**Not absent: Purge.** He carries `AtlasOF_PurgeReduced`, one of the three Purge
+keys. Covered.
+
+**Genuinely missing: Regeneration, Tireless and Mastery of Water** -- and *not*
+because he is a Vampiir. The classes lacking all three are exactly:
+
+    Heretic, Valkyrie, Bainshee, Vampiir, Warlock, and the three Maulers
+
+which is precisely the eight classes added after the base game. All 39 older
+classes have them. This is a population gap in `classxrealmability_atlas` that
+was never filled in for the expansion classes, not a per-class decision, and it
+applies to eight classes rather than one.
+
+**Not fixed.** Adding three realm abilities to eight classes is 24 rows and a
+real change to what those classes can spend points on. It is written down here
+for a decision rather than made quietly.
+
+### One thing that needs your judgement
+
+Our `CombatPower.cs` pays a Vampiir power **for being hit**. Live does not.
+
+The official class library says he "gains power from a variety of attacks --
+primarily melee strikes", and the class is described as having no normal power
+pool, gaining power only from successfully attacking an opponent. Core already
+implements exactly that, in `AttackComponent.MakeAttack`.
+
+So the defensive half of that script is an **invention** for the Vampiir, not a
+repair. It was written on the belief that being hit ought to pay him too, and
+that belief is not supported by anything found since.
+
+It is left in place and flagged rather than removed, because taking it away is
+as much a balance decision as adding it was, and `combat_power_rate` already
+scales it. Worth noting the Mauler is the opposite case: for him, power from
+being hit **is** the live mechanic, core implements it, and the same script was
+double-paying him until it was corrected.

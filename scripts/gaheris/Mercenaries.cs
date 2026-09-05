@@ -1365,6 +1365,11 @@ namespace DOL.GS.Scripts
             {
                 MaintainServants();
 
+                // The servant works through its orders every tick, not only on
+                // the tick one was given -- otherwise a queued spell would sit
+                // there until the Necromancer happened to issue another.
+                RunServantQueue();
+
                 // Upkeep, not combat. Deliberately above the "is there a foe"
                 // test, for the same reason MaintainServants is: a servant that
                 // finished the last fight at a third health starts the next one
@@ -2641,9 +2646,105 @@ namespace DOL.GS.Scripts
             // pet casts it, so the servant's version scales with what the
             // Necromancer knows rather than with the sub-spell's own row.
             real.Level = wrapper.Level;
-            servant.TargetObject = aim;
 
-            return servant.CastSpell(real, SkillBase.GetSpellLine(GlobalSpellsLines.Mob_Spells), false);
+            // Queued, not cast. A Necromancer gives an order and the servant
+            // carries it out when it can -- that delay is the class, and
+            // casting straight away skipped it.
+            Queue(real.IsInstantCast ? _servantInstants : _servantOrders, real, aim);
+            RunServantQueue();
+            return true;
+        }
+
+        /// <summary>
+        /// The servant's orders, waiting to be carried out.
+        ///
+        /// Two queues, because core keeps two and for the reason it gives:
+        /// instants are checked first, "This allows instant spells such as FP
+        /// to be activated first", and they drain all at once while an ordinary
+        /// spell goes one per check.
+        ///
+        /// Two deep each, which is core's depth. A third order pushes out the
+        /// one the servant would have cast next -- so the newest orders win and
+        /// a Necromancer cannot stack a minute of casting into the queue.
+        /// </summary>
+        private readonly Queue<(Spell Spell, GameLiving Target)> _servantOrders = new();
+        private readonly Queue<(Spell Spell, GameLiving Target)> _servantInstants = new();
+
+        private const int SERVANT_QUEUE_DEPTH = 2;
+
+        private static void Queue(Queue<(Spell Spell, GameLiving Target)> queue,
+                                  Spell spell, GameLiving target)
+        {
+            while (queue.Count >= SERVANT_QUEUE_DEPTH)
+                queue.Dequeue();
+
+            queue.Enqueue((spell, target));
+        }
+
+        /// <summary>
+        /// Give the servant its next order, if it is free to take one.
+        ///
+        /// The gate is core's: an order waits for the servant's attack round to
+        /// finish -- "Only start casting if the pet has finished his attack
+        /// round" -- and instants are tried before anything else.
+        /// </summary>
+        private void RunServantQueue()
+        {
+            GameNPC servant = ControlledBrain?.Body;
+
+            if (servant == null || !servant.IsAlive)
+            {
+                _servantOrders.Clear();
+                _servantInstants.Clear();
+                return;
+            }
+
+            if (servant.attackComponent.weaponAction?.IsAttackRoundFinished == false)
+                return;
+
+            if (!servant.IsCasting)
+            {
+                // Instants drain in one pass, the way core's
+                // CheckAttackSpellQueue does.
+                for (int i = _servantInstants.Count; i > 0; i--)
+                {
+                    (Spell spell, GameLiving target) = _servantInstants.Peek();
+
+                    if (!ServantCasts(servant, spell, target))
+                        break;
+
+                    _servantInstants.Dequeue();
+                }
+            }
+
+            if (servant.IsCasting || _servantOrders.Count == 0)
+                return;
+
+            (Spell next, GameLiving at) = _servantOrders.Peek();
+
+            if (ServantCasts(servant, next, at))
+                _servantOrders.Dequeue();
+        }
+
+        /// <summary>
+        /// One order, carried out. The target test is core's: alive, or the
+        /// spell is on the servant itself, or it has no range and so bursts
+        /// where the servant stands.
+        /// </summary>
+        private bool ServantCasts(GameNPC servant, Spell spell, GameLiving target)
+        {
+            if (spell == null)
+                return true;
+
+            if (target is not { IsAlive: true } &&
+                spell.Target is not eSpellTarget.SELF && spell.Range != 0)
+                return false;
+
+            if (spell.CastTime > 0)
+                servant.attackComponent.StopAttack();
+
+            servant.TargetObject = target;
+            return servant.CastSpell(spell, SkillBase.GetSpellLine(GlobalSpellsLines.Mob_Spells), false);
         }
 
         /// <summary>

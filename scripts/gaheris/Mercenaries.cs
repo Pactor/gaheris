@@ -721,7 +721,7 @@ namespace DOL.GS.Scripts
         public override int ThinkInterval => 1000;
 
         /// <summary>How far the employer may get before following beats fighting.</summary>
-        private const int STAY_WITH_EMPLOYER = 600;
+        public const int STAY_WITH_EMPLOYER = 600;
 
         /// <summary>How close they gather once the fighting is over.</summary>
         private const int REGROUP_DISTANCE = 150;
@@ -1482,7 +1482,9 @@ namespace DOL.GS.Scripts
             if (tactic == Tactic.PBAoE && Kit.Pbaoe != null &&
                 !IsWithinRadius(foe, Kit.Pbaoe.Radius))
             {
-                Follow(foe, 60, MercenaryBrain.FOLLOW_GIVE_UP);
+                if (MayCloseOn(owner, foe))
+                    Follow(foe, 60, MercenaryBrain.FOLLOW_GIVE_UP);
+
                 return;
             }
 
@@ -1501,7 +1503,43 @@ namespace DOL.GS.Scripts
                 return;
             }
 
-            Follow(foe, Math.Max(200, Kit.Nuke.Range - 300), Kit.Nuke.Range - 100);
+            if (MayCloseOn(owner, foe))
+                Follow(foe, Math.Max(200, Kit.Nuke.Range - 300), Kit.Nuke.Range - 100);
+        }
+
+        /// <summary>
+        /// Whether this hire may walk towards a foe at all.
+        ///
+        /// Two rules, and both exist because RoleThink runs BEFORE the brain
+        /// decides whether to engage, so a closing move here is made without
+        /// any of that context and then argued with a tick later.
+        ///
+        /// A Skald showed it plainly. It has eleven direct damage songs at
+        /// range 1000, so Kit.Nuke is set and the caster's close-the-gap call
+        /// at the end of RoleThink applied to it: Follow(foe, 700, 900). It
+        /// walked at the mob, crossed STAY_WITH_EMPLOYER at 600 units, and the
+        /// brain's break-off sent it straight home -- where it was back in
+        /// range to start walking again. Back and forth on the spot, wanting
+        /// to attack something nobody had attacked, while the group buffed.
+        ///
+        /// So: never walk further from the employer than the leash allows.
+        /// A foe beyond it cannot be closed on without being dragged back, and
+        /// a move that is undone every tick is worse than standing still.
+        ///
+        /// And a hire that fights in melee waits, because the brain already
+        /// says so -- "casters may open at range; melee wait for it to
+        /// arrive". Closing here was that rule being broken from the other
+        /// side of the tick by a class that happens to own a damage spell.
+        /// </summary>
+        private bool MayCloseOn(GamePlayer owner, GameLiving foe)
+        {
+            if (owner == null || foe == null)
+                return false;
+
+            if (EngagesInMelee)
+                return false;
+
+            return owner.IsWithinRadius(foe, MercenaryBrain.STAY_WITH_EMPLOYER);
         }
 
         /// <summary>

@@ -94,9 +94,19 @@ never written.
 `scripts/classes/shared/CombatPower.cs` grants it, on the Vampiir's curve. For
 the Vampiir it is a top-up; **for the Mauler it is the entire supply**.
 
-It has never been seen working. It hung on two dead events from the day it was
-written until 4 September, and the Vampiir session that followed produced no
-evidence either way. `combat_power_log` exists, off by default, to settle it.
+**Corrected 5 September: this was never his mechanic.** The class library says
+it outright -- "The class does not have a normal power pool, however. It will
+gain power from taking damage in combat." Power from damage *dealt* reaches a
+Mauler only through the few spells that say "returned as power", not as a
+passive.
+
+Core already pays him for taking damage, a flat 25%, through Defensive Combat
+Power Regeneration, which every Mauler carries from career level 1. So a played
+Mauler was never short of anything -- he was being paid twice for the mechanic
+he has and once more for one he does not.
+
+This file now pays **hired** Maulers only, on that same 25%, because
+`GamePlayer.TakeDamage` is an override a `GameNPC` never runs.
 
 **This is the thing to test first.** If it does not work, a Mauler is
 unplayable past his first bar.

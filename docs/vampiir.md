@@ -61,7 +61,11 @@ It now hangs off `GameObjectEvent.TakeDamage`, which is raised, fires once per
 landed blow, and names both ends of it -- so one handler pays the striker and
 the victim. See `dead-events.md`.
 
-**This has never been seen working.** It needs testing before it is believed.
+**Superseded 5 September.** Being hit is not how a Vampiir gains power --
+that is the Mauler's mechanic. Core's `MakeAttack` grant, for landing blows, is
+the whole of his, and it has always worked. This file now pays **hired**
+Vampiirs only, for dealing damage, since core's grant tests
+`playerOwner.CharacterClass` and never sees a `GameMercenary`.
 
 `combat_power_rate` scales it. 1.0 grants exactly what the core pays for one
 landed blow.

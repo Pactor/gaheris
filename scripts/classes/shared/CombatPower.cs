@@ -8,51 +8,58 @@ using DOL.GS.ServerProperties;
 namespace DOL.GS.Scripts
 {
     /// <summary>
-    /// A Vampiir draws power from blows taken as well as blows landed, and a
-    /// Mauler draws it at all.
+    /// Power from fighting, for the two classes that live on it -- and only
+    /// for the ones the core cannot reach.
     ///
-    /// Only half of that is in the core. AttackComponent.MakeAttack grants
-    /// power when a Vampiir hits something --
+    /// **The core already does this correctly, for players.** That took three
+    /// passes to establish, and each pass had it wrong in a different way, so
+    /// the conclusion is written out in full:
     ///
-    ///     int perc = (ad.Damage + ad.CriticalDamage) / 100 * (55 - Level);
-    ///     perc = clamp(perc, 1, 15);
-    ///     Mana += ceil(perc * MaxMana / 100);
+    ///   Vampiir  gains power by **dealing** damage. AttackComponent.MakeAttack:
     ///
-    /// -- and that is the only place in the whole server where a Vampiir is
-    /// given power at all, the power bolt aside. Being hit grants nothing. The
-    /// one piece of Vampiir code on the damage-taken path cancels the speed
-    /// enhancement and then stops. So a Vampiir fills at half the rate it
-    /// should, and the half that is missing is the one that pays you for
-    /// standing in the middle of a fight, which is the whole shape of the
-    /// class.
+    ///       perc = (ad.Damage + ad.CriticalDamage) / 100 * (55 - Level)
+    ///       perc = clamp(perc, 1, 15)
+    ///       Mana += ceil(perc * MaxMana / 100)
     ///
-    /// This adds it, using the core's own formula rather than a new one --
-    /// same curve, same one-to-fifteen-percent bounds, same inverse scaling on
-    /// level, which is there because damage grows with level and the share
-    /// taken from it should not.
+    ///   Mauler   gains power by **taking** it. GamePlayer.TakeDamage, through
+    ///            Defensive Combat Power Regeneration, which every Mauler
+    ///            carries from career level 1:
     ///
-    /// The Maulers are worse off still. They carry a power bar -- their class
-    /// keys mana to Strength -- and the game refuses them every way of filling
-    /// it: RegenBuff, PowerHealSpellHandler and the Perfecter power heal all
-    /// name the three of them alongside the Vampiir and decline. That is
-    /// correct, because a Mauler is supposed to earn its power by fighting.
-    /// Nothing in the server grants it any. So the bar fills once, drains, and
-    /// never recovers -- which makes Fist Wraps and Power Strikes something
-    /// you use at the start of an evening and not again.
+    ///       Mana += (damageAmount + criticalAmount) * 0.25
     ///
-    /// They are given the same deal as the Vampiir here: power for landing a
-    /// blow and for taking one, on the core's own curve.
+    /// The class libraries are plain about both. A Vampiir "gains power from a
+    /// variety of attacks -- primarily melee strikes" and has no normal power
+    /// pool to fill any other way. A Mauler "does not have a normal power
+    /// pool, however. It will gain power from taking damage in combat" --
+    /// power from damage *dealt* reaches him only through particular spells
+    /// that say so, not as a passive.
     ///
-    /// Power comes only from a blow that actually lands. A block, a parry or
-    /// an evade is a blow that did not happen.
+    /// This file spent most of its life doing the opposite of both: paying a
+    /// Vampiir for being hit, which is not his mechanic, and paying a Mauler
+    /// for landing blows, which is not his either -- while core was quietly
+    /// paying the Mauler a second time for the one that is.
+    ///
+    /// **What is left is hires, and nothing else.** Both core paths are gated
+    /// on GamePlayer: MakeAttack tests `playerOwner.CharacterClass`, and
+    /// TakeDamage is an override on GamePlayer that a GameNPC never runs. So a
+    /// hired Vampiir was paid nothing for dealing and a hired Mauler nothing
+    /// for taking, and the game refuses them every other way of filling a bar
+    /// -- RegenBuff, PowerHealSpellHandler and the Perfecter power heal all
+    /// name these classes and decline. Their bars filled once and never again.
+    ///
+    /// Each hire is paid on its own class's formula, the core's, so a hired
+    /// one and a played one behave the same way.
+    ///
+    /// Power comes only from a blow that lands. A block, parry or evade is a
+    /// blow that did not happen, and TakeDamage never fires for one.
     /// </summary>
     public static class CombatPower
     {
         [ServerProperty("classes", "combat_power_rate",
-            "How fast a Vampiir or Mauler draws power from a fight, as a multiplier on " +
-            "the core's own formula. 1.0 grants exactly what the core grants " +
-            "a Vampiir for landing a blow -- now also for taking one, and for " +
-            "the Maulers, who are granted nothing at all by the core.", 1.0)]
+            "How fast a hired Vampiir or Mauler draws power from a fight, as a " +
+            "multiplier on the core's own formulas. 1.0 grants a hire exactly " +
+            "what the core grants the played class. Players are not affected " +
+            "at all -- the core pays them directly.", 1.0)]
         public static double POWER_RATE;
 
         /// <summary>
@@ -104,6 +111,21 @@ namespace DOL.GS.Scripts
                        or eCharacterClass.MaulerAlb
                        or eCharacterClass.MaulerMid
                        or eCharacterClass.MaulerHib;
+        }
+
+        /// <summary>
+        /// Who is paid for *dealing* a blow: the Vampiir, and only him. It is
+        /// his whole mechanic, and it is not the Mauler's -- a Mauler earns
+        /// power by being hit, and gets power from damage dealt only through
+        /// the few spells that say "returned as power".
+        /// </summary>
+        private static bool FeedsOnDealing(GameLiving living)
+        {
+            if (living is GamePlayer player)
+                return player.CharacterClass is ClassVampiir;
+
+            return living is GameMercenary hire &&
+                   hire.Profile?.ClassId is eCharacterClass.Vampiir;
         }
 
         /// <summary>
@@ -180,35 +202,17 @@ namespace DOL.GS.Scripts
             if (damage <= 0)
                 return;
 
-            // Power for being hit, which almost nobody gets from here.
-            //
-            // This began as "the half the core never had" and was wrong twice
-            // over. It is a Mauler mechanic, not a shared one -- Defensive
-            // Combat Power Regeneration, carried by every Mauler and nobody
-            // else -- and core already pays it in GamePlayer.TakeDamage:
-            //
-            //     if (HasAbility(Abilities.DefensiveCombatPowerRegeneration))
-            //         Mana += (int)((damageAmount + criticalAmount) * 0.25);
-            //
-            // So the Vampiir should never have been paid for it at all, and the
-            // Mauler was being paid for it twice. What is left for this script
-            // is the one case core cannot reach: a **hired** Mauler, which is a
-            // GameNPC, so GamePlayer.TakeDamage never runs for it.
+            // Taking a blow pays a Mauler, and nobody else. Core pays a played
+            // one in GamePlayer.TakeDamage; a hire is a GameNPC and never runs
+            // that override, so this is the only thing that pays it.
             if (sender is GameLiving hurt && FeedsOnBeingHit(hurt) && !CorePaysForBeingHit(hurt))
-                Draw(hurt, hurt, damage, POWER_RATE);
+                Quarter(hurt, damage);
 
-            // And power for landing one. The core already pays a Vampiir for
-            // this in MakeAttack, so it only tops that up when the rate has
-            // been raised. For landing a blow a Mauler really is paid nothing
-            // by anybody, and neither is any hire, so both get the whole
-            // share.
-            if (blow.DamageSource is GameLiving struck)
-            {
-                double share = CorePays(struck) ? POWER_RATE - 1.0 : POWER_RATE;
-
-                if (share > 0)
-                    Draw(struck, sender as GameObject, damage, share);
-            }
+            // Landing one pays a Vampiir, and nobody else. Core pays a played
+            // one in MakeAttack, which tests playerOwner.CharacterClass, so
+            // again only a hire is left.
+            if (blow.DamageSource is GameLiving struck && FeedsOnDealing(struck) && !CorePays(struck))
+                Draw(struck, sender as GameObject, damage, POWER_RATE);
         }
 
         /// <summary>
@@ -246,6 +250,41 @@ namespace DOL.GS.Scripts
                                           (player == other ? "taken" : "dealt") +
                                           " -- " + before + " to " + player.Mana +
                                           " of " + player.MaxMana);
+                }
+            }
+            catch (Exception)
+            {
+                // Never let a power tick interfere with a swing.
+            }
+        }
+
+        /// <summary>
+        /// A quarter of the damage, as power. This is the core's Mauler
+        /// formula exactly -- `Mana += (damage + crit) * 0.25` -- rather than
+        /// the Vampiir's curve, so a hired Mauler fills at the same rate as a
+        /// played one.
+        /// </summary>
+        private static void Quarter(GameLiving hire, int damage)
+        {
+            try
+            {
+                if (!hire.IsAlive)
+                    return;
+
+                int gain = (int) (damage * 0.25 * POWER_RATE);
+
+                if (gain <= 0)
+                    return;
+
+                int before = hire.Mana;
+                hire.Mana += gain;
+
+                if (LOG)
+                {
+                    Console.WriteLine("Power: " + hire.Name + " draws " + gain +
+                                      " from " + damage + " damage taken -- " +
+                                      before + " to " + hire.Mana +
+                                      " of " + hire.MaxMana);
                 }
             }
             catch (Exception)

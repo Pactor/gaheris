@@ -31,12 +31,26 @@ sitting on a dead event; champion trees checked for realm and archetype.
 
 This is the testing queue, roughly by how much rests on it.
 
-**1. Combat power -- Vampiir and all three Maulers.** For the Mauler this is
-the entire power supply; for the Vampiir a top-up. It granted nothing at all
-from the day it was written until 4 September. Hires of those classes were
-missed again until 5 September and now draw as well.
-*Fight something, watch the bar, and watch the log.* If it stays silent while
-you swing, stop -- a Mauler is unplayable past his first bar.
+**1. Combat power -- settled 5 September, and the answer was that the core had
+it right all along.**
+
+Observed working in play: a level 50 Mauler drew power on every landed blow, on
+the core's Vampiir curve, and the arithmetic matched at every damage figure
+(195 damage gave 35, 151 gave 28, 37 gave 7, anything under 30 gave the 1%
+floor of 4). It also clamped correctly at full.
+
+**And then it turned out to be the wrong mechanic.** The class libraries are
+plain: a Vampiir gains power by *dealing* damage, a Mauler by *taking* it. Core
+implements both, for players -- `MakeAttack` for the one, a flat 25% in
+`GamePlayer.TakeDamage` for the other. This script had spent its life doing the
+opposite of both.
+
+It now covers **hires only**, each on its own class's formula, because both core
+paths are gated on `GamePlayer` and a `GameMercenary` runs neither. A played
+Vampiir or Mauler is untouched by it.
+
+*Still to watch:* a **hired** Mauler taking blows, and a **hired** Vampiir
+landing them. Those are the only two cases this file still pays.
 
 **2. Mark of Prey** -- the Vampiir's RR5, which never returned power in the
 whole life of this server. `ra_blows_log` narrates it.

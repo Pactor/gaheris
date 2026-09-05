@@ -1807,6 +1807,30 @@ namespace DOL.GS.Scripts
 
             foreach (Spell buff in Kit.Maintained)
             {
+                // A Necromancer's buffs are its servant's, and they go through
+                // the servant. They are kept here with everything else because
+                // they are maintained like everything else, but nothing below
+                // works on them:
+                //
+                // BestAt asks which hire has the strongest version, and the
+                // answer is meaningless when each Necromancer buffs its own
+                // pet. WhoNeeds walks the group, and the only candidate is a
+                // servant that is not in it. And the effect lookup is the one
+                // that actually stopped them -- EffectHelper.GetEffectFromSpell
+                // is handed the wrapper, whose type is PetSpell, which maps to
+                // nothing, so every pet buff hit the Unknown test and was
+                // skipped. They were being kept and never cast.
+                //
+                // The sub-spell knows what it really is, so ask that, and put
+                // it on the servant.
+                if (buff.SpellType is eSpellType.PetSpell)
+                {
+                    if (BuffTheServant(buff, RETRY))
+                        return true;
+
+                    continue;
+                }
+
                 // Whoever has the strongest version of this particular buff
                 // casts it -- not whoever happened to be hired first.
                 if (!BestAt(buff, owner))
@@ -2678,6 +2702,36 @@ namespace DOL.GS.Scripts
                 return false;
 
             return CastAt(driest, Kit.PowerGift, 10000);
+        }
+
+        /// <summary>
+        /// Put one of the servant's own buffs on the servant.
+        ///
+        /// The wrapper carries the range and the cast; the sub-spell carries
+        /// what the effect actually is, which is the only way to ask whether it
+        /// is already up. CastAt sends it to CommandServant, which aims a
+        /// PET or SELF targeted wrapper at the servant on its own, so the
+        /// target passed here is only there to satisfy the signature.
+        /// </summary>
+        private bool BuffTheServant(Spell wrapper, int retryMillis)
+        {
+            GameNPC servant = ControlledBrain?.Body;
+
+            if (servant == null || !servant.IsAlive)
+                return false;
+
+            Spell real = SkillBase.GetSpellByID(wrapper.SubSpellID);
+
+            if (real == null)
+                return false;
+
+            eEffect effect = EffectHelper.GetEffectFromSpell(real);
+
+            if (effect is not eEffect.Unknown &&
+                EffectListService.GetEffectOnTarget(servant, effect) != null)
+                return false;
+
+            return CastAt(servant, wrapper, retryMillis);
         }
 
         protected bool CastAt(GameLiving target, Spell spell, int cooldownMillis, bool allowDead = false)

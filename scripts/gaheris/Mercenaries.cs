@@ -3651,26 +3651,47 @@ namespace DOL.GS.Scripts
             if (Profile == null || Profile.ClassId is not eCharacterClass.Necromancer)
                 return;
 
-            // The shade is not a costume. While the servant lives the
-            // Necromancer cannot be targeted or damaged at all -- to kill one
-            // you kill the pet first, and only then does the shade become
-            // something you can hit. Wearing the model without the flags gave
-            // us the look of it and none of the rule.
+            // A shade is seen. It is not hidden and it is not untargetable.
+            //
+            // This carried GHOST and CANTTARGET on the reasoning that a shaded
+            // Necromancer cannot be touched until its servant falls. That is
+            // not the rule and it is not what the flags do: together they took
+            // the hire off the screen, so a Necromancer summoned its pet and
+            // vanished, and nobody could buff it because nobody could click it.
+            //
+            // Core's shade does exactly one thing to a player:
+            //
+            //     OwnerPlayer.Model = OwnerPlayer.ShadeModel;
+            //
+            // and that is the whole of ShadeECSGameEffect.OnStartEffect. The
+            // player stays visible and stays targetable by their own side --
+            // which is why a Necromancer can be buffed while shaded.
+            //
+            // Being left alone by monsters is a separate rule, and a narrower
+            // one than "cannot be touched". Core keeps the shade in the aggro
+            // list and filters it out only while it is shaded, and says why:
+            //
+            //     // Keep Necromancer shades so that we can attack them if
+            //     // their pets die.
+            //
+            // So the mob remembers the Necromancer and comes for it the moment
+            // the servant dies -- which is the same moment the shade drops.
+            //
+            // That filter reads ShouldBeIgnored(GameLiving target), not a
+            // player, and asks the effect list for eEffect.Shade. A hire has an
+            // effect list too, so carrying the real effect gets the real
+            // behaviour from core's own code rather than an imitation of it.
             bool shaded = crop > 0;
-            eFlags want = shaded
-                ? Flags | eFlags.GHOST | eFlags.CANTTARGET
-                : Flags & ~(eFlags.GHOST | eFlags.CANTTARGET);
+            ECSGameAbilityEffect worn = EffectListService.GetAbilityEffectOnTarget(this, eEffect.Shade);
 
-            if (Flags != want)
+            if (shaded && worn == null)
             {
-                Flags = want;
-
-                // Flags ride along with the create packet rather than an
-                // update, so the shade has to be redrawn before it is
-                // untargetable on anybody's screen.
-                foreach (GamePlayer nearby in GetPlayersInRadius(WorldMgr.VISIBILITY_DISTANCE))
-                    nearby.Out.SendNPCCreate(this);
+                ECSGameEffectFactory.Create(new(this, 0, 1),
+                    static (in i) => new MercenaryShadeEffect(i));
+                HandOverAttackers();
             }
+            else if (!shaded && worn != null)
+                worn.End();
 
             ushort wanted = shaded ? SHADE_MODEL : Profile.Model;
 
@@ -3683,8 +3704,64 @@ namespace DOL.GS.Scripts
                 nearby.Out.SendModelChange(this, wanted);
         }
 
+        /// <summary>
+        /// Anything already swinging at the Necromancer goes after the servant
+        /// instead, the moment the shade goes up.
+        ///
+        /// Core does this in ClassDisciple.Shade, and without it the rule only
+        /// half works: new attackers are filtered away by the shade, while
+        /// whatever was already hitting the Necromancer when it summoned keeps
+        /// hitting it. The aggro is moved rather than dropped, and it is moved
+        /// with the amount core uses -- GetBaseAggroAmount for the
+        /// Necromancer -- so the servant inherits the fight rather than being
+        /// handed a mob with no reason to stay on it.
+        /// </summary>
+        private void HandOverAttackers()
+        {
+            GameNPC servant = ControlledBrain?.Body;
+
+            if (servant == null)
+                return;
+
+            foreach (GameObject attacker in attackComponent.AttackerTracker.Attackers)
+            {
+                if (attacker is not GameNPC npc || !npc.attackComponent.AttackState ||
+                    npc.Brain is not IOldAggressiveBrain hostile)
+                    continue;
+
+                npc.StopAttack();
+                hostile.AddToAggroList(servant, hostile.GetBaseAggroAmount(this));
+            }
+        }
+
         /// <summary>Briton shade -- what GamePlayer.ShadeModel picks by race.</summary>
         private const ushort SHADE_MODEL = 1353;
+
+        /// <summary>
+        /// The shade a hired Necromancer wears.
+        ///
+        /// Its own class rather than core's ShadeECSGameEffect, for one
+        /// reason: that one's Name reads LanguageMgr.GetTranslation(
+        /// OwnerPlayer.Client, ...) with no null check, and OwnerPlayer is
+        /// documented as "will be null on NPCs". Anything that asked a hire's
+        /// shade for its name would have thrown.
+        ///
+        /// Nothing else is needed. The only thing core asks of this effect is
+        /// its type -- ContainsEffectForEffectType(eEffect.Shade) -- so the
+        /// model change stays where it is and this exists to answer that
+        /// question truthfully.
+        /// </summary>
+        public class MercenaryShadeEffect : ECSGameAbilityEffect
+        {
+            public override ushort Icon => 0x193;
+            public override string Name => "Shade";
+            public override bool HasPositiveEffect => false;
+
+            public MercenaryShadeEffect(in ECSGameEffectInitParams initParams) : base(initParams)
+            {
+                EffectType = eEffect.Shade;
+            }
+        }
 
         /// <summary>
         /// A Necromancer with its servant up: a shade, which commands rather

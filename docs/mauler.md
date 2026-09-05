@@ -133,3 +133,67 @@ One session should settle him.
    quarter less and you gain power. `ra_blows_log` narrates it.
 6. Whether the fill rate **feels** right at `combat_power_rate = 1.0`. This is
    the setting most likely to want changing after play.
+
+---
+
+## Full audit, 5 September 2026
+
+Run to the standard the Bainshee audit should have met -- not just skills, but
+whether the class can be trained, created and equipped.
+
+### Clean
+
+| Checked | Result |
+|---|---|
+| Class ids and races | 60/61/62, each Minotaur race plus two of the realm -- Korazh/Briton/Inconnu, Deifrang/Kobold/Norseman, Graoch/Celt/Lurikeen |
+| **Trainers at home** | Albion 4, Midgard 6, Hibernia 8. The fault that caught the Bainshee is not here |
+| Champion lines | correct realm each -- migration 106's fix confirmed |
+| Spell types | 21 across Aura Manipulation, Magnetism and Power Strikes. **All handled, none dead** |
+| Hybrid marking | class is `eClassType.Hybrid`, all three spell specs are `LiveSpellHybridSpecialization` |
+| RR5 | Gift of Perizor, all three, instantiates |
+| Realm abilities | 26 each |
+| Styles | Fist Wraps 48, Mauler Staff 48 |
+| Armour and weapons | realm armour plus Fist Wraps, Mauler Staff and three realm weapons each |
+| Master levels | all eight paths |
+
+**On the realm ability count.** 26 against 32-33 for a Mercenary, Berserker or
+Blademaster, which looks short until you read the difference. The Mauler trades
+pure-melee abilities -- Mastery of Arms, Dodger, Duelist's Reflexes, Whirling
+Dervish, Hail of Blows -- for caster ones: Aug Acuity, Mastery of Magery, Wild
+Power, Serenity, Ethereal Bond, Mastery of Focus. That is a hybrid's set, and
+it is coherent.
+
+### One fault, and it was ours
+
+**The Mauler was being paid twice for being hit.**
+
+`CombatPower.cs` was written on the belief that nothing in the server pays a
+Mauler anything, and said so in a comment. That is true of landing a blow. It is
+**not** true of taking one. Every Mauler carries **Defensive Combat Power
+Regeneration** from career level 1, and `GamePlayer.TakeDamage` pays it:
+
+```csharp
+if (HasAbility(Abilities.DefensiveCombatPowerRegeneration))
+    Mana += (int)((damageAmount + criticalAmount) * 0.25);
+```
+
+So a Mauler in a fight drew a quarter of the damage he took as power from core,
+and then a full share again from our script.
+
+Fixed: the defensive grant now skips anyone carrying that ability. The test is
+the **ability**, not the class, on purpose -- a hired Mauler is a `GameNPC`,
+core's `GamePlayer.TakeDamage` never runs for it, and it still needs paying.
+
+The offensive half is unchanged and was always right: core pays only a Vampiir
+for landing a blow, so a Mauler and every hire still take the whole share there.
+
+**Never observed either way.** The doubling was found by reading, not by
+watching a power bar, and the fix has not been watched either.
+
+### Not the Mauler's fault, but his to live with
+
+He is handed the same dead Master Level abilities as everyone: **Unburdened
+Warrior**, **Sabotage**, **Lookout** and **Siege Master** do nothing, and
+**Enduring Poison** fires at a hundredth of its stated chance. All recorded in
+`abilities.md`; none are class-specific.
+

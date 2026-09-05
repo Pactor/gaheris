@@ -107,9 +107,23 @@ namespace DOL.GS.Scripts
         }
 
         /// <summary>The core pays a Vampiir for landing a blow; nobody else.</summary>
+        /// <summary>Core pays a Vampiir for landing a blow, in MakeAttack.</summary>
         private static bool CorePays(GameLiving living)
         {
             return living is GamePlayer player && player.CharacterClass is ClassVampiir;
+        }
+
+        /// <summary>
+        /// Core pays for *taking* a blow too, but only for someone carrying
+        /// Defensive Combat Power Regeneration -- which is every Mauler and
+        /// nobody else. Checked as an ability rather than a class so that a
+        /// hired Mauler, whose GameNPC never runs GamePlayer.TakeDamage, is
+        /// still paid here.
+        /// </summary>
+        private static bool CorePaysForBeingHit(GameLiving living)
+        {
+            return living is GamePlayer player &&
+                   player.HasAbility(Abilities.DefensiveCombatPowerRegeneration);
         }
 
         /// <summary>
@@ -139,14 +153,28 @@ namespace DOL.GS.Scripts
             if (damage <= 0)
                 return;
 
-            // The half the core never had: power for being hit.
-            if (sender is GameLiving hurt)
+            // Power for being hit -- but not for everyone.
+            //
+            // This was written as "the half the core never had", and that was
+            // only ever true of the Vampiir. Every Mauler carries Defensive
+            // Combat Power Regeneration from career level 1, and core pays it
+            // in GamePlayer.TakeDamage:
+            //
+            //     if (HasAbility(Abilities.DefensiveCombatPowerRegeneration))
+            //         Mana += (int)((damageAmount + criticalAmount) * 0.25);
+            //
+            // so a Mauler standing in a fight was being paid twice over, once
+            // by core and once again here. The test is the ability rather than
+            // the class on purpose: a hired Mauler is a GameNPC, core's
+            // override never runs for it, and it still needs paying.
+            if (sender is GameLiving hurt && !CorePaysForBeingHit(hurt))
                 Draw(hurt, hurt, damage, POWER_RATE);
 
             // And power for landing one. The core already pays a Vampiir for
             // this in MakeAttack, so it only tops that up when the rate has
-            // been raised. A Mauler is paid nothing by anybody, and neither is
-            // any hire, so both get the whole share.
+            // been raised. For landing a blow a Mauler really is paid nothing
+            // by anybody, and neither is any hire, so both get the whole
+            // share.
             if (blow.DamageSource is GameLiving struck)
             {
                 double share = CorePays(struck) ? POWER_RATE - 1.0 : POWER_RATE;

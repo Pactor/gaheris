@@ -1427,12 +1427,24 @@ namespace DOL.GS.Scripts
                     return;
             }
 
-            // A shaded Necromancer does not cast. Everything it has goes
-            // through the servant, which is the whole shape of the class --
-            // and casting directly is what had it throwing several of its own
-            // spells a fight while the pet stood there.
-            if (Shaded)
-                return;
+            // A shaded Necromancer commands; it does not swing and it does not
+            // cast anything of its own.
+            //
+            // This used to return outright, on the reasoning that everything a
+            // Necromancer has goes through the servant. The first half is
+            // right and the second half made it do nothing at all: the orders
+            // ALSO go out from here, so refusing to reach this code refused the
+            // orders too. A shaded hire stood behind a servant that was never
+            // told to do anything.
+            //
+            // The player's rule is narrower than "does not cast". Core blocks
+            // exactly two things: ClassDisciple.StartAttack refuses melee --
+            // "You cannot enter combat while in shade form!" -- and
+            // SummonNecromancerPet.CheckBeginCast refuses a second pet. There
+            // is no blanket ban on casting, and there could not be, because
+            // commanding the servant IS casting.
+            if (Shaded && attackComponent.AttackState)
+                StopAttack();
 
             // Not onto a foe that already carries it, from anybody. Two
             // debuffers with overlapping families were each landing their own
@@ -2527,6 +2539,77 @@ namespace DOL.GS.Scripts
             return false;
         }
 
+        /// <summary>
+        /// A Necromancer does not cast. It tells the servant to, and the
+        /// servant casts.
+        ///
+        /// This is the whole class, and it is not a flourish -- every
+        /// offensive and supportive spell a Necromancer owns is a PetSpell
+        /// wrapper whose SubSpellID names the real one. The lifetaps, the
+        /// point-blank damage, the power drain, the power given away to whoever
+        /// needs it, the damage shield it pulls with: all of them are the
+        /// servant's, issued by the shade.
+        ///
+        /// Core does it in PetSpellHandler.FinishSpellCast, which resolves the
+        /// sub-spell and hands it to the pet's brain. That path is closed to a
+        /// hire on its first line:
+        ///
+        ///     if (Caster is not GamePlayer playerCaster || ...) return;
+        ///
+        /// so a hire casting one of these spent the cast and did nothing at
+        /// all -- silently, which is why it looked like a Necromancer that
+        /// simply would not fight. The same method also needs the pet to carry
+        /// a NecromancerPetBrain, and a hire's servant carries a mercenary one.
+        ///
+        /// So the delivery is done here instead, following what core does step
+        /// for step: resolve SubSpellID, give the sub-spell the wrapper's
+        /// level -- core assigns spell.Level the same way -- and let the
+        /// servant cast it.
+        ///
+        /// Range is measured from the SERVANT, because the servant is what
+        /// casts. Measuring from the shade is how you get a Necromancer that
+        /// stands in range of nothing while its pet is on top of the target.
+        /// </summary>
+        private bool CommandServant(GameLiving target, Spell wrapper, int cooldownMillis)
+        {
+            GameNPC servant = ControlledBrain?.Body;
+
+            if (servant == null || !servant.IsAlive || servant.IsCasting)
+                return false;
+
+            Spell real = SkillBase.GetSpellByID(wrapper.SubSpellID);
+
+            if (real == null)
+                return false;
+
+            // The servant's own buffs and its damage shield land on the
+            // servant. Everything else goes where it was aimed.
+            bool onServant = wrapper.Target is eSpellTarget.PET or eSpellTarget.SELF;
+            GameLiving aim = onServant ? servant : target;
+
+            if (aim == null || (!aim.IsAlive && !onServant))
+                return false;
+
+            if (wrapper.Range > 0 && aim != servant &&
+                !servant.IsWithinRadius(aim, wrapper.Range))
+                return false;
+
+            long ready = GameLoop.GameLoopTime;
+
+            if (_cooldowns.TryGetValue(wrapper.ID, out long until) && until > ready)
+                return false;
+
+            _cooldowns[wrapper.ID] = ready + cooldownMillis;
+
+            // Core assigns the wrapper's level onto the sub-spell before the
+            // pet casts it, so the servant's version scales with what the
+            // Necromancer knows rather than with the sub-spell's own row.
+            real.Level = wrapper.Level;
+            servant.TargetObject = aim;
+
+            return servant.CastSpell(real, SkillBase.GetSpellLine(GlobalSpellsLines.Mob_Spells), false);
+        }
+
         protected bool CastAt(GameLiving target, Spell spell, int cooldownMillis, bool allowDead = false)
         {
             if (spell == null || target == null || !IsAlive || IsCasting)
@@ -2567,8 +2650,8 @@ namespace DOL.GS.Scripts
             // answer to a component that throws is to remove the entity that
             // owns it from the world. A Necromancer whose servant was down
             // simply vanished mid-fight, roster and all.
-            if (spell.SpellType is eSpellType.PetSpell && ControlledBrain == null)
-                return false;
+            if (spell.SpellType is eSpellType.PetSpell)
+                return ControlledBrain != null && CommandServant(target, spell, cooldownMillis);
 
             long now = GameLoop.GameLoopTime;
 

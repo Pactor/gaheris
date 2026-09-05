@@ -928,11 +928,82 @@ namespace DOL.GS.Scripts
                     // the hire never used one. It had his single-target spells
                     // and cast them itself, which is the one thing a
                     // Necromancer never does.
+                    //
+                    // Filed by what the SERVANT casts, not by the wrapper. The
+                    // wrapper is always type PetSpell and carries the numbers
+                    // -- range, radius, damage, who it is aimed at -- while
+                    // SubSpellID names the real spell and therefore the real
+                    // job. Sorting on the wrapper alone put the whole class in
+                    // two buckets ranked by damage, so everything that does no
+                    // damage -- the pet's strength and dexterity buffs, the
+                    // damage shield it pulls with, the armour and constitution
+                    // debuffs, the snares -- scored zero, never won a bucket
+                    // and was never cast. A Necromancer that only ever nukes is
+                    // half a Necromancer.
                     case eSpellType.PetSpell:
-                        if (spell.Radius > 0)
-                            Keep(ref loadout.Pbaoe, spell, s => s.Damage);
-                        else
-                            Keep(ref loadout.Nuke, spell, s => s.Damage);
+                        Spell cast = SkillBase.GetSpellByID(spell.SubSpellID);
+
+                        switch (cast?.SpellType)
+                        {
+                            // The lifetaps and the point-blank damage. Lifedrain
+                            // heals whoever casts it, and the servant is the
+                            // caster, so these are also how the pet stays up.
+                            case eSpellType.Lifedrain:
+                            case eSpellType.DirectDamage:
+                            // Power drain damages and returns power in one
+                            // cast, so as an attack it belongs here.
+                            case eSpellType.PowerDrainPet:
+                                if (spell.Radius > 0)
+                                    Keep(ref loadout.Pbaoe, spell, s => s.Damage);
+                                else
+                                    Keep(ref loadout.Nuke, spell, s => s.Damage);
+                                break;
+
+                            case eSpellType.DamageOverTime:
+                                if (spell.Radius > 0)
+                                    Keep(ref loadout.Pbaoe, spell, s => s.Damage);
+                                else
+                                    Keep(ref loadout.Dot, spell, s => s.Damage);
+                                break;
+
+                            case eSpellType.ArmorFactorDebuff:
+                            case eSpellType.ConstitutionDebuff:
+                            case eSpellType.StrengthConstitutionDebuff:
+                            case eSpellType.SpeedDecrease:
+                                Keep(ref loadout.Debuff, spell, s => s.Value);
+                                break;
+
+                            // Everything the servant wears: its stat buffs and
+                            // the damage shield a Necromancer pulls with.
+                            case eSpellType.StrengthBuff:
+                            case eSpellType.DexterityBuff:
+                            case eSpellType.DexterityQuicknessBuff:
+                            case eSpellType.StrengthConstitutionBuff:
+                            case eSpellType.ArmorAbsorptionBuff:
+                            case eSpellType.DamageShield:
+                                KeepBest(loadout.Maintained, spell);
+                                break;
+
+                            // Left unfiled on purpose rather than forced into a
+                            // bucket that nearly fits. PowerTransferPet gives
+                            // the drained power to whoever in the group is
+                            // short of it, and the servant's HealOverTime keeps
+                            // the servant standing -- both need a "who needs
+                            // this" decision that no existing bucket makes.
+                            // Filing them as buffs would have them cast once on
+                            // nothing in particular and left.
+                            default:
+                                if (spell.Damage > 0)
+                                {
+                                    if (spell.Radius > 0)
+                                        Keep(ref loadout.Pbaoe, spell, s => s.Damage);
+                                    else
+                                        Keep(ref loadout.Nuke, spell, s => s.Damage);
+                                }
+
+                                break;
+                        }
+
                         break;
 
                     case eSpellType.Taunt:

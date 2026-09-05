@@ -44,7 +44,7 @@ namespace DOL.GS.Scripts
     /// is what a 90 percent absorb should cost.
     /// </summary>
     [SpellHandler(eSpellType.FocusShell)]
-    public class FocusShellThatAbsorbs : FocusShellHandler
+    public class FocusShellThatAbsorbs : SpellHandler
     {
         /// <summary>
         /// Core refuses to absorb damage from anything whose realm is None,
@@ -76,6 +76,102 @@ namespace DOL.GS.Scripts
         public override ECSGameSpellEffect CreateECSEffect(in ECSGameEffectInitParams initParams)
         {
             return ECSGameEffectFactory.Create(initParams, static (in i) => new FocusShellEffect(i));
+        }
+
+        /// <summary>
+        /// Core's own version of this check can never pass, and that is why the
+        /// spell has never been castable.
+        ///
+        /// `FocusShellHandler.CheckBeginCast` reads the target straight out of
+        /// its parameter and refuses anything that is not a GamePlayer:
+        ///
+        ///     if (selectedTarget is GamePlayer) { FSTarget = ...; }
+        ///     else return false;          // silent
+        ///
+        /// But in the ECS cast flow that parameter is null. The real target is
+        /// resolved *inside* `SpellHandler.CheckBeginCast`, from
+        /// `playerCaster.TargetObject`, which happens only after core's handler
+        /// has already returned false. Twelve presses were logged and the
+        /// parameter was null every single time, with a target selected and
+        /// without.
+        ///
+        /// So the check is skipped rather than delegated to -- this class
+        /// derives from SpellHandler, not FocusShellHandler -- and the same
+        /// rules are applied here against a target resolved the way the rest of
+        /// the server resolves one. And it says why when it refuses, instead of
+        /// leaving a button that does nothing.
+        /// </summary>
+        public override bool CheckBeginCast(GameLiving selectedTarget)
+        {
+            GameLiving who = selectedTarget
+                          ?? Caster?.TargetObject as GameLiving
+                          ?? Caster;
+
+            if (who is GameNPC)
+            {
+                MessageToCaster("This spell may not be cast on pets!", eChatType.CT_SpellResisted);
+                return false;
+            }
+
+            if (who is not GamePlayer)
+            {
+                MessageToCaster("This spell only works on members of your realm!", eChatType.CT_SpellResisted);
+                return false;
+            }
+
+            if (!GameServer.ServerRules.IsSameRealm(Caster, who, true))
+            {
+                MessageToCaster("This spell only works on members of your realm!", eChatType.CT_SpellResisted);
+                return false;
+            }
+
+            // A beneficial spell with nothing selected lands on the caster,
+            // which is how it behaves in the client. Said plainly here because
+            // SpellHandler re-reads TargetObject and would otherwise refuse.
+            if (Caster?.TargetObject == null && Caster is GamePlayer self)
+                self.TargetObject = self;
+
+            Target = who;
+
+            bool allowed;
+            string trouble = null;
+
+            try
+            {
+                allowed = base.CheckBeginCast(who);
+            }
+            catch (System.Exception e)
+            {
+                allowed = false;
+                trouble = e.GetType().Name + ": " + e.Message;
+            }
+
+            if (LOG)
+            {
+                Console.WriteLine("FocusShell: CheckBeginCast by " + (Caster?.Name ?? "?") +
+                                  "  on " + (who?.Name ?? "null") +
+                                  "  handlerTarget=" + (Target?.Name ?? "null") +
+                                  " -> " + allowed +
+                                  (trouble == null ? "" : "  THREW " + trouble));
+            }
+
+            return allowed;
+        }
+
+        public override void FinishSpellCast(GameLiving target)
+        {
+            if (LOG)
+                Console.WriteLine("FocusShell: FinishSpellCast on " + (target?.Name ?? "none"));
+
+            base.FinishSpellCast(target);
+        }
+
+        public override void ApplyEffectOnTarget(GameLiving target)
+        {
+            if (LOG)
+                Console.WriteLine("FocusShell: ApplyEffectOnTarget on " + (target?.Name ?? "none"));
+
+            base.ApplyEffectOnTarget(target);
         }
     }
 

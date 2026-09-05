@@ -3734,8 +3734,22 @@ namespace DOL.GS.Scripts
             }
         }
 
-        /// <summary>Briton shade -- what GamePlayer.ShadeModel picks by race.</summary>
-        private const ushort SHADE_MODEL = 1353;
+        /// <summary>
+        /// The Necromancer's shade. Not a race morph.
+        ///
+        /// This was 1353, the Briton shade, on the belief that GamePlayer.
+        /// ShadeModel picks by race. It does -- but not for this class, and the
+        /// class is the first thing it checks:
+        ///
+        ///     if (CharacterClass is ClassDisciple)
+        ///         return 822;
+        ///
+        /// The race table below that line, 1351 to 1371, is for other shade
+        /// morphs. A Necromancer never reaches it. Worth noting that no NPC in
+        /// the database uses 1353 or 822, so those are player morphs being
+        /// borrowed either way -- but 822 is the one the class actually wears.
+        /// </summary>
+        private const ushort SHADE_MODEL = 822;
 
         /// <summary>
         /// The shade a hired Necromancer wears.
@@ -3765,12 +3779,19 @@ namespace DOL.GS.Scripts
 
         /// <summary>
         /// A Necromancer with its servant up: a shade, which commands rather
-        /// than casts and cannot be touched until the servant falls.
+        /// than swings, and which monsters leave alone while the servant
+        /// stands.
+        ///
+        /// Asks the effect list, because that is now where the shade lives.
+        /// This used to read the CANTTARGET flag, which was correct only for
+        /// as long as the shade was made of flags; once it became a real
+        /// eEffect.Shade the test never fired again, and a shaded hire went
+        /// back to swinging because nothing thought it was shaded.
         /// </summary>
         protected bool Shaded =>
             Profile != null &&
             Profile.ClassId is eCharacterClass.Necromancer &&
-            (Flags & eFlags.CANTTARGET) != 0;
+            EffectListService.GetAbilityEffectOnTarget(this, eEffect.Shade) != null;
 
         /// <summary>The summon this class would actually cast.</summary>
         protected virtual Spell ServantSpell()

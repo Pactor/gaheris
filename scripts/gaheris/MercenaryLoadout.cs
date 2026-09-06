@@ -1061,19 +1061,19 @@ namespace DOL.GS.Scripts
                     case eSpellType.PowerRegenBuff:
                     case eSpellType.CombatSpeedBuff:
                     case eSpellType.MeleeDamageBuff:
-                    // ArmorFactorBuff sat unhandled beside its own siblings:
-                    // BaseArmorFactorBuff and SpecArmorFactorBuff were both
-                    // kept and the plain one was not, so 59 spells across
-                    // fourteen lines were simply never put up.
+                    // ArmorFactorBuff is kept for completeness and does
+                    // nothing today. EffectHelper.GetEffectFromSpell maps
+                    // BaseArmorFactorBuff, SpecArmorFactorBuff and
+                    // PaladinArmorFactorBuff and not the plain one, so it comes
+                    // back Unknown and the buffing loop skips it. An earlier
+                    // note here claimed this put 59 spells back into use; it
+                    // does not, and will only start working if core maps it.
                     case eSpellType.ArmorFactorBuff:
                     // Procs are buffs you leave on a weapon, not spells you
-                    // cast at something.
+                    // cast at something. Both override CreateECSEffect, so the
+                    // effect registers and the hire can tell it is already up.
                     case eSpellType.OffensiveProc:
                     case eSpellType.DefensiveProc:
-                    // The Heretic's self buff. HereticPiercingMagic is a
-                    // SpellHandler whose whole job is OnEffectStart, so it is
-                    // maintained like any other.
-                    case eSpellType.HereticPiercingMagic:
                     // Single-resist buffs. The grouped ones -- BodySpiritEnergy,
                     // HeatColdMatter and AllMagicResists -- were kept while the
                     // one-resist versions they come from were not.

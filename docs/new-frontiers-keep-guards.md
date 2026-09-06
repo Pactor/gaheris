@@ -73,11 +73,36 @@ skin 31   height 0, 1            new tower
 ```
 
 New Frontiers runs on the new skins. So every keep in region 163, whatever its
-level, falls back to the height-1 row: **the lord spawns in the ground room and
-the upper floors are unguarded, because those positions do not exist.**
+level, falls back to the height-1 row: **the lord spawns one floor below where
+a max-level keep should put him, and the floors above are unguarded because
+those positions do not exist.**
 
 That is the whole symptom. Not too few guards spread thinly -- the correct
-low-tier garrison, with the entire upper-tier garrison missing.
+mid-tier garrison, with the entire upper-tier garrison missing.
+
+### Confirmed by measurement
+
+Hurbury's lord was reported missing entirely. He is not. Computing his spawn
+through core's own placement maths -- keep at (599604, 650643) heading 110, its
+skin-30 component at grid (-6, 9) rotation 1, the lord's offset (347, -922)
+with **ZOff 577** rotated onto it -- puts him at zone **44092, 26686, 9001**.
+
+Against the position measured in game for a levels 4-7 keep, 44113, 26667,
+9001: **21 units apart in X, 19 in Y, and exactly zero in Z.**
+
+So the lord is standing on the middle floor of a Level 10 keep, which is why
+he was not found: the search was on the top floor, where a max-level keep
+should put him and where our data has nothing.
+
+The match also cross-validates both sides. The positions remembered from live
+play and the positions this database produces are describing the same building
+to within twenty units, which is why the missing height 2 and 3 rows can be
+treated as a genuine gap rather than a difference of opinion about what live
+did.
+
+An earlier note here said the lord falls back to the ground room. That was
+wrong -- ZOff was read as 0 when it is 577 -- and the fallback is the middle
+floor.
 
 ---
 

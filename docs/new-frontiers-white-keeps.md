@@ -10,7 +10,11 @@ be wrong in ways worth remembering. **Add to it as things are learned. Do not
 re-test anything under "Ruled out" without a reason to think the finding was
 wrong** -- and if you do overturn one, say so here rather than deleting it.
 
-Opened 6 September 2026. Not solved.
+Opened 6 September 2026. **Solved the same day.** The keeps were being built at
+the wrong height, not drawn without textures. The answer is in "First result"
+and "What it was"; everything below that is kept because it is the record of
+what was eliminated and why, and because two of the eliminations correct things
+this project previously believed.
 
 Separate from `new-frontiers-plan.md`, which is about the conversion itself.
 That work is done: the keeps are in region 163 and they load.
@@ -69,6 +73,85 @@ never a choice anyone made here.
 
 **This change has never been looked at in game.** It went in and the session
 moved to other work.
+
+---
+
+## First result, 6 September 2026
+
+**Caer Renaris renders correctly, and it did not before.** Observed on a GM
+account after jumping to it in region 163.
+
+Nothing else changed in between. The keep data is untouched since the
+comparison against the public database, the client is the same install, and the
+only difference between the two viewings is migration 121 -- the raise from
+Level 4 to Level 10, which moved every New Frontiers keep from build tier 1 to
+build tier 4.
+
+So the leading explanation is now that the keeps were never untextured at all.
+They were being drawn at the wrong build tier, and whatever the client puts on
+the ground for a tier-1 New Frontiers keep reads as a white shell.
+
+Not yet confirmed as general. Renaris is keep type 6, one of seven designs, and
+the 84 towers are a different model again -- a single component at skin 31. See
+"Open questions".
+
+### Survey results
+
+Region 163 is only eight shapes: seven keep designs, each existing once per
+realm, and 84 towers that are all one component at skin 31. So the survey is
+eight stops, not 105.
+
+| Stop | What it covers | Result |
+|---|---|---|
+| Caer Renaris, type 6 | 3 keeps (one per realm) | **correct** -- was white before |
+| Caer Boldiam, type 4 | 3 keeps | **correct** |
+| Caer Sursbrooke, type 5 | 3 keeps | **correct** |
+| watchtowers, several, in passing | all 84 towers | **correct** |
+| types 1, 2, 3, 7 | 12 keeps | not checked -- survey stopped |
+
+Three unrelated keep designs and the entire tower population, none of which
+rendered correctly before. The survey was stopped there: the remaining four
+designs are the same kind of structure built from the same skin family, and
+nothing has been seen white since the level change.
+
+Two notes recorded while planning the survey, both of which correct earlier
+assumptions:
+
+**Castle Excalibur and Castle Sauvage are not keeps.** Neither appears in the
+`keep` table; they are static zone geometry in the client's Albion art. They
+render correctly, and that says nothing about keep components, which are built
+from packets.
+
+**Battleground keeps are not an old-skin control group.** Fort Brolorn carries
+16 old-skin parts and 9 new-skin ones, and `use_new_keeps` is global, so the
+battlegrounds have been drawing new skins alongside New Frontiers all along.
+Comparing them does not test old models against new. It tests region 163
+against everywhere else, which is still worth doing and needs no restart.
+
+---
+
+## What it was
+
+A keep's level decides how tall the client builds it. Every New Frontiers keep
+sat at Level 4, and `GetHeightFromLevel` turns that into height 1 -- the second
+lowest of six build tiers -- which goes into the component packet one byte per
+wall section. Raised to Level 10 the keeps build at height 4, and they render.
+
+So they were never untextured. They were being built wrong, and whatever the
+client puts on the ground for a New Frontiers keep at build tier 1 reads as a
+white shell. **Why** it reads that way is client side and not established here;
+the honest statement is that the height was wrong, fixing it fixed the look,
+and the mechanism inside the client was never proven.
+
+Level 4 was not a decision anybody made. It is core's `starting_keep_level`,
+the level an *unclaimed* keep sits at, so this is simply what New Frontiers
+looked like before anyone had ever taken and upgraded a keep.
+
+Worth keeping in mind: `starting_keep_level` is still 4, so a captured keep
+drops back to Level 4 and will look white again until it is upgraded. That is
+recorded in migration 121 and left alone on purpose, because raising the
+property would apply to every keep in the game on capture, battlegrounds
+included, where the levels are tuned to each bracket.
 
 ---
 

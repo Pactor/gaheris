@@ -704,9 +704,92 @@ namespace DOL.GS.Scripts
     /// the employer must still be credited for what the group kills (done in
     /// GameMercenary.OnAttackEnemy).
     /// </summary>
-    public class MercenaryBrain : StandardMobBrain
+    public class MercenaryBrain : StandardMobBrain, IControlledBrain
     {
         public GamePlayer Employer;
+
+        #region Somebody's, for the game's purposes
+
+        /// <summary>
+        /// A hire answers to its employer, and the game needs to be able to
+        /// ask that.
+        ///
+        /// This is an interface, deliberately, and not a ControlledMobBrain.
+        /// The distinction decides two behaviours that pull in opposite
+        /// directions, and core keys them on different things.
+        ///
+        /// The last line of StandardMobBrain.CanAggroTarget is:
+        ///
+        ///     return (Body.Realm != eRealm.None || realTarget is not GameNPC)
+        ///            && AggroLevel > 0;
+        ///
+        /// A monster has no realm and a hire is an NPC, so both halves were
+        /// false and a monster could never pick a companion out of a crowd. It
+        /// walked past six of them to the employer, every time, and no server
+        /// rule could change that -- the test happens after the rules are
+        /// asked. The escape is above it: a target whose brain is an
+        /// IControlledBrain is resolved to its owner first, so the check reads
+        /// the employer and passes.
+        ///
+        /// The thing we do NOT want is the owner aggro tag, and that is keyed
+        /// on the CLASS:
+        ///
+        ///     if (attacker is GameNPC npcAttacker &&
+        ///         npcAttacker.Brain is ControlledMobBrain controlledBrain)
+        ///         ...
+        ///         AddToAggroList(controlledBrain.Owner, (int)(damage * 0.3));
+        ///
+        /// A hire is not a ControlledMobBrain, so it never fires. With six
+        /// hires that would have been six streams of aggro landing on somebody
+        /// who had not swung at anything -- which is exactly the reason this
+        /// was avoided before, and it is avoided still.
+        ///
+        /// What else comes with it is wanted anyway. Every loot generator, and
+        /// the kill reward processor, credit a kill to the owner when the
+        /// killer's brain is an IControlledBrain -- so a monster a hire killed
+        /// now drops for its employer rather than for nobody.
+        ///
+        /// The movement members are answered rather than implemented. This
+        /// brain already decides where a hire stands, in Think, and a second
+        /// set of orders arriving through the pet interface would fight it.
+        /// </summary>
+        public GameLiving Owner => Employer;
+
+        public GamePlayer GetPlayerOwner() => Employer;
+        public GameLiving GetLivingOwner() => Employer;
+        public GameNPC GetNPCOwner() => null;
+
+        /// <summary>
+        /// False, always. IsMainPet marks the one pet a player commands, and
+        /// that is their real pet if they have one -- a hired company is not
+        /// it, and there may be six of them.
+        /// </summary>
+        public bool IsMainPet { get; set; }
+
+        public eWalkState WalkState => eWalkState.Follow;
+
+        public eAggressionState AggressionState { get; set; } = eAggressionState.Defensive;
+
+        public void SetAggressionState(eAggressionState state) { AggressionState = state; }
+
+        // Orders this brain gives itself. Answered so the interface is
+        // complete, and left alone so Think stays the only thing steering.
+        public void Attack(GameObject target) { }
+        public void Disengage() { }
+        public void ResumeWalkState() { }
+        public void CheckAggressionStateOnPlayerOrder() { }
+        public void Follow(GameObject target) { }
+        public void FollowOwner() { }
+        public void Stay() { }
+        public void ComeHere() { }
+        public void Goto(GameObject target) { }
+
+        /// <summary>
+        /// Nothing. The pet window shows one pet, and a company is not one.
+        /// </summary>
+        public void UpdatePetWindow() { }
+
+        #endregion
 
         public MercenaryBrain(GamePlayer employer)
         {

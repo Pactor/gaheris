@@ -133,6 +133,39 @@ against everywhere else, which is still worth doing and needs no restart.
 
 ---
 
+## The attachments, and what the build tier is worth
+
+The keeps render, but the overhanging structures along the battlements -- the
+hoardings -- are still untextured white. Reported with a screenshot showing
+correct stonework and white awnings above it.
+
+The obvious theory was that tier 3 adds geometry the client cannot texture, so
+tier 2 would be clean. Tested by dropping region 163 to Level 7 and restarting.
+
+**It made every keep white again**, exactly as tier 1 had been. So all three
+reachable tiers are now known:
+
+| tier | levels | result |
+|---|---|---|
+| height 1 | 2-4 | entire keep untextured |
+| height 2 | 5-7 | entire keep untextured |
+| height 3 | 8-10 | keep body correct, hoardings untextured |
+
+Tier 3 is the only one that draws a keep at all, so it stands, and Level 10 is
+restored. Lowering the tier does not remove the white hoardings -- it removes
+the keep.
+
+**The build tier is therefore finished as a line of enquiry.** The hoardings
+are not a tier problem, and there is no fourth setting to try: height 4 needs
+Level 16 and height 5 Level 21, both above the `max_keep_level` of 10 and
+outside the 0-10 range `AbstractGameKeep` documents.
+
+That leaves the hoardings as client art for those specific pieces, which is
+where to look next if they are worth chasing. They are cosmetic; the keeps are
+otherwise correct.
+
+---
+
 ## What it was
 
 A keep's level decides how tall the client builds it. Every New Frontiers keep

@@ -106,13 +106,17 @@ eight stops, not 105.
 | Caer Renaris, type 6 | 3 keeps (one per realm) | **correct** -- was white before |
 | Caer Boldiam, type 4 | 3 keeps | **correct** |
 | Caer Sursbrooke, type 5 | 3 keeps | **correct** |
-| watchtowers, several, in passing | all 84 towers | **correct** |
-| types 1, 2, 3, 7 | 12 keeps | not checked -- survey stopped |
+| Caer Erasleigh, type 3, and its towers | 3 keeps | **correct** |
+| Caer Benowyc, type 1 | 3 keeps | **correct** -- the largest design, 18 components |
+| Caer Berkstead, type 2 | 3 keeps | **correct** -- the smallest, 10 components |
+| watchtowers, many, in passing | all 84 towers | **correct** |
+| Caer Hurbury, type 7 | 3 keeps | not checked |
 
-Three unrelated keep designs and the entire tower population, none of which
-rendered correctly before. The survey was stopped there: the remaining four
-designs are the same kind of structure built from the same skin family, and
-nothing has been seen white since the level change.
+Six of the seven keep designs and the entire tower population, from the largest
+design at 18 components to the smallest at 10, none of which rendered correctly
+before. Nothing has been seen white anywhere in region 163 since the level
+change and no structure has needed a second look. The seventh design was left
+unvisited deliberately rather than forgotten.
 
 Two notes recorded while planning the survey, both of which correct earlier
 assumptions:

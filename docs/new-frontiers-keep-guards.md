@@ -143,6 +143,59 @@ genuine cross-check; the other two are recollection.
 
 ---
 
+## How keep levels actually work
+
+Established 6 September 2026, because it decides what the missing height data
+is worth fixing.
+
+**Keeps are never Level 1 in play.** The floor is `starting_keep_level`, which
+is 4. An unclaimed keep sits at 4, `Reset()` puts a captured one back to 4, and
+a guild claiming one starts it at `starting_keep_claim_level`, 5. From there
+`ChangeLevelTimerCallback` moves it one level at a time toward
+`max_keep_level`, 10. A razed tower will not upgrade until its components are
+repaired past 75%.
+
+So the range in play is 4 to 10, and Level 1 only happens if somebody types it.
+That is how the lordless keeps were found -- `/keep level 1` during testing --
+and it is why `sql/128` is insurance rather than a repair of live behaviour.
+
+**The climb is gated on guild ownership**, and this is the part that matters
+for this server:
+
+```csharp
+byte maxlevel = Guild != null ? MAX_KEEP_LEVEL : STARTING_KEEP_LEVEL;
+if (Level < maxlevel && Guild != null)       ChangeLevel(Level + 1);
+else if (Level > maxlevel && Guild == null)  // falls back toward 4
+```
+
+Only a claimed keep rises. An unclaimed one is driven *down* to 4. All 105
+New Frontiers keeps are unclaimed, so switching on `enable_keep_upgrade_timer`
+today would walk every one of them from Level 10 down to Level 4 -- which is
+height 1, the setting that rendered them all white. The timer is deliberately
+left off and the keeps pinned at 10.
+
+That also means a Gaheris ruleset cannot use this mechanic as it stands. If
+keeps are held by evil rather than by player guilds, nothing ever claims one,
+so nothing ever climbs and everything decays. Levelling driven by something
+other than guild ownership is code rather than data, and belongs with the
+stage-two work below.
+
+**And with the current data, levelling would change almost nothing anyway.**
+Every new-skin guard slot has one rung, so:
+
+```
+Level 4      -> height 1    the only rung that exists
+Level 5-7    -> height 2    no data, falls back to height 1
+Level 8-10   -> height 3    no data, falls back to height 1
+```
+
+A keep upgrading from 4 to 10 gains toughness and guard levels and not one
+additional guard, and its lord never moves. The "a keep gets harder as it
+upgrades" mechanic has no data behind it on the new skins. That is the same
+hole as the empty upper floors, seen from the gameplay side.
+
+---
+
 ## Two rulesets, and where the line is
 
 There are two garrison systems here and they must stay apart. They already do,

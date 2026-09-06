@@ -1,0 +1,125 @@
+# New Frontiers keep guards
+
+A max-level keep should be fought through. Ours can be walked through: the
+courtyard is empty, the stairs are empty, the path to the lord is empty, and
+the lord is not in the room he should be in.
+
+Opened 6 September 2026. The cause is found and recorded below; the fix is not
+written yet.
+
+---
+
+## How it is supposed to work
+
+Reported from live play, and it is the piece that made the rest make sense.
+
+**The lord moves as the keep is upgraded.** He is not in a fixed room. There
+are three positions, one per build tier, and the guards move with him -- at low
+levels they stand outside and in the courtyard, and as the keep rises they fill
+the stairs and the floors between the door and the lord.
+
+Measured in game at Caer Hurbury, in Snowdonia (`/loc` gives zone coordinates;
+Snowdonia is offset 68, 76, so world = local + 557056, 622592):
+
+| keep level | lord, zone coords | heading | world coords |
+|---|---|---|---|
+| 1-3 | 43944, 26407, 8664 | 200 | 601000, 648999, 8664 |
+| 4-7 | 44113, 26667, 9001 | 287 | 601169, 649259, 9001 |
+| 8-10 | 43848, 26660, 9272 | 19 | 600904, 649252, 9272 |
+
+He climbs: Z 8664, then 9001, then 9272. Three floors of the same building.
+At 8-10 there is "plenty of guards to go through on the way up", and the lord
+keeps clerics and damage dealers with him at every tier.
+
+**Those three bands are core's build tiers exactly**, which is the confirmation
+that this is a real mechanic and not a memory:
+
+```
+GetHeightFromLevel:  level 1 -> 0    2-4 -> 1    5-7 -> 2    8-10 -> 3
+```
+
+Height 0 and 1 are the ground room, height 2 the middle, height 3 the top. The
+player-reported bands 1-3 / 4-7 / 8-10 line up on the same boundaries.
+
+---
+
+## What is actually wrong
+
+**The new-skin keeps have no guard positions above height 1.**
+
+`keepposition` rows carry a Height, and `FillPositions` walks down from the
+component's height taking the first row it finds:
+
+```csharp
+for (int i = this.Height; i >= 0; i--)
+    if (positionGroup[i] is DbKeepPosition position) { ...create...; break; }
+```
+
+So a height-3 keep looks for a height-3 row, then height 2, then 1. Counting
+what exists:
+
+| skin family | heights present |
+|---|---|
+| old skins (< 20) | 0, 1, 2, 3 |
+| new skins (> 20) | 0, 1 only |
+
+And the lord ladder shows it cleanly. The old tower, skin 11, has a lord at
+every height:
+
+```
+skin 11   height 0, 1, 2, 3      one lord per build tier
+skin 30   height 0, 1            new keep
+skin 31   height 0, 1            new tower
+```
+
+New Frontiers runs on the new skins. So every keep in region 163, whatever its
+level, falls back to the height-1 row: **the lord spawns in the ground room and
+the upper floors are unguarded, because those positions do not exist.**
+
+That is the whole symptom. Not too few guards spread thinly -- the correct
+low-tier garrison, with the entire upper-tier garrison missing.
+
+---
+
+## Why this was not obvious
+
+The keeps are at Level 10, so everything reads as "max level" and the guard
+count looks like a tuning problem rather than a missing dataset. Three earlier
+readings were wrong on the way here and are worth recording:
+
+**The counts were miscounted twice.** First by ignoring the rotation filter --
+`LoadPositions` also matches `ComponentRotation` against the component's
+heading -- which inflated Benowyc from 41 to 108. Then by counting distinct
+TemplateIDs rather than TemplateID per component, which is how core keys them.
+
+**The data was assumed correct because it matches the reference.** It does:
+every one of the public database's 261 rows is present. But the public Dawn of
+Light database has the same gap -- it, too, has no height 2 or 3 rows for the
+new skins -- so matching it proves the import was faithful, not that the data
+is complete.
+
+---
+
+## What a fix has to supply
+
+Guard positions at heights 2 and 3 for the new-skin components, at minimum
+skin 30 (the keep) and skin 31 (the tower), including the lord's own position
+at each tier.
+
+The old skins have this data. They are the same keeps in different art, so the
+old-skin ladder is the obvious model -- but the offsets cannot simply be
+copied, because an old keep and a new keep are different buildings and a
+position is an offset from the component. The three lord positions measured
+above are real coordinates from a real keep and are the anchor to work from.
+
+Nothing here is written yet.
+
+---
+
+## Unrelated, already fixed
+
+Recorded so they are not re-investigated: six keeps had two lords and three
+designs had healers standing inside one another, from four rows this repo
+added that are not in the reference (`sql/123`). Thirteen doubled and corrupt
+door rows, same cause (`sql/124`). Those were real and are gone, but neither
+was the reason the keeps feel empty.

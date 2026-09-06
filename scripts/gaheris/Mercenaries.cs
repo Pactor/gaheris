@@ -4717,8 +4717,10 @@ namespace DOL.GS.Scripts
                 eInventorySlot back = player.Inventory.FindFirstEmptySlot(
                     eInventorySlot.FirstBackpack, eInventorySlot.LastBackpack);
 
+                // Existing row going home, so no insert -- same reason as
+                // Return below.
                 if (back != eInventorySlot.Invalid)
-                    player.Inventory.AddItem(back, item);
+                    player.Inventory.AddItemWithoutDbAddition(back, item);
 
                 merc.SayTo(player, eChatLoc.CL_SystemWindow, "Your pack is too full to trade.");
                 return false;
@@ -4729,8 +4731,10 @@ namespace DOL.GS.Scripts
                 eInventorySlot back = player.Inventory.FindFirstEmptySlot(
                     eInventorySlot.FirstBackpack, eInventorySlot.LastBackpack);
 
+                // Existing row going home, so no insert -- same reason as
+                // Return below.
                 if (back != eInventorySlot.Invalid)
-                    player.Inventory.AddItem(back, item);
+                    player.Inventory.AddItemWithoutDbAddition(back, item);
 
                 return false;
             }
@@ -4759,10 +4763,28 @@ namespace DOL.GS.Scripts
 
             merc.Inventory.RemoveItem(item);
 
+            // AddItemWithoutDbAddition, not AddItem, and this is the whole of
+            // the trade bug.
+            //
+            // GamePlayerInventory.AddItem marks the item for DB ADDITION -- an
+            // insert, for a row that already exists, because it has been the
+            // mercenary's all along. The insert collided with the row already
+            // there, and the SaveObject below then updated nothing:
+            //
+            //     Error saving data object (0 rows affected) in table Inventory
+            //
+            // named for the same item under two owners in the same second. It
+            // only ever showed on a return, because that is the only direction
+            // that hands a row back to a player, and only when a slot was
+            // already filled, because that is what causes a return.
+            //
+            // Equip already had this right going the other way, and says so:
+            // "this is a change of owner, not a destroy and recreate".
+            //
             // If the pack refuses it, put it straight back where it was. The
             // window between the two is the only moment this item belongs to
             // nobody, and it does not get to end there.
-            if (!player.Inventory.AddItem(free, item))
+            if (!player.Inventory.AddItemWithoutDbAddition(free, item))
             {
                 merc.Inventory.AddItem(held, item);
                 item.OwnerID = InventoryId(player, merc.RoleKey);
@@ -4836,7 +4858,11 @@ namespace DOL.GS.Scripts
                 // Ownership changes only once the item is actually in the pack.
                 // Doing it the other way round leaves a row that claims to be
                 // the player's while sitting in nobody's inventory.
-                if (!player.Inventory.AddItem(free, item))
+                //
+                // Without a DB addition: these rows were read out of the
+                // Inventory table a few lines above, so they plainly exist, and
+                // asking for an insert would collide with the row it came from.
+                if (!player.Inventory.AddItemWithoutDbAddition(free, item))
                     continue;
 
                 item.OwnerID = player.InternalID;

@@ -110,13 +110,12 @@ eight stops, not 105.
 | Caer Benowyc, type 1 | 3 keeps | **correct** -- the largest design, 18 components |
 | Caer Berkstead, type 2 | 3 keeps | **correct** -- the smallest, 10 components |
 | watchtowers, many, in passing | all 84 towers | **correct** |
-| Caer Hurbury, type 7 | 3 keeps | not checked |
+| Caer Hurbury, type 7 | 3 keeps | **correct** |
 
-Six of the seven keep designs and the entire tower population, from the largest
-design at 18 components to the smallest at 10, none of which rendered correctly
-before. Nothing has been seen white anywhere in region 163 since the level
-change and no structure has needed a second look. The seventh design was left
-unvisited deliberately rather than forgotten.
+**Every keep design and the entire tower population, all correct.** From the
+largest design at 18 components to the smallest at 10, plus the 84 towers, none
+of which rendered before the level change. Nothing in region 163 has been seen
+white since, and no structure needed a second look. The survey is complete.
 
 Two notes recorded while planning the survey, both of which correct earlier
 assumptions:

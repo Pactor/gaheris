@@ -164,6 +164,26 @@ That leaves the hoardings as client art for those specific pieces, which is
 where to look next if they are worth chasing. They are cosmetic; the keeps are
 otherwise correct.
 
+### PARKED: the hoardings
+
+**Open, deliberately set aside on 6 September 2026** to check guard spawns
+first. Pick this up here.
+
+What is known: the keeps render at build tier 3, and the overhanging
+structures along the battlements do not. The build tier is exhausted -- all
+three reachable tiers are characterised above and there is no fourth. The
+server data is stock; keeps, components, zones and keep positions all match the
+public database.
+
+So the next move is client side, and it is a different kind of work from
+everything else in this document: the pieces are drawn from the client's own
+art, and nothing on the server chooses their texture. Somewhere to start would
+be `figures/skins/skin163.mpk` and `frontiers/nf.mpk` in the client install,
+both of which are present and full size.
+
+Worth saying plainly: this is cosmetic. Nothing about it affects capture,
+guards, doors or play.
+
 ---
 
 ## What it was

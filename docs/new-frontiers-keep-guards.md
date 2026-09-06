@@ -125,6 +125,24 @@ is complete.
 
 ---
 
+## Milestone: guards exist, 6 September 2026
+
+After `sql/127` and a restart, New Frontiers keeps have garrisons for the first
+time. Confirmed in game -- "this looks more like it".
+
+Everything measured before this point was measuring nothing. Every guard count
+in this document that predates it describes what the data *would* produce, not
+what stood on the ground, because `CreateInstance` was returning null for all
+152 guard positions. Treat those numbers as arithmetic rather than observation.
+
+The lord is not exactly where he was remembered, and the memory is described as
+spotty. That is worth writing down plainly: the three measured lord positions
+below are the best anchor available and they are not a specification. The
+middle one matches what the data produces to within twenty units, which is a
+genuine cross-check; the other two are recollection.
+
+---
+
 ## Two rulesets, and where the line is
 
 There are two garrison systems here and they must stay apart. They already do,

@@ -125,6 +125,84 @@ is complete.
 
 ---
 
+## Two rulesets, and where the line is
+
+There are two garrison systems here and they must stay apart. They already do,
+and the line is the frontier itself:
+
+| | how guards are made | classes | ruleset |
+|---|---|---|---|
+| Old Frontiers, regions 1 / 100 / 200 | `mob` rows | `DOL.GS.Scripts.MonsterGuard*` | Gaheris, evil-held |
+| New Frontiers, region 163 | `keepposition` | `DOL.GS.Keeps.Guard*` | normal RvR |
+
+The Gaheris garrison is real and working: 474 fighters, 187 archers, 84
+commanders and 31 lords across the old frontiers, all mob rows. Mob rows are
+instantiated through a path that knows about the scripts assembly, which is why
+they became dread legionnaires correctly.
+
+**Renaming ClassType is not available as a mechanism for keep-position
+guards**, and this is the thing to remember rather than rediscover.
+`FillPositions` uses `Assembly.GetExecutingAssembly()`, which is the GameServer
+assembly, so it can only build classes that live in core. A script class put
+there returns null and the guard is silently skipped. That is what
+`62-keepposition-monster-garrison.sql` did, and it emptied every New Frontiers
+and battleground keep without logging anything; `sql/127` puts it back.
+
+### The plan, in two stages
+
+Stated 6 September 2026, and it is the order the rest of this work should
+follow.
+
+This server exists to play the Gaheris ruleset -- keeps held by the forces of
+evil rather than by realms -- and that is what was built first. What was not
+known at the time is how much of New Frontiers was broken underneath it. The
+Gaheris layer was laid over a floor that was not sound.
+
+**Stage one: make New Frontiers correct on the ordinary RvR ruleset.** Stock
+behaviour, stock data, checkable against the public Dawn of Light database.
+That is the baseline, and it is worth having for its own sake: it is the only
+version of this that can be verified against an outside authority rather than
+against opinion. Everything in this document above this line is stage one, and
+it is not finished -- the missing height 2 and 3 positions are still missing.
+
+**Stage two: a deliberate switch to the Gaheris ruleset**, applied on top of a
+working baseline rather than edited into the data in place.
+
+The constraint found today shapes stage two, so it is worth stating before
+anyone starts: **the switch cannot be a ClassType rename.** `FillPositions`
+uses `Assembly.GetExecutingAssembly()`, so keep-position guards can only ever
+be classes that live in core. Naming a script class there returns null and the
+guard is silently skipped, which is exactly what emptied the keeps. So the
+switch has to be one of:
+
+- the Monster classes moved somewhere core can instantiate them, or
+- the guards post-processed after they spawn -- model, name and brain changed
+  on a core guard rather than the class substituted.
+
+The second is the smaller change and does not require touching core. Either
+way it should be a toggle -- a server property, or a feature in
+`sql/features.conf` -- so the two rulesets can be swapped without a migration
+rewriting rows that then have to be reverted. That is the mistake worth not
+repeating: `62-keepposition-monster-garrison.sql` changed the data rather than
+adding a layer, and undoing it meant another migration.
+
+One stale piece to be aware of: `Garrison.HeldByEvil` still answers true for
+anything in region 163, written when New Frontiers was meant to be evil-held:
+
+```csharp
+return guard.CurrentRegionID == NEW_FRONTIERS;
+```
+
+Nothing consults it there any more, because that clause is only reached from
+the Monster classes and New Frontiers no longer uses them. It is inert rather
+than wrong, but it is misleading and should be revisited if the ruleset for
+region 163 is ever settled the other way.
+
+Battlegrounds also raise their garrisons from `keepposition`, so they went back
+to realm guards with New Frontiers. That is the same decision, made once.
+
+---
+
 ## What a fix has to supply
 
 Guard positions at heights 2 and 3 for the new-skin components, at minimum

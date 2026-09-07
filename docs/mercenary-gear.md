@@ -142,7 +142,7 @@ int allowed = Math.Max(merc.GetAbilityLevel(Abilities.AlbArmor),
 so a Skald takes Albion chain and Hibernian scale, and the rung mapping below
 it is the same one core uses.
 
-**Weapons are not**, and that is an inconsistency rather than a decision.
+**Weapons were not**, and that was an inconsistency rather than a decision.
 `MercenaryLoadout.CanWield` delegates to
 `GameServer.ServerRules.CheckAbilityToUseItem`, which opens with:
 
@@ -154,18 +154,46 @@ if (!ServerProperties.Properties.ALLOW_CROSS_REALM_ITEMS)
 }
 ```
 
-`allow_cross_realm_items` is **False** on this server. So a hire is refused
-another realm's weapon on realm alone -- and even past that gate, the
-proficiency mapping is realm-locked too: an Albion slashing sword asks for
-`Weapon_Slashing`, which a Skald has never had. Only with the property on does
-core map the equivalents (Slashing / Blades / Swords, Crushing / Blunt /
-Hammers, Polearms / Celtic Spear / Spears, and so on).
+`allow_cross_realm_items` was **False**, so a hire was refused another realm's
+weapon on realm alone -- and even past that gate the proficiency mapping was
+realm-locked: an Albion slashing sword asks for `Weapon_Slashing`, which no
+Midgard class has ever had.
 
-Two ways to make hires cross-realm on weapons:
+Migration `130-one-character-all-three-realms.sql` turns the property on. This
+is a Gaheris server: one character walks all three realms and the drops come
+back with them, so the refusal was a rule written for a server where they
+could never have been there. With it on, core switches the proficiency check
+from the item's realm to the wearer's and the equivalents count as the same
+training:
 
-1. Turn `allow_cross_realm_items` on. One row, core does the rest -- but it
-   applies to players as well as hires.
-2. Do the equivalence mapping for hires only, in `CanWield`. Players unchanged,
-   at the cost of carrying a copy of core's table.
+| Item type | Albion asks for | Hibernia | Midgard |
+|---|---|---|---|
+| Slashing / Sword / Blades | Slashing | Blades | Swords |
+| Axe / LeftAxe | Slashing | Blades | Axes |
+| Crushing / Hammer / Blunt | Crushing | Blunt | Hammers |
+| Polearm / Spear / CelticSpear | Polearms | CelticSpear | Spears |
+| ThrustWeapon | Thrusting | Piercing | Thrusting |
+| Piercing | Thrusting | Piercing | Piercing |
+| TwoHanded | TwoHanded | LargeWeapons | TwoHanded |
+| LargeWeapons | TwoHanded | LargeWeapons | LargeWeapons |
 
-Not decided yet.
+Bows are deliberately **not** equivalenced, in core or here -- a longbow still
+asks for `Weapon_Longbows`. That is live behaviour and it stays, so a Hunter
+still cannot pick up a Scout's bow.
+
+Head armour is the one piece core keeps realm-locked even with the property on:
+
+```csharp
+if (ALLOW_CROSS_REALM_ITEMS && item.Item_Type != (int) eEquipmentItems.HEAD)
+```
+
+The property applies to players as well as hires, which on a co-operative
+server is the point rather than a side effect. It is read at boot, so it needs
+a restart.
+
+One thing worth knowing about that branch: with the property on, the armour
+check reads `player.Realm` with no null test, so passing a non-player living
+through `CheckAbilityToUseItem` with an armour item would throw. Nothing does
+-- every caller of `HasAbilityToUseItem` in core is a `GamePlayer`, and
+`CanWield` is only ever reached for weapons -- but it is why armour for hires
+stays in `WhyNot` rather than being handed to core.

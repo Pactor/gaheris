@@ -296,8 +296,21 @@ characters included. Stop the gameserver first.
 Two features have been installed onto databases built from the stock OpenDAoC
 seed, on 5 September 2026 -- not onto a copy of this server.
 
-**`mercenaries`** -- 25 migrations, all clean. The recruiters appeared; nothing
-from the task dungeons or the class work came with them.
+**`mercenaries`** -- re-tested 7 September 2026 after it was made standalone,
+and it is now **2 migrations**, not the 25 it used to drag. Full round trip on
+a database built from the upstream stock dump -- 97,737 mobs, plus the server
+property rows a boot creates:
+
+- install applied `06` and `40` and nothing else; three recruiters appeared,
+  in Camelot, Jordheim and Tir na Nog
+- uninstall returned the database to **exactly 97,737 mob rows**, the stock
+  count, with no recruiters or collectors left behind
+- installing twice left 3 recruiters, not 6; uninstalling twice was clean
+- the live database was untouched throughout, and the test database dropped
+
+Worth knowing: the stock dump contains no `DreadedSealCollector` mobs at all,
+so migration 06's seal-collector repointing matched nothing. That half only
+does anything on a server that already has OpenDAoC's seal content.
 
 **`bainshee`** -- 53 migrations. It failed twice before it passed, and both
 faults were real ones that only a fresh database could show.

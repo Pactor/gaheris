@@ -122,6 +122,40 @@ catch cannot see.
 
 ---
 
+## A second reason a hire does not come back
+
+Not a fault at all, and it survived the fixes above: a hire that died
+*properly* could still be refused its return.
+
+`GetCompany` holds the servants as well as the hires. `SummonServant` ends with
+`Register(Employer, servant)`, so every pet, minion and turret is in that list,
+and an Animist alone keeps five turrets planted (`TURRET_FIELD = 5`). The
+return timer read the raw count:
+
+```csharp
+if (player.ObjectState != eObjectState.Active ||
+    HasRole(player, key) ||
+    GetCompany(player).Count >= MAX_COMPANY)   // MAX_COMPANY is 7
+    return 0;
+```
+
+`return 0` stops an `ECSGameTimer` for good. So with any pet class in the
+group the company always looked full, and a hire that fell was never coming
+back -- only a relog, which rebuilds from the roster, would restore it.
+
+`RestoreRoster` read it the same way and would `break` part way through
+fielding a login.
+
+The recruiter had always counted this correctly:
+
+```csharp
+if (merc.CanWearGear)
+    onDuty++;
+```
+
+`CanWearGear` is false on `MercenaryServant`, so that is the discriminator.
+It is now `MercenaryManager.HireCount`, and every cap reads it.
+
 ## Still open
 
 - `MainTeleporterBrain.Think` NRE, 3 hits on Master Visur. Core, unrelated to

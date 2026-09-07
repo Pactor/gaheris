@@ -459,6 +459,43 @@ namespace DOL.GS.Scripts
             return tier > MAX_TIER ? MAX_TIER : tier;
         }
 
+        /// <summary>
+        /// How many HIRES are with the player, which is not how many things are.
+        ///
+        /// GetCompany holds the servants too. Pets, minions and turrets are all
+        /// registered into it -- SummonServant ends with Register(Employer,
+        /// servant) -- and an Animist on its own keeps five turrets planted. So
+        /// the raw count crosses MAX_COMPANY with three hires and one summoner
+        /// standing next to them, and every cap read off it was really a cap on
+        /// hires plus livestock.
+        ///
+        /// That cost a dead hire its return. The return timer gives up for
+        /// good when the company looks full:
+        ///
+        ///     if (... || GetCompany(player).Count >= MAX_COMPANY)
+        ///         return 0;
+        ///
+        /// so with any pet class in the group, a hire that fell was never
+        /// coming back and the only recovery was a relog. RestoreRoster read it
+        /// the same way and would stop fielding the roster part way through.
+        ///
+        /// The recruiter always counted this correctly. CanWearGear is the
+        /// discriminator -- it is false on MercenaryServant -- and this is the
+        /// recruiter loop lifted somewhere everything else can use it.
+        /// </summary>
+        public static int HireCount(GamePlayer player)
+        {
+            int hires = 0;
+
+            foreach (GameMercenary merc in GetCompany(player))
+            {
+                if (merc.CanWearGear)
+                    hires++;
+            }
+
+            return hires;
+        }
+
         public static List<GameMercenary> GetCompany(GamePlayer player)
         {
             if (player == null)
@@ -551,7 +588,7 @@ namespace DOL.GS.Scripts
 
             foreach (string key in saved.Split(','))
             {
-                if (GetCompany(player).Count >= MAX_COMPANY)
+                if (HireCount(player) >= MAX_COMPANY)
                     break;
 
                 if (!Roster.TryGetValue(key.Trim(), out MercClass profile))
@@ -588,14 +625,14 @@ namespace DOL.GS.Scripts
                 // a relog or a release fields the whole list anyway.
                 if (player.ObjectState != GameObject.eObjectState.Active ||
                     HasRole(player, key) ||
-                    GetCompany(player).Count >= MAX_COMPANY)
+                    HireCount(player) >= MAX_COMPANY)
                     return 0;
 
                 // Not while the fight that killed them is still going.
                 if (GameLoop.GameLoopTime < readyAt || player.InCombat)
                     return 5000;
 
-                GameMercenary returning = Field(player, Roster[key], GetCompany(player).Count * 50);
+                GameMercenary returning = Field(player, Roster[key], HireCount(player) * 50);
                 returning.Health = Math.Max(1, returning.MaxHealth / 4);
 
                 player.Out.SendMessage(
@@ -5148,13 +5185,7 @@ namespace DOL.GS.Scripts
 
             int tier = MercenaryManager.GetTier(player);
             long rp = MercenaryManager.GetRealmPoints(player);
-            int onDuty = 0;
-
-            foreach (GameMercenary merc in MercenaryManager.GetCompany(player))
-            {
-                if (merc.CanWearGear)
-                    onDuty++;
-            }
+            int onDuty = MercenaryManager.HireCount(player);
 
             string text =
                 "Keeps are not taken alone.\n\n" +
@@ -5270,13 +5301,7 @@ namespace DOL.GS.Scripts
                 return;
             }
 
-            int onDuty = 0;
-
-            foreach (GameMercenary merc in MercenaryManager.GetCompany(player))
-            {
-                if (merc.CanWearGear)
-                    onDuty++;
-            }
+            int onDuty = MercenaryManager.HireCount(player);
 
             if (onDuty >= MercenaryManager.MAX_COMPANY)
             {

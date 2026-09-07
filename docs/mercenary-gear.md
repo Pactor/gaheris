@@ -47,6 +47,11 @@ A hire is built at its level in one pass, so the same rule has to be applied
 here. It now keeps the **best** grant of each ability across every career the
 class holds.
 
+**Verified in game, 7 September 2026.** A hired Skald was handed chain and took
+it. The three others below have not been checked yet and are the ones to try
+next -- Cleric and Minstrel above level 10 especially, since those two were the
+furthest out.
+
 ### Who else it hit
 
 Only four classes had a career order that lost, but two of them badly:

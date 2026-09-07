@@ -27,6 +27,49 @@ reads. If this page and that file ever disagree, believe the file.
 
 ---
 
+## Taking one feature to another server
+
+`mercenaries` is the worked example, and the only one currently set up to come
+back out again.
+
+```bash
+./install.sh mercenaries              # two migrations, nothing else
+./install.sh --uninstall mercenaries  # and back out
+```
+
+It depends on nothing. That is deliberate and it was not always true: it used
+to depend on `base`, which meant installing "just the mercenaries" applied
+thirty-five migrations and converted the server to a co-operative ruleset along
+the way. It now applies exactly `06-mercenaries.sql` and `40-city-recruiters.sql`,
+which between them write to one table, `mob`.
+
+**The scripts do not install themselves.** Copy these six files into the target
+server's `scripts/` directory:
+
+```
+scripts/gaheris/Mercenaries.cs
+scripts/gaheris/MercenaryLoadout.cs
+scripts/gaheris/MercenaryCommands.cs
+scripts/gaheris/MercenaryTravel.cs
+scripts/gaheris/Settings.cs                              GaherisSettings
+scripts/classes/catacombs/warlock/WarlockPairing.cs      a hired Warlock's paired casting
+```
+
+That is the complete set, worked out by following every type they use rather
+than by guessing. `MonsterGarrison.cs` is *not* needed -- none of them
+references it. `GaherisSealCollector` is defined inside `Mercenaries.cs`, so it
+comes along on its own.
+
+The uninstall removes the recruiters and puts the stock `DreadedSealCollector`
+class back on the seal collectors, which the install had repointed. It does not
+delete a company a player has already hired -- those are cleaned up by the
+roster. Script files are left in place: they compile against stock OpenDAoC and
+simply have no recruiter to be hired from.
+
+A backup is taken before an uninstall for the same reason as before an install.
+
+---
+
 ## Before anything else: boot once
 
 **Start the server before installing.** Seven migrations only *update* server
@@ -60,7 +103,7 @@ nothing orphaned, nothing counted twice.
 |---|---|---|---|
 | `frontiers` | 12 | travel | New Frontiers: population, objects, crossings, border keeps, the way home |
 | `battlegrounds` | 5 | base | the designed battlegrounds and Molvik |
-| `mercenaries` | 2 | base | hired companions and the recruiters who sell them |
+| `mercenaries` | 2 | **nothing** | hired companions and the recruiters who sell them — installs and uninstalls on its own, see below |
 | `seals` | 1 | base | dreaded seals as a currency |
 | `atlantis` | 6 | travel | Trials of Atlantis zones, population, Hall of the Corrupt |
 | `artifacts` | 2 | atlantis | artifact scrolls and the wiring that turns them into artifacts |

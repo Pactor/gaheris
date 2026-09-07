@@ -11,6 +11,7 @@
 #   ./install.sh --dry-run ...   name the migrations without applying any
 #   ./install.sh --no-backup     skip the automatic backup taken first
 #   ./install.sh --restore       put the newest backup back, undoing an install
+#   ./install.sh --uninstall X   take one feature back out, leaving the rest
 #   ./install.sh --diff          which tables differ from the newest backup
 #   ./install.sh mercenaries     one feature, and whatever it depends on
 #   ./install.sh classes travel  several
@@ -361,6 +362,8 @@ for arg in "$@"; do
       DIFF=1 ;;
     --testkit|--maintenance)
       EXTRAS="$EXTRAS $arg" ;;
+    --uninstall)
+      UNINSTALL=1 ;;
     -*)
       echo "Unknown option: $arg" >&2
       exit 1 ;;
@@ -369,6 +372,50 @@ for arg in "$@"; do
   esac
 done
 
+do_uninstall() {
+  local names="$1"
+
+  if [[ -z "$names" ]]; then
+    echo "Name what to uninstall, e.g. ./install.sh --uninstall mercenaries" >&2
+    echo "Available:" >&2
+    ls sql/uninstall/*.sql 2>/dev/null | sed 's#.*/##; s#\.sql$##; s/^/  /' >&2
+    exit 1
+  fi
+
+  for name in $names; do
+    local file="sql/uninstall/$name.sql"
+
+    if [[ ! -f "$file" ]]; then
+      echo "No uninstall script for '$name'." >&2
+      echo "Only some features can be taken back out; the rest need --restore." >&2
+      exit 1
+    fi
+  done
+
+  # A backup first, for the same reason an install takes one: this changes the
+  # world and there is no putting it back except from a copy.
+  if [[ -z "$DRYRUN" && -z "${NOBACKUP:-}" ]]; then
+    take_backup
+  fi
+
+  for name in $names; do
+    echo "Removing: $name"
+    apply "sql/uninstall/$name.sql"
+  done
+
+  cat <<'EOF'
+
+Done. Restart the gameserver so it stops loading what was removed:
+
+    docker compose restart gameserver
+
+The script files are left in place. They compile against stock OpenDAoC and
+simply have nothing to do -- see docs/features.md if you want them gone too.
+EOF
+  exit 0
+}
+
+[[ -n "${UNINSTALL:-}" ]] && do_uninstall "${FEATURES// /}"
 [[ -n "$RESTORE" ]] && do_restore "${FEATURES// /}"
 [[ -n "$DIFF" ]] && do_diff "${FEATURES// /}"
 

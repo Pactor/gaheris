@@ -240,6 +240,10 @@ namespace DOL.GS.Scripts
                 case 160: case 161: case 190: case 191:
                 case 220: case 221: case 222: case 223: case 224:
                 case 243: case 246: case 248:
+                // Darkness Falls. Without this it falls through to the numeric
+                // test below, and 249 is under 300, so all three of its stops
+                // would have been filed under Hibernia.
+                case 249:
                     return "Dungeons";
             }
 

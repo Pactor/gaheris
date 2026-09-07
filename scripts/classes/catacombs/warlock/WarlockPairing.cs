@@ -57,8 +57,24 @@ namespace DOL.GS.Scripts
         /// </summary>
         private const long STALE = 20000;
 
-        private static readonly Dictionary<string, Pairing> _open = new();
-        private static readonly object _lock = new();
+        /// <summary>
+        /// The weave in flight is kept ON the caster, not in a table keyed by
+        /// InternalID.
+        ///
+        /// InternalID is the database row id, and it is only ever set by
+        /// GameObject.LoadFromDatabase. A hired Warlock is built with "new"
+        /// and never persisted, so its InternalID is null -- and
+        /// _open[null] = ... threw ArgumentNullException out of Begin, out
+        /// of CastAt, out of MercenaryBrain.Think and into NpcService, whose
+        /// answer to a brain that throws is RemoveFromWorld on the body. The
+        /// hire vanished mid-fight without dying, so nothing scheduled it to
+        /// come back and the player waited for a return that was never coming.
+        ///
+        /// TempProperties is on every GameLiving, is null-safe, is locked
+        /// internally, and dies with the object -- so there is nothing to key,
+        /// nothing to leak, and nothing to clean up after a hire that is gone.
+        /// </summary>
+        private const string WEAVE = "WarlockWeave";
 
         [ScriptLoadedEvent]
         public static void OnScriptLoaded(DOLEvent e, object sender, EventArgs args)
@@ -126,15 +142,12 @@ namespace DOL.GS.Scripts
             if (!Pairs(player) || primary == null)
                 return;
 
-            lock (_lock)
+            player.TempProperties.SetProperty(WEAVE, new Pairing
             {
-                _open[player.InternalID] = new Pairing
-                {
-                    Primary = primary,
-                    Target = player.TargetObject as GameLiving,
-                    Opened = GameLoop.GameLoopTime,
-                };
-            }
+                Primary = primary,
+                Target = player.TargetObject as GameLiving,
+                Opened = GameLoop.GameLoopTime,
+            });
 
             // Said out loud, because the delve cannot say it. ShortDescription
             // is what the client is shown, and the handlers for lifedrain,
@@ -206,33 +219,25 @@ namespace DOL.GS.Scripts
 
         private static Pairing Current(GameLiving player)
         {
-            lock (_lock)
+            Pairing pairing = player.TempProperties.GetProperty<Pairing>(WEAVE);
+
+            if (pairing == null)
+                return null;
+
+            if (GameLoop.GameLoopTime - pairing.Opened > STALE)
             {
-                if (!_open.TryGetValue(player.InternalID, out Pairing pairing))
-                    return null;
-
-                if (GameLoop.GameLoopTime - pairing.Opened > STALE)
-                {
-                    _open.Remove(player.InternalID);
-                    return null;
-                }
-
-                return pairing;
+                player.TempProperties.RemoveProperty(WEAVE);
+                return null;
             }
+
+            return pairing;
         }
 
         private static Pairing Close(GameLiving player)
         {
-            lock (_lock)
-            {
-                if (_open.TryGetValue(player.InternalID, out Pairing pairing))
-                {
-                    _open.Remove(player.InternalID);
-                    return pairing;
-                }
-            }
-
-            return null;
+            return player.TempProperties.TryRemoveProperty(WEAVE, out object held)
+                ? held as Pairing
+                : null;
         }
 
         /// <summary>

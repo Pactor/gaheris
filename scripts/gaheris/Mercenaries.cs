@@ -968,7 +968,69 @@ namespace DOL.GS.Scripts
             return true;
         }
 
+        /// <summary>
+        /// Nothing a brain does is worth losing the hire over.
+        ///
+        /// NpcService catches a throwing Think, and its answer is to drop the
+        /// brain from the service store and call RemoveFromWorld on the body.
+        /// That is not a death: Die never runs, so no return is scheduled, the
+        /// roster still lists them, and the leash timer has already been
+        /// stopped by RemoveFromWorld. The hire simply ceases to exist until
+        /// the player logs out and back in -- which, to the player, looks
+        /// exactly like one that died and never came back.
+        ///
+        /// It also takes the rest of the tick with it: the exception unwinds
+        /// out of the service loop, so every NPC after this one in that pass
+        /// is skipped as well.
+        ///
+        /// A bad tick is cheap. Log it and take the next one.
+        /// </summary>
+        /// <summary>
+        /// A hire casts what RoleThink tells it to, and nothing else.
+        ///
+        /// StandardMobBrain.Think reaches AttackMostWanted, which calls this
+        /// and, on a hit, casts straight out of Body.Spells with
+        /// Body.CastSpell(spell, m_mobSpellLine) -- core picking a spell at
+        /// random from a mob spell list. Two things go wrong with that, and
+        /// both of them delete the hire:
+        ///
+        ///   * A PetSpell picked that way goes to PetSpellHandler, whose
+        ///     CheckBeginCast reports a missing pet with
+        ///     LanguageMgr.GetTranslation((Caster as GamePlayer).Client, ...).
+        ///     A hire is not a GamePlayer, so that is a null dereference. It
+        ///     took the Necromancer and its servant six times each in one day.
+        ///
+        ///   * Core casts with checkLos left at its default of true, and the
+        ///     end-of-cast check reads castingComponent.SpellHandler without a
+        ///     null test. That one took the Valkyrie.
+        ///
+        /// Neither is reachable through CastAt, which refuses a PetSpell and
+        /// passes checkLos false -- this was core going around it. RoleThink
+        /// already owns every spell a hire casts, kit, cooldowns, targeting and
+        /// all, so there is nothing here to lose by saying no.
+        ///
+        /// Melee is untouched: a false answer is what sends AttackMostWanted to
+        /// StartAttack, which is what it should have been doing anyway.
+        /// </summary>
+        public override bool CheckSpells(eCheckSpellType type)
+        {
+            return false;
+        }
+
         public override void Think()
+        {
+            try
+            {
+                ThinkInternal();
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine("Mercenary brain fault on " +
+                                  (Body?.Name ?? "?") + ": " + e);
+            }
+        }
+
+        private void ThinkInternal()
         {
             GamePlayer owner = Employer;
             GameMercenary merc0 = Body as GameMercenary;
@@ -2348,10 +2410,84 @@ namespace DOL.GS.Scripts
 
         public virtual void Retire()
         {
+            // Says so out loud, so the loss watcher below can tell a hire that
+            // was sent away from one that was taken away.
+            _retiring = true;
             Group?.RemoveMember(this);
 
             if (ObjectState == eObjectState.Active)
                 Delete();
+        }
+
+        /// <summary>Set while a hire is being taken out of the world on purpose.</summary>
+        private bool _retiring;
+
+        /// <summary>
+        /// A hire can leave the world without dying, and when it does, nothing
+        /// brings it back.
+        ///
+        /// Every ECS service answers a component that throws the same way: drop
+        /// it from the store, then RemoveFromWorld on the body that owns it.
+        /// The hire is simply gone -- Die never ran, so it was never removed
+        /// from the company, never scheduled to return, and its leash timer was
+        /// stopped on the way out. It sat in the roster as a live member that
+        /// no longer existed anywhere, until the player logged out and back in.
+        ///
+        /// From the outside that is indistinguishable from a death that never
+        /// healed up, which is exactly how it was reported.
+        ///
+        /// So: anything that leaves the world while still alive and still on
+        /// the books is treated as a fall. The check waits three seconds first,
+        /// because MoveTo removes and re-adds -- a teleport to the employer, a
+        /// zone line, a trip to the frontier -- and a hire that is back in the
+        /// world by then went nowhere.
+        /// </summary>
+        private void WatchForSilentLoss()
+        {
+            GamePlayer employer = Employer;
+
+            if (_retiring || employer == null || !CanWearGear || !IsAlive)
+                return;
+
+            string key = RoleKey;
+            ECSGameTimer check = new ECSGameTimer(employer);
+
+            check.Callback = t =>
+            {
+                try
+                {
+                    // Back in the world: that was a move, not a loss.
+                    if (ObjectState == eObjectState.Active)
+                        return 0;
+
+                    if (employer.ObjectState != eObjectState.Active)
+                        return 0;
+
+                    List<GameMercenary> company = MercenaryManager.GetCompany(employer);
+
+                    // Already accounted for -- died properly, or disbanded.
+                    if (!company.Contains(this))
+                        return 0;
+
+                    company.Remove(this);
+                    MercenaryManager.ScheduleReturn(employer, key);
+
+                    employer.Out.SendMessage(
+                        "Your " + RoleName + " was lost, and will find their way back to you.",
+                        eChatType.CT_Important, eChatLoc.CL_SystemWindow);
+                }
+                catch (Exception e)
+                {
+                    // The owner of this timer is the PLAYER, and a service that
+                    // catches a throwing timer kicks its owner to the character
+                    // screen. Not for this.
+                    Console.WriteLine("Mercenary loss watch fault: " + e);
+                }
+
+                return 0;
+            };
+
+            check.Start(3000);
         }
 
         /// <summary>
@@ -2481,6 +2617,7 @@ namespace DOL.GS.Scripts
         {
             _leash?.Stop();
             RetireServants();
+            WatchForSilentLoss();
             return base.RemoveFromWorld();
         }
 

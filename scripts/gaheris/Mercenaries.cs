@@ -1049,6 +1049,44 @@ namespace DOL.GS.Scripts
         /// Melee is untouched: a false answer is what sends AttackMostWanted to
         /// StartAttack, which is what it should have been doing anyway.
         /// </summary>
+        /// <summary>
+        /// Walking cancels a focus spell, which for a hire nothing else does.
+        ///
+        /// A focus spell parks the caster in CastState.Focusing and holds it
+        /// there. What ends it is the caster moving -- and moving is reported
+        /// by exactly two lines in the whole server, both of them in
+        /// GamePlayer:
+        ///
+        ///     CurrentSpellHandler?.CasterMoves();
+        ///
+        /// A GameNPC sends no movement packet, so it never says it moved and
+        /// its focus never lapses. Worse, SpellHandler.CheckDuringCast takes
+        /// the opposite side while the cast runs:
+        ///
+        ///     if (Caster is GameNPC npcOwner)
+        ///         if (Spell.CastTime > 0)
+        ///             if (npcOwner.IsMoving)
+        ///                 npcOwner.StopFollowing();
+        ///
+        /// so the hire is actively stopped from following, forever, by a spell
+        /// that will never end on its own.
+        ///
+        /// It is a Heretic problem first because the Heretic has the focus
+        /// line that does its damage: Lava Spate through Lava Avalanche, spells
+        /// 14055 to 14061, all carrying IsFocus. One of those and the hire
+        /// stands where it cast it until the leash timer teleports it, which
+        /// from the outside is a companion that has stopped following.
+        ///
+        /// So the hire does what the player does, at the moment it decides to
+        /// travel. StopCurrentSpellcast reaches CancelFocusSpells by the same
+        /// route a moving player takes.
+        /// </summary>
+        private void StopFocusing()
+        {
+            if (Body != null && Body.IsCasting)
+                Body.StopCurrentSpellcast();
+        }
+
         public override bool CheckSpells(eCheckSpellType type)
         {
             return false;
@@ -1121,6 +1159,7 @@ namespace DOL.GS.Scripts
                 // and survived three attempts at tuning the distance.
                 Note(merc0, "breaking off at " + Body.GetDistanceTo(owner) + "u, returning");
                 Body.StopAttack();
+                StopFocusing();
                 ClearAggroList();
                 Body.TargetObject = null;
                 GoHome(owner);
@@ -1149,6 +1188,7 @@ namespace DOL.GS.Scripts
             {
                 Note(merc0, "walking back from " + Body.GetDistanceTo(owner) + "u");
                 Body.StopAttack();
+                StopFocusing();
                 GoHome(owner);
                 return;
             }

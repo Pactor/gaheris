@@ -317,6 +317,39 @@ namespace DOL.GS.Scripts
                 }
             }
 
+            // The strongest grant of each ability wins, not the last one read.
+            //
+            // A class carries more than one career specialisation and they
+            // overlap. A Skald has VikingCareer, which grants MidArmor 3, and
+            // SkaldCareer, which grants MidArmor 4 -- studded and chain. The
+            // old loop added every qualifying row in whatever order the
+            // database handed back, and GameLiving.AddAbility is an
+            // unconditional overwrite:
+            //
+            //     int oldLevel = oldAbility.Level;
+            //     oldAbility.Level = ability.Level;
+            //
+            // so the LAST row read decided the answer. VikingCareer came back
+            // last and a Skald was left in studded, refusing the chain and
+            // scale she is trained for. The same coin toss cost the Thane and
+            // the Warrior their chain, the Armsman and the Paladin their
+            // plate, and the Hero and the Champion their scale.
+            //
+            // Core never had the problem because a player is levelled into
+            // these one at a time, and RefreshSpecDependantSkills only ever
+            // raises:
+            //
+            //     if (!HasAbility(ab.KeyName) || GetAbility(ab.KeyName).Level < ab.Level)
+            //         AddAbility(ab, sendMessages);
+            //
+            // A hire is built at its level in one pass, so the same rule has to
+            // be applied here instead: keep the best of everything the class
+            // has qualified for by now. That also settles the handful of
+            // classes whose own career reads 4 at level 1 and 3 at level 10 --
+            // Warden and Druid -- where a player keeps the 4 they were given
+            // and a hire, reading rows in order, would have taken the 3.
+            Dictionary<string, Ability> earned = new();
+
             foreach (string spec in specs)
             {
                 List<Ability> abilities = SkillBase.GetSpecAbilityList(spec, (int) characterClass);
@@ -325,8 +358,12 @@ namespace DOL.GS.Scripts
                 {
                     foreach (Ability ability in abilities)
                     {
-                        if (ability != null && ability.SpecLevelRequirement <= level)
-                            loadout.Abilities.Add(ability);
+                        if (ability == null || ability.SpecLevelRequirement > level)
+                            continue;
+
+                        if (!earned.TryGetValue(ability.KeyName, out Ability held) ||
+                            held.Level < ability.Level)
+                            earned[ability.KeyName] = ability;
                     }
                 }
 
@@ -341,6 +378,8 @@ namespace DOL.GS.Scripts
                         loadout.Styles.Add(style);
                 }
             }
+
+            loadout.Abilities.AddRange(earned.Values);
 
             Categorise(loadout);
             return loadout;

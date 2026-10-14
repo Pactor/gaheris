@@ -2168,10 +2168,10 @@ namespace DOL.GS.Scripts
         /// </summary>
         private static readonly eEffect[][] BUFF_FAMILIES =
         {
-            new[] { eEffect.StrengthBuff,     eEffect.StrengthConBuff },
-            new[] { eEffect.ConstitutionBuff, eEffect.StrengthConBuff },
-            new[] { eEffect.DexterityBuff,    eEffect.DexQuickBuff },
-            new[] { eEffect.QuicknessBuff,    eEffect.DexQuickBuff },
+            new[] { eEffect.StrengthBuff,     eEffect.StrConBuff },
+            new[] { eEffect.ConstitutionBuff, eEffect.StrConBuff },
+            new[] { eEffect.DexterityBuff,    eEffect.DexQuiBuff },
+            new[] { eEffect.QuicknessBuff,    eEffect.DexQuiBuff },
 
             new[] { eEffect.BodyResistBuff,   eEffect.SpiritResistBuff, eEffect.EnergyResistBuff,
                     eEffect.BodySpiritEnergyBuff, eEffect.AllMagicResistsBuff, eEffect.AllResistsBuff },

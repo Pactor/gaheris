@@ -1,0 +1,75 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    Precompiles the Gaheris scripts into a standalone GameServerScripts.dll so
+    the server can LOAD it instead of compiling scripts/ at boot. Use this when
+    the boot-time script compiler misbehaves (for example a "Bad IL format"
+    error, which means the DLL it emitted targets a different .NET than the
+    server is running on).
+
+    The stock OpenDAoC scripts are already inside GameServer.dll, so this
+    assembly only needs the Gaheris scripts under scripts/ -- compiling them
+    alone is enough.
+
+    Steps:
+      1. Build OpenDAoC-Core first (Release). Note its output "lib" folder,
+         e.g.  ...\OpenDAoC-Core\Release\lib
+      2. Build this project, pointing CoreLibs at that lib folder:
+           dotnet build GameServerScripts.csproj -c Release -p:CoreLibs=C:\path\to\OpenDAoC-Core\Release\lib
+         (or set the CoreLibs default below and build in your IDE).
+      3. Copy the resulting GameServerScripts.dll into the server's lib folder
+         (next to GameServer.dll).
+      4. In config/serverconfig.xml set <EnableCompilation>False</EnableCompilation>.
+
+    This targets net10.0 to match the server; do not change the core.
+  -->
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>disable</Nullable>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <AssemblyName>GameServerScripts</AssemblyName>
+    <OutputType>Library</OutputType>
+    <!-- Scripts are an overlay; compile only what is listed here. -->
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+    <!-- The server compiles scripts without warnings-as-errors; match that. -->
+    <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
+    <NoWarn>CS0169;CS0414;CS0649</NoWarn>
+    <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+
+    <!-- Point this at your OpenDAoC-Core build output "lib" folder.
+         Override on the command line with -p:CoreLibs=... -->
+    <CoreLibs Condition="'$(CoreLibs)' == ''">..\OpenDAoC-Core\Release\lib</CoreLibs>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="scripts\**\*.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Server assemblies. Private=false keeps them out of our output;
+         we only want GameServerScripts.dll. GameServer/CoreBase/CoreDatabase/
+         Detour.Managed live in lib\; the CoreServer host sits one level up. -->
+    <Reference Include="GameServer">
+      <HintPath>$(CoreLibs)\GameServer.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="CoreBase">
+      <HintPath>$(CoreLibs)\CoreBase.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="CoreDatabase">
+      <HintPath>$(CoreLibs)\CoreDatabase.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="Detour.Managed">
+      <HintPath>$(CoreLibs)\Detour.Managed.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="CoreServer">
+      <HintPath>$(CoreLibs)\..\CoreServer.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+  </ItemGroup>
+
+</Project>

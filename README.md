@@ -33,6 +33,18 @@ Nothing else. You do not need to build OpenDAoC, and you do not need a
 database dump -- the gameserver image ships the world database and seeds it
 into the volume on first boot.
 
+**Running natively instead of in Docker?** Then the one thing that bites is
+the .NET version. OpenDAoC-Core targets **net10.0**, and the server compiles
+`scripts/` into `lib/GameServerScripts.dll` at boot against whatever runtime it
+is *running* on -- so if you launch it on an older .NET, the assembly it emits
+will not load and you get a `Bad IL format` error. Run the server on the
+**.NET 10 runtime** (and delete any stale `lib/GameServerScripts.dll` before
+the first boot) and it compiles cleanly. If you would rather not depend on the
+boot compiler at all, build the scripts ahead of time with
+`GameServerScripts.csproj`, drop the DLL in `lib/`, and set
+`<EnableCompilation>False</EnableCompilation>`. Docker avoids all of this,
+since the image already carries the right runtime.
+
 ### 1. Docker, inside the distro
 
 ```bash

@@ -8,7 +8,7 @@
     server is running on).
 
     The stock OpenDAoC scripts are already inside GameServer.dll, so this
-    assembly only needs the Gaheris scripts under scripts/ -- compiling them
+    assembly only needs the Gaheris scripts under scripts/ - compiling them
     alone is enough.
 
     Steps:
